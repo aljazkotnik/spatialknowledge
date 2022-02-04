@@ -1,6 +1,6 @@
 import { svg2element } from "../helpers.js";
 
-let template = `<circle r="5" fill="orange"></circle>`; // template
+let template = `<circle r="5" fill="cornflowerblue"></circle>`; // template
 
 export default class MiniMapIcon{
     constructor(item){
@@ -10,7 +10,7 @@ export default class MiniMapIcon{
 	} // constructor
 	
 
-	update(xscale, yscale){
+	update(xscale, yscale, highlight){
 		// The scales must be given from the parent, and the icon uses them to position itself.
 		// The scales should incorporate both the panning and zooming adjustements needed.
 		let obj = this;
@@ -24,5 +24,16 @@ export default class MiniMapIcon{
 		obj.node.setAttribute("cx", xscale.dom2range( x ));
 		obj.node.setAttribute("cy", yscale.dom2range( y ));
 		
+		
+		obj.node.setAttribute("fill", highlight ? "orange" : "cornflowerblue");
+		obj.node.setAttribute("display", obj.item.node.style.display );
+		
+		
+		// Support for groups.
+		if(obj.item.members){
+			// The area of the group of n items should be n times larger?
+			obj.node.setAttribute("r", Math.sqrt( obj.item.members.length )*5)
+		}; // if
 	} // update
+	
 } // MiniMapIcon

@@ -1,43 +1,53 @@
 import { html2element } from "../helpers.js";
 
-// What happens if we add a wrapper, so that the wrapper is positioned, but the div is scaled?
 let template = `
 <div class="item">
-  <div class="label unselectable">Label</div>
-  <div class="view">
+  <div class="head unselectable">
+    <span class="label"></span>
+	<span class="button" style="display: none;">x</span>
   </div>
+  <div class="view"></div>
+  <div class="preview"></div>
+  <div class="controls"></div>
+  <div class="commenting"></div>
 </div>
 `;
 
-// This item should be support use as a single object, as well as a group. Just depends on the tasks coming in.
+/*
+`Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
-// The Item will have to be scalable!!
+Scaling: the container is transformed to include zooming/panning. When the zoom happens the items are prompted to check whether they are still large enough to draw the data.
+*/
 export default class Item{
 	
   // Main viewport dimensions;
   width = 300;
   height = 200;
 	
-  constructor(task){
+  constructor(){
 	let obj = this;
 	  
-	obj.task = task;
+	
 	obj.node = html2element(template);
+	obj.node.style.position = "absolute";
 	  
 	obj.viewnode = obj.node.querySelector("div.view");
 	obj.viewnode.style.height = obj.height + "px";
 	obj.viewnode.style.width = obj.width + "px";
 	  
-	  
-	obj.node.querySelector("div.label").innerHTML = task.taskId;
-	  
+	obj.previewnode = obj.node.querySelector("div.preview");
+	obj.previewnode.style.maxWidth = obj.width + "px";
 	
 	// Add the dragging in here. The dragging is supposed to be in a scaled, and potentially tranlated div, so the offset to the div needs to be removed.
 	let active = false;
 	let itemRelativePosition = [0, 0];
 		
+		
+	// The `e.target == obj.node' prevents any events on the children elements to bubble up. This require the title width to be 0, and it prevented from a button being positioned to the right. 
+	// `obj.node.contains(e.target)' allows any children to launch the dragging, but this will interfere with the panning and zooming in the viewport div.
+	// Maybe any child that is contained by obj.node. but not the viewport node?
 	obj.node.onmousedown = function(e){
-	  if(e.target == obj.node){
+	  if(obj.node.contains(e.target) && e.target != obj.viewnode && obj.node.isConnected){
 		e.preventDefault();
 		let rect = obj.node.getBoundingClientRect();
 		
@@ -62,9 +72,8 @@ export default class Item{
 		
 		let x = e.pageX - parentRect.x - itemRelativePosition[0];
 		let y = e.pageY - parentRect.y - itemRelativePosition[1];
-				
-		obj.node.style.left = x/k + "px";
-		obj.node.style.top  = y/k + "px";
+		
+		obj.position = [x/k, y/k];
 		
 		obj.onmove();
 	  } // if
@@ -74,7 +83,37 @@ export default class Item{
 	obj.node.onmouseleave = function(){ active = false; } // onmouseleave
   } // constructor
   
-  // Dummy method that evaluates when the item is being repositioned.
+  
+  // Generic hide, show, and position methods.
+  show(){
+	let obj = this;
+	obj.node.style.display = "";
+  } // show
+  
+  hide(){
+	let obj = this;
+	obj.node.style.display = "none";
+  } // hide
+  
+  set position(point){
+	let obj = this;
+	obj.node.style.left = point[0] + "px";
+	obj.node.style.top  = point[1] + "px";
+  } // set position
+  
+  get position(){
+	  let obj = this;
+	  return [
+	    parseFloat(obj.node.style.left),
+		parseFloat(obj.node.style.top)
+	  ]
+  } // get position
+  
+  // superclass method defined in the subclasses.
+  checksize(){} // checksize
+  
+  
+  // Dummy method. Superset in NavigationManager to trigger the minimap update.
   onmove(){} // onmove
   
 } // Item

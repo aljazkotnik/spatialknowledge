@@ -106,9 +106,12 @@ export function addDraggingToSvgItem(svg, item){
 } // addDraggingToItem
 
 
-export function isEventWithinBoundingClientRect(e, rect){
-	return ( e.clientX > rect.x && e.clientX < rect.x + rect.width ) &&
-	       ( e.clientY > rect.y && e.clientY < rect.y + rect.height );
+
+
+export function isWithinBoundingClientRect(A, B){
+	// A and B are expected to be the results of "getBoundingClientRect"
+	return ( A.x > B.x && A.x < B.x + B.width ) &&
+	       ( A.y > B.y && A.y < B.y + B.height );
 } // isEventWithinRectangle
 
 

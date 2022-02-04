@@ -81,14 +81,33 @@ div.item {
 	box-shadow: 1px 2px 4px 0px rgba(0,0,0,0.25);
 }
 
-div.label {
+div.head {
 	color: #888;
 	font-size: 28px;
 	margin-top: 0.5em;
-	max-width: 0px;
+}
+
+span.label {
 	white-space: nowrap;
 }
 
+span.button {
+	float: right;
+	cursor: pointer;
+}
+
+
 div.view {
 	opacity: 0.001;
+}
+
+div.preview {
+	margin-top: 5px;
+}
+
+div.previewicon {
+	width: 20px;
+	height: 20px;
+	background: gainsboro;
+	float: left;
 }

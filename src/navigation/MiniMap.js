@@ -1,4 +1,4 @@
-import { svg2element, scaleLinear } from "../helpers.js";
+import { svg2element, scaleLinear, isWithinBoundingClientRect } from "../helpers.js";
 import MiniMapIcon from "./MiniMapIcon.js";
 import MiniMapViewRect from "./MiniMapViewRect.js";
 /*
@@ -6,7 +6,7 @@ The initial arrangement is not the problem of this module. This module just visu
 
 The panning/zooming should be made available on hte background also.
 */
-const template = `<svg style="border: 2px solid black; display: block;">
+const template = `<svg style="border: 2px solid gainsboro; display: block;">
   <g class="icons"></g>
 </svg>`; // template
 
@@ -18,7 +18,7 @@ export default class MiniMap{
 	
 	width = 300;
 	height = 200;
-	icons = [];
+	_icons = [];
 	
 	constructor(){
 		let obj = this;
@@ -35,23 +35,7 @@ export default class MiniMap{
 		obj.viewrect = new MiniMapViewRect();
 		obj.node.appendChild(obj.viewrect.node)
 		
-		
-		
-		
-		
-		
-		// When the square moves the main view should be updated. How to do the update?
-		// Should tehre be an offset applied? This doesn't seem neat
-		// Should the items keep track of their coordinates and sizes in initial coordinates, which would then be converted to the browser coordinates depending on the view.
-		// scrollLeft and scrollTop are bounded by 0 on each side, so the items can either be repositioned initially, or I keep track of the coordnates internally.
-		
-		// Then the position components need to be tracked independently, as they are changed through different interactions. So keep track of the initial position and size, and the user dragging offset separately.
-		
-		// The dragging just applies the offset from the original position to the current cursor position. Maybe instead of storing the components I can just transform back, and apply the new transform?
-		
-		
-		
-		// Add scrolling to the rect!
+		// Scrolling is added to the the rect externally!
 		
 		// Create the scales to map the necessary range to the size of the svg.
 		obj.xscale = new scaleLinear();
@@ -60,13 +44,50 @@ export default class MiniMap{
 		obj.yscale = new scaleLinear();
 		obj.yscale.range = [0, obj.height];
 		
+		
+		// Maybe it's just simpler to keep re-rendering the MiniMap? So the update doesn't have to be called everywhere?
+		// Maybe not, because a lot of the time it's just the re-centering of hte data that is needed?
+		
 	} // constructor
+	
+	
+	
+	// icons getter/setter - to dynamically filter out any group sthat are removed.
+	set icons(ic){
+		this._icons = ic;
+	} // set icons
+	
+	get icons(){
+		return this._icons.filter(icon=>{
+			return icon.item.node.isConnected ? true : icon.node.remove();
+		})
+	} // get icons
+	
 	
 	getoffset(){
 	    let obj = this;
-	    return [obj.xscale.range2dom( obj.viewrect.node.getAttribute("x") ),
-	            obj.yscale.range2dom( obj.viewrect.node.getAttribute("y") ) ];
+	    return [ obj.xscale.range2dom( obj.viewrect.node.getAttribute("x") ),
+	             obj.yscale.range2dom( obj.viewrect.node.getAttribute("y") ) ];
 	} // getoffset
+	
+	
+	// The groups dynamically added to the workspace must also appear on the minimap.
+	add(item){
+		let obj = this;
+		let icon = new MiniMapIcon(item);
+		obj.node.querySelector("g.icons").appendChild(icon.node); 
+		obj._icons.push(icon);
+	} // add
+	
+	
+	remove(item){
+		let obj = this;
+		// Remove the icon, and the underlying obj.
+		let i = obj.icons.map(icon=>icon.item).indexOf(item);
+		obj.icons[i].node.remove()
+		obj.icons.splice(i, 1);
+	} // remove
+	
 	
 	// Update the circle representations.
 	update(items){
@@ -74,12 +95,9 @@ export default class MiniMap{
 		
 		// If items have been given, then change the circles.
 		if(items){
-			let container = obj.node.querySelector("g.icons");
-			obj.icons = items.map(item=>{
-				let icon = new MiniMapIcon(item);
-				container.appendChild(icon.node);
-				return icon;
-			}) // map
+			items.forEach(item=>{
+				obj.add(item);
+			}); // forEach
 		} // items
 		
 		
@@ -89,7 +107,7 @@ export default class MiniMap{
 		// Redraw minimap
 		obj.centerdata();
 		obj.viewrect.init(obj.xscale, obj.yscale);
-		obj.render()
+		obj.render();
 		 
 	} // update
 	
@@ -119,8 +137,9 @@ export default class MiniMap{
 		
 		// Resize the viewrect to the right aspect ratio and size.
 		obj.viewrect.update(obj.xscale, obj.yscale);
+		let r = obj.viewrect.node.getBoundingClientRect();
 		
-		// Redo the icons.
+		// Redo the icons if they are active.
 		obj.icons.forEach(icon=>{
 			icon.update(obj.xscale, obj.yscale);
 		}) // forEach

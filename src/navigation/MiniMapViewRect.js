@@ -1,4 +1,4 @@
-import { svg2element, isEventWithinBoundingClientRect } from "../helpers.js";
+import { svg2element, isWithinBoundingClientRect } from "../helpers.js";
 
 let template = `<rect class="current" x="50" y="10" width="150" height="50" fill="black" opacity="0.5"></rect>`
 
@@ -30,7 +30,8 @@ export default class MiniMapViewRect{
 				let svgClientRect = obj.node.parentElement.getBoundingClientRect();
 				
 				// Check if the mouse left the svg.
-				if(isEventWithinBoundingClientRect(e, svgClientRect)){
+				
+				if(isWithinBoundingClientRect({x: e.clientX, y: e.clientY}, svgClientRect)){
 					let x = e.clientX - svgClientRect.x + clickedItemOffset.x;
 					let y = e.clientY - svgClientRect.y + clickedItemOffset.y;
 					
