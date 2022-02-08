@@ -4,28 +4,15 @@ This should connect to the server, receive some data, and create the spatial arr
 
 import Individual from "./grouping/Individual.js";
 import NavigationManager from "./navigation/NavigationManager.js";
-
+import KnowledgeManager from "./knowledge/KnowledgeManager.js";
 
 
 // Do we want categorical variables in here as well?? Knowledge may be injected through ML generated tags or something? But then maybe they could be injected just as tags?
 
 // author, datetime, tag, taskId, line, area, t
-// Maybe separate annotations for starttime and endtime? And then let the system figure out a closed chapter.
+// Maybe separate annotations for starttime and endtime? And then let the system figure out a close chapter.
 
-const annotations = [
-{tag: "green", taskId: "task 2"},
-{tag: "green", taskId: "task 7"},
-{tag: "green", taskId: "task 11"},
-{tag: "blue", taskId: "task 5"},
-{tag: "blue", taskId: "task 6"},
-{tag: "blue", taskId: "task 11"},
-{tag: "brown", taskId: "task 1"},
-{tag: "brown", taskId: "task 3"},
-{tag: "brown", taskId: "task 4"},
-{tag: "brown", taskId: "task 8"},
-{tag: "brown", taskId: "task 13"},
-{tag: "brown", taskId: "task 15"}
-]; // annotations
+
 
 
 const data = [
@@ -82,6 +69,8 @@ items.forEach((item,i)=>{
 
 
 
+// The knowledge manager object.
+var knowledge = new KnowledgeManager(workspace);
 
 
 // Add the main rendering loop

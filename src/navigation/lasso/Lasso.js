@@ -1,4 +1,4 @@
-import {svg2element} from "../helpers.js";
+import {svg2element} from "../../helpers.js";
 
 
 let template = `
@@ -29,7 +29,6 @@ export default class Lasso{
 		// Should the boundary be stored at all??
 		obj.svg.addEventListener("mousedown", function(event){
 			obj.clearBoundary();
-			obj.active = true;
 		}) // mousedown
 
 		obj.svg.addEventListener("mousemove", function(event){

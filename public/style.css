@@ -73,6 +73,11 @@ div.hudright {
 }
 
 
+text.correlation-label {
+	cursor: pointer;
+}
+
+
 
 /* SMALL MULTIPLES */
 div.item {

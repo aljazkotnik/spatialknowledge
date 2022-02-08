@@ -116,6 +116,31 @@ export function isWithinBoundingClientRect(A, B){
 
 
 
+export class scaleCategorical {
+  domain = []
+  range = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+  // Opposite function is not defined - two domain values can map to the same range value.
+  dom2range(v){
+	let obj = this;
+	if(v){
+		let i = (obj.domain.indexOf(v)+1) % obj.range.length - 1;
+		if(i<0){
+			obj.domain.push(v);
+			return obj.range[obj.domain.length-1];
+		} else {
+			return obj.range[i];
+		} // if
+	} else {
+		// If v isn't a truthy just return black.
+		return '#000000';
+	} // if
+  } // dom2range
+  
+} // scaleCategorical
+
+
+
 export class scaleLinear {
   
   _domain = [0, 1]
@@ -139,3 +164,24 @@ export class scaleLinear {
 function mapSpaceAValueToSpaceB(v, A, B){
 	return (v-A[0])/(A[1]-A[0]) * (B[1]-B[0]) + B[0]
 } // mapSpaceAValueToSpaceB
+
+
+
+// From regular helpers.
+export function arrayEqual(A, B){
+	
+	return arrayIncludesAll(A, B)
+		&& arrayIncludesAll(B, A)
+	
+} // arrayEqual
+
+export function arrayIncludesAll(A,B){
+	// 'arrayIncludesAll' checks if array A includes all elements of array B. The elements of the arrays are expected to be strings.
+	
+	// Return element of B if it is not contained in A. If the response array has length 0 then A includes all elements of B, and 'true' is returned.
+	var f = B.filter(function(b){
+		return !A.includes(b)
+	})
+	
+	return f.length == 0? true : false
+} // arrayIncludesAll

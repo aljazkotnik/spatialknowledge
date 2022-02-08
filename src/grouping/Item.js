@@ -40,6 +40,7 @@ export default class Item{
 	
 	// Add the dragging in here. The dragging is supposed to be in a scaled, and potentially tranlated div, so the offset to the div needs to be removed.
 	let active = false;
+	let itemStartPosition = [0,0];
 	let itemRelativePosition = [0, 0];
 		
 		
@@ -52,6 +53,7 @@ export default class Item{
 		let rect = obj.node.getBoundingClientRect();
 		
 		active = true;
+		itemStartPosition = obj.position;
 		itemRelativePosition = [
 		  e.clientX - rect.x,
 		  e.clientY - rect.y
@@ -78,7 +80,12 @@ export default class Item{
 		obj.onmove();
 	  } // if
 	} // mousemove
-	obj.node.onmouseup = function(){ active = false; } // onmouseup
+	obj.node.onmouseup = function(){ 
+	  if(active){
+		  obj.onend(itemStartPosition);
+	  } // if
+	  active = false;
+	} // onmouseup
 	obj.node.onmouseenter = function(){ active = false; } // onmouseenter
 	obj.node.onmouseleave = function(){ active = false; } // onmouseleave
   } // constructor
@@ -115,5 +122,8 @@ export default class Item{
   
   // Dummy method. Superset in NavigationManager to trigger the minimap update.
   onmove(){} // onmove
+  
+  // Dummy method. Superset in Navigationmanager.track to allow adding to groups.
+  onend(){} // onend
   
 } // Item

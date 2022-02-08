@@ -84,6 +84,8 @@ export default class Group extends Item {
   width = 300;
   height = 200;
   
+  icons = [];
+  members = [];
 	
   constructor(items, annotations){
 	// `items' is an array of `Items' which should be grouped together. `annotations' are an optional input for groups that are created based on server saved annotations.
@@ -102,11 +104,28 @@ export default class Group extends Item {
 	}; // onclick
 	
 	// Store the members.
-	obj.members = items;
 	obj.current = items[0];
 	
 	// When deleting an item the current item WILL be deleted (because it was moused onto first). Therefore another item will have to be selected
 	
+	
+	
+	
+	
+	items.forEach(item=>{
+		obj.addmember(item);
+	}) // map
+	
+
+	
+  } // constructor
+  
+  
+  
+  addmember(item){
+	let obj = this;
+	
+	obj.members.push(item);
 	
 	function uncolorAllIcons(){
 		// Control the preview appearance.
@@ -115,58 +134,53 @@ export default class Group extends Item {
 		}) // forEach
 	} // coordinateIconColors
 	
-	
-	obj.icons = obj.members.map(item=>{
+	  
+	let iconobj = {
+	  item: item,
+	  node: html2element(icontemplate)
+	}; // return
 		
-		let iconobj = {
-			item: item,
-			node: html2element(icontemplate)
-		}; // return
-		
-		// Give the correct initial color, and append it.
-		
-		obj.previewnode.appendChild( iconobj.node );
+	// Give the correct initial color, and append it.
+	item.hide();
+	obj.previewnode.appendChild( iconobj.node );
 		
 		
-		iconobj.node.onmouseenter = function(){
-			// Set current object - important for canvas rendering.
-			obj.current = iconobj.item;
+	iconobj.node.onmouseenter = function(){
+	  // Set current object - important for canvas rendering.
+	  obj.current = iconobj.item;
 			
-			// coordinate the colors.
-			uncolorAllIcons();
-			iconobj.node.style.background = "gray";
+	  // coordinate the colors.
+	  uncolorAllIcons();
+	  iconobj.node.style.background = "gray";
 			
 			
-			// Dummy rendering
-			obj.viewnode.style.background = obj.current.task.color;
-			obj.viewnode.style.opacity = 1;
-		} // onmouseenter
+	  // Dummy rendering
+	  obj.viewnode.style.background = obj.current.task.color;
+	  obj.viewnode.style.opacity = 1;
+	} // onmouseenter
 		
 		
-		// Long press release.
-		var pressTimer;
-		function releaseMember(){
-			obj.release(iconobj)
-		} // releaseMember
+	// Long press release.
+	var pressTimer;
+	function releaseMember(){
+	  obj.release(iconobj)
+	} // releaseMember
 		
-		iconobj.node.onmouseup = function(){
-		  clearTimeout(pressTimer);
-		  // Clear timeout
-		  return false;
-		}; // onmouseup
+	iconobj.node.onmouseup = function(){
+	  clearTimeout(pressTimer);
+	  // Clear timeout
+	  return false;
+	}; // onmouseup
 		
-		iconobj.node.onmousedown = function(){
-		  // Set timeout
-		  pressTimer = window.setTimeout(releaseMember, 1000);
-		  return false; 
-		}; // onmousedown
-		
-		return iconobj;
-	}) // map
+	iconobj.node.onmousedown = function(){
+	  // Set timeout
+	  pressTimer = window.setTimeout(releaseMember, 1000);
+	  return false; 
+	}; // onmousedown
 	
-
-	
-  } // constructor
+	obj.icons.push(iconobj);
+	  
+  } // addmember
   
   
   release(iconobj){
@@ -197,7 +211,7 @@ export default class Group extends Item {
 	  obj.node.remove();
 	  
 	  
-	  // Calculate and apply the offset.
+	  // When the group is created the items remain at their locations, and are simply hidden. When the group is dissolved an offset is applied to account for th egroup moving. For items that are included individually by dragging and dropping.
 	  
 	  let offset = [
 	    obj.position[0] - obj.origin[0],
@@ -211,6 +225,8 @@ export default class Group extends Item {
 		  ]; // position
 		  item.node.style.display = "";
 	  }) // forEach
+	  
+	  obj.members = [];
 	  
 	  obj.onmove();
   } // dissolve

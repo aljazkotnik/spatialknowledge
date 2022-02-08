@@ -18,7 +18,7 @@
 <body>
 
   <div class="header">
-    <h1 style="display: inline-block;">Hello World!</h1>
+    <h1 style="display: inline-block;"></h1>
   </div>
 
 
@@ -40,13 +40,19 @@
   
   <!-- Tree visualisation and lasso support 
   The svg is in front of the item divs to allow lasso to be applied to it.
-  -->
+  
   <svg id="sketchpad" class="fullscreen">
 	<g class="tree" transform="translate(0,60)"></g>
   </svg>
+  -->
+  
   
   <!-- Place for small multiple frames -->
   <div id="tabletop" class="fullscreen">
+    <!-- The svg for the clickable spatial correlation menu, and the knowledge tree -->
+	<svg id="sketchpad" class="fullscreen">
+	  <g class="tree" transform="translate(0,60)"></g>
+    </svg>
     <div class="scalingwrapper"></div>
   </div>
 	
@@ -54,12 +60,12 @@
   <!-- Head up display -->
   <div class="hud unselectable">
 	
-	<!-- Minimap at the top: maybe svg with aggregated scatterplot? -->
 	
 	
 	<!-- Right toolbar -->
 	<div class="hudright">
 	
+	  <!-- Minimap at the top: maybe svg with aggregated scatterplot? -->
 	  <div id="minimap"></div>
 	
 	  <form style="float: right; margin-top: 10px;">

@@ -1,4 +1,4 @@
-import { svg2element, scaleLinear, isWithinBoundingClientRect } from "../helpers.js";
+import { svg2element, scaleLinear, isWithinBoundingClientRect } from "../../helpers.js";
 import MiniMapIcon from "./MiniMapIcon.js";
 import MiniMapViewRect from "./MiniMapViewRect.js";
 /*
