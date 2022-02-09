@@ -397,6 +397,10 @@ export default class NavigationManager{
 		// Just hide all groups.
 		obj.groups.forEach(g_=>g_.hide()) // forEach;
 		
+		// Update the tree current status.
+		obj.tree.currenttasks = g.members.map(m=>m.task.taskId);
+		obj.hudrefresh();
+		
 	} // enter
 
 	// Add the group to the session.

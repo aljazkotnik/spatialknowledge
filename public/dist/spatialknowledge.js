@@ -2679,6 +2679,12 @@
           obj.groups.forEach(function (g_) {
             return g_.hide();
           }); // forEach;
+          // Update the tree current status.
+
+          obj.tree.currenttasks = g.members.map(function (m) {
+            return m.task.taskId;
+          });
+          obj.hudrefresh();
         }; // enter
         // Add the group to the session.
 
