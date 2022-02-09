@@ -69,6 +69,10 @@ export default class TreeKnowledge {
 		
 		obj.color = new scaleCategorical();
 		
+		
+		// The tree is redrawn on every interaction. To allow the user to ee where on the tree they currently are just highlight the group that contains all the relevant items.
+		obj.currenttasks = [];
+		
 	} // constructor
 	
 	
@@ -119,15 +123,27 @@ export default class TreeKnowledge {
 		
 		obj.map.nodes.forEach(nodeobj=>{
 			
+			// Check if the group should be highlighted.
+			let iscurrent = !nodeobj.connections.group.members.some(taskId=>!obj.currenttasks.includes(taskId))
+			
+			
 			obj.gnodes.appendChild( nodeobj.node );
 			nodeobj.update();
-			
+			if(iscurrent){
+				nodeobj.highlightselect();
+			} // if
 			
 			// Add teh styling changes on mouseover. Clicking the label moves view to the group.
-			nodeobj.node.querySelector("g.label").onclick = function(){ 
-				obj.moveto(nodeobj.connections) 
+			let label = nodeobj.node.querySelector("g.label");
+			label.onclick = function(){ 
+				obj.moveto(nodeobj.connections);
 			} // onclick
-			
+			label.addEventListener("mouseenter", function(){
+				obj.crossreferencein(nodeobj.connections.group.members)
+			}) // addEventListener
+			label.addEventListener("mouseout", function(){
+				obj.crossreferenceout();
+			}) // addEventListener
 			
 			// Clicking on hte node just collapses branches.
 			nodeobj.node.querySelector("g.marker").onclick = function(){
@@ -154,5 +170,13 @@ export default class TreeKnowledge {
 		// I want to move to the group which contains only tasks given by "nodeobj.connections.group.members", but I also want to show all the groups within that grop.
 		console.log("Move to", nodeobj.connections.group.members)
 	} // moveto
+	
+	crossreferencein(taskids){
+		// Dummy method that takes in taskids and allows for them to be highlighted on a different plot.
+	} // crossreferencein
+	
+	crossreferenceout(taskids){
+		// Dummy method to signal end of cross reference
+	} // crossreferenceout
 	
 } // TreeKnowledge

@@ -4,7 +4,8 @@ let template = `
 <div class="item">
   <div class="head unselectable">
     <span class="label"></span>
-	<span class="button" style="display: none;">x</span>
+	<span class="button dissolve" style="display: none;">✖</span>
+	<span class="button enter" style="display: none;">⮊</span>
   </div>
   <div class="view"></div>
   <div class="preview"></div>

@@ -98,12 +98,21 @@ export default class Group extends Item {
 	let head = obj.node.querySelector("div.head")
 	head.querySelector("span.label").innerHTML = "Group";
 	
-	let dissolvebutton = head.querySelector("span.button");
+	let dissolvebutton = head.querySelector("span.dissolve");
 	dissolvebutton.style.display = "";
 	dissolvebutton.onmousedown = function(){
 		// The main item checks if the event is a drag, and stops propagation if so. This happens `onmousedown', which is fired before it can become an `onclick' (which presumably includes the `onmouseup' also?)
 		obj.dissolve();
 	}; // onclick
+	
+	
+	let enterbutton = head.querySelector("span.enter");
+	enterbutton.style.display = "";
+	enterbutton.onmousedown = function(){
+		obj.enter();
+	}; // onclick
+
+	
 	
 	// Store the members.
 	obj.current = items[0];
@@ -208,6 +217,10 @@ export default class Group extends Item {
 	  // Always when an item is released the group becomes temporary.
 	  obj.temporary = true;
   } // release
+  
+  
+  // Dummy method
+  enter(){} // enter
   
   
   dissolve(){

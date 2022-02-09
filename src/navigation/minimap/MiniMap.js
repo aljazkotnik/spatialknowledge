@@ -51,6 +51,34 @@ export default class MiniMap{
 	} // constructor
 	
 	
+	highlight(taskids){
+		// Go through the icons and light up the ones with th eappropriate item.
+		let obj = this;
+		obj.icons.forEach(icon=>{
+			// Some icons represent groups, which have multiple taskIds.
+			if(icon.item.members){
+				// This is a group - highlight it if any/all elements are part of it?
+				let memberids = icon.item.members.map(memberitem=>memberitem.task.taskId);
+				if(memberids.some(id=>taskids.includes(id))){
+					icon.highlight();
+				} // if
+			} else {
+				if(taskids.includes(icon.item.task.taskId)){
+					icon.highlight();
+				} // if
+			} // if
+			
+		}) // forEach
+	} // highlight
+	
+	unhighlight(){
+		// Turn them all off.
+		let obj = this;
+		obj.icons.forEach(icon=>{
+			icon.unhighlight();
+		}) // forEach
+	} // unhighlight
+	
 	
 	// icons getter/setter - to dynamically filter out any group sthat are removed.
 	set icons(ic){

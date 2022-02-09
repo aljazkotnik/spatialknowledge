@@ -11,6 +11,7 @@ let template = `
     <path class="fill" stroke="white" stroke-width="4" stroke-linecap="round"></path>
   </g>
   <g class="label">
+    <rect rx="5" ry="5" fill="none"></rect>
     <text class="unselectable" stroke="white" stroke-width="2" font-size="10px"></text>
     <text class="unselectable" stroke="black" stroke-width="0.5" font-size="10px"></text>
   </g>
@@ -41,8 +42,8 @@ export default class TreeNode{
 		
 		
 		let label = obj.node.querySelector("g.label");
-		label.onmouseenter = function(){ obj.highlighttext(true) }
-		label.onmouseleave = function(){ obj.highlighttext(false) }
+		label.addEventListener("mouseenter", function(){ obj.highlighttext(true) });
+		label.addEventListener("mouseout" , function(){ obj.highlighttext(false) });
 		
 		let marker = obj.node.querySelector("g.marker");
 		marker.onmouseenter = function(){ obj.highlightmarker(true) }
@@ -68,7 +69,63 @@ export default class TreeNode{
 		for(let i=0; i<texts.length; i++){
 			texts[i].innerHTML = obj.label;
 		} // for
+		
+		obj.updateBackgroundRectSize();
 	} // update
+	
+	
+	
+	updateBackgroundRectSize(){
+		let obj = this;
+		
+		let t = obj.node.querySelector("g.label").querySelectorAll("text")[1];
+		let rect = obj.node.querySelector("g.label").querySelector("rect");
+		let textbox = t.getBBox();
+		
+		rect.setAttribute("x", textbox.x - textbox.width*0.05);
+		rect.setAttribute("y", textbox.y);
+		rect.setAttribute("width", textbox.width*1.1);
+		rect.setAttribute("height", textbox.height*1.1);
+	} // updatebackgroundRectSize
+	
+	
+	highlightselect(){
+		// Just toggle the background rect, and the text color. Let it still respond to mouseover font increases.
+		let obj = this;
+		
+		let t = obj.node.querySelector("g.label").querySelectorAll("text");
+		let rect = obj.node.querySelector("g.label").querySelector("rect");
+		
+		// Text fill is now white.
+		t[0].setAttribute("fill", "black");
+		t[0].setAttribute("stroke", "black");
+
+		t[1].setAttribute("fill", "white");
+		t[1].setAttribute("stroke", "white");
+
+		// Set the rect
+		rect.setAttribute("fill", "black");
+	} // highlightselect
+	
+	
+	unhighlightselect(){
+		let obj = this;
+		
+		let t = obj.node.querySelector("g.label").querySelectorAll("text");
+		let rect = obj.node.querySelector("g.label").querySelector("rect");
+		
+		// Text fill is now white.
+		t[0].setAttribute("fill", "white");
+		t[0].setAttribute("stroke", "white");
+
+		t[1].setAttribute("fill", "black");
+		t[1].setAttribute("stroke", "black");
+
+
+		rect.setAttribute("fill", "none");
+	} // unhighlightselect
+	
+	
 	
 	
 	highlighttext(v){
@@ -78,6 +135,7 @@ export default class TreeNode{
 		for(let i=0; i<texts.length; i++){
 			texts[i].setAttribute("font-size", size);
 		} // for
+		obj.updateBackgroundRectSize();
 	} // highlighttext
 	
 	highlightmarker(v){
@@ -85,7 +143,6 @@ export default class TreeNode{
 		let size = v ? 10 : 8;
 		let outline = obj.node.querySelector("g.marker").querySelector("path.outline");
 		outline.setAttribute("stroke-width", size);
-		
 	} // highlighttext
 	
 	clear(){

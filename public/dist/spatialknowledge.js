@@ -253,7 +253,7 @@
     return f.length == 0 ? true : false;
   } // arrayIncludesAll
 
-  var template$7 = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button\" style=\"display: none;\">x</span>\n  </div>\n  <div class=\"view\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"controls\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$7 = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"view\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"controls\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -891,7 +891,7 @@
 
   // text -> 	"x", node => node.labelx, "y", node => node.labely, label node=>node.label
 
-  var template$5 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
+  var template$5 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
   // A treenode object is a higher level wrapper that contains all the dimensioning information. The `connections' attribute is supposed to hold the `treegroup' object, which contains a reference the an individual group, all it's ancestors, it's direct parents, and all its descendants.
 
   var TreeNode = /*#__PURE__*/function () {
@@ -912,15 +912,12 @@
 
       obj.connections = treegroup;
       var label = obj.node.querySelector("g.label");
-
-      label.onmouseenter = function () {
+      label.addEventListener("mouseenter", function () {
         obj.highlighttext(true);
-      };
-
-      label.onmouseleave = function () {
+      });
+      label.addEventListener("mouseout", function () {
         obj.highlighttext(false);
-      };
-
+      });
       var marker = obj.node.querySelector("g.marker");
 
       marker.onmouseenter = function () {
@@ -953,7 +950,52 @@
           texts[_i].innerHTML = obj.label;
         } // for
 
+
+        obj.updateBackgroundRectSize();
       } // update
+
+    }, {
+      key: "updateBackgroundRectSize",
+      value: function updateBackgroundRectSize() {
+        var obj = this;
+        var t = obj.node.querySelector("g.label").querySelectorAll("text")[1];
+        var rect = obj.node.querySelector("g.label").querySelector("rect");
+        var textbox = t.getBBox();
+        rect.setAttribute("x", textbox.x - textbox.width * 0.05);
+        rect.setAttribute("y", textbox.y);
+        rect.setAttribute("width", textbox.width * 1.1);
+        rect.setAttribute("height", textbox.height * 1.1);
+      } // updatebackgroundRectSize
+
+    }, {
+      key: "highlightselect",
+      value: function highlightselect() {
+        // Just toggle the background rect, and the text color. Let it still respond to mouseover font increases.
+        var obj = this;
+        var t = obj.node.querySelector("g.label").querySelectorAll("text");
+        var rect = obj.node.querySelector("g.label").querySelector("rect"); // Text fill is now white.
+
+        t[0].setAttribute("fill", "black");
+        t[0].setAttribute("stroke", "black");
+        t[1].setAttribute("fill", "white");
+        t[1].setAttribute("stroke", "white"); // Set the rect
+
+        rect.setAttribute("fill", "black");
+      } // highlightselect
+
+    }, {
+      key: "unhighlightselect",
+      value: function unhighlightselect() {
+        var obj = this;
+        var t = obj.node.querySelector("g.label").querySelectorAll("text");
+        var rect = obj.node.querySelector("g.label").querySelector("rect"); // Text fill is now white.
+
+        t[0].setAttribute("fill", "white");
+        t[0].setAttribute("stroke", "white");
+        t[1].setAttribute("fill", "black");
+        t[1].setAttribute("stroke", "black");
+        rect.setAttribute("fill", "none");
+      } // unhighlightselect
 
     }, {
       key: "highlighttext",
@@ -966,6 +1008,8 @@
           texts[i].setAttribute("font-size", size);
         } // for
 
+
+        obj.updateBackgroundRectSize();
       } // highlighttext
 
     }, {
@@ -1422,7 +1466,9 @@
       obj.node = svg2element(template$4);
       obj.gnodes = obj.node.querySelector("g.nodes");
       obj.gbundles = obj.node.querySelector("g.bundles");
-      obj.color = new scaleCategorical();
+      obj.color = new scaleCategorical(); // The tree is redrawn on every interaction. To allow the user to ee where on the tree they currently are just highlight the group that contains all the relevant items.
+
+      obj.currenttasks = [];
     } // constructor
 
 
@@ -1479,14 +1525,34 @@
       value: function updatenodes() {
         var obj = this;
         obj.map.nodes.forEach(function (nodeobj) {
+          // Check if the group should be highlighted.
+          var iscurrent = !nodeobj.connections.group.members.some(function (taskId) {
+            return !obj.currenttasks.includes(taskId);
+          });
           obj.gnodes.appendChild(nodeobj.node);
-          nodeobj.update(); // Add teh styling changes on mouseover. Clicking the label moves view to the group.
+          nodeobj.update();
 
-          nodeobj.node.querySelector("g.label").onclick = function () {
+          if (iscurrent) {
+            nodeobj.highlightselect();
+          } // if
+          // Add teh styling changes on mouseover. Clicking the label moves view to the group.
+
+
+          var label = nodeobj.node.querySelector("g.label");
+
+          label.onclick = function () {
             obj.moveto(nodeobj.connections);
           }; // onclick
-          // Clicking on hte node just collapses branches.
 
+
+          label.addEventListener("mouseenter", function () {
+            obj.crossreferencein(nodeobj.connections.group.members);
+          }); // addEventListener
+
+          label.addEventListener("mouseout", function () {
+            obj.crossreferenceout();
+          }); // addEventListener
+          // Clicking on hte node just collapses branches.
 
           nodeobj.node.querySelector("g.marker").onclick = function () {
             nodeobj.hidden = !nodeobj.hidden;
@@ -1513,6 +1579,16 @@
         // I want to move to the group which contains only tasks given by "nodeobj.connections.group.members", but I also want to show all the groups within that grop.
         console.log("Move to", nodeobj.connections.group.members);
       } // moveto
+
+    }, {
+      key: "crossreferencein",
+      value: function crossreferencein(taskids) {// Dummy method that takes in taskids and allows for them to be highlighted on a different plot.
+      } // crossreferencein
+
+    }, {
+      key: "crossreferenceout",
+      value: function crossreferenceout(taskids) {// Dummy method to signal end of cross reference
+      } // crossreferenceout
 
     }]);
 
@@ -1551,6 +1627,20 @@
           obj.node.setAttribute("r", Math.sqrt(obj.item.members.length) * 5);
         }
       } // update
+
+    }, {
+      key: "highlight",
+      value: function highlight() {
+        var obj = this;
+        obj.node.setAttribute("fill", "orange");
+      } // highlight
+
+    }, {
+      key: "unhighlight",
+      value: function unhighlight() {
+        var obj = this;
+        obj.node.setAttribute("fill", "cornflowerblue");
+      } // unhighlight
 
     }]);
 
@@ -1673,10 +1763,49 @@
       obj.yscale.range = [0, obj.height]; // Maybe it's just simpler to keep re-rendering the MiniMap? So the update doesn't have to be called everywhere?
       // Maybe not, because a lot of the time it's just the re-centering of hte data that is needed?
     } // constructor
-    // icons getter/setter - to dynamically filter out any group sthat are removed.
 
 
     _createClass(MiniMap, [{
+      key: "highlight",
+      value: function highlight(taskids) {
+        // Go through the icons and light up the ones with th eappropriate item.
+        var obj = this;
+        obj.icons.forEach(function (icon) {
+          // Some icons represent groups, which have multiple taskIds.
+          if (icon.item.members) {
+            // This is a group - highlight it if any/all elements are part of it?
+            var memberids = icon.item.members.map(function (memberitem) {
+              return memberitem.task.taskId;
+            });
+
+            if (memberids.some(function (id) {
+              return taskids.includes(id);
+            })) {
+              icon.highlight();
+            } // if
+
+          } else {
+            if (taskids.includes(icon.item.task.taskId)) {
+              icon.highlight();
+            } // if
+
+          } // if
+
+        }); // forEach
+      } // highlight
+
+    }, {
+      key: "unhighlight",
+      value: function unhighlight() {
+        // Turn them all off.
+        var obj = this;
+        obj.icons.forEach(function (icon) {
+          icon.unhighlight();
+        }); // forEach
+      } // unhighlight
+      // icons getter/setter - to dynamically filter out any group sthat are removed.
+
+    }, {
       key: "icons",
       get: // set icons
       function get() {
@@ -2019,12 +2148,20 @@
 
       var head = obj.node.querySelector("div.head");
       head.querySelector("span.label").innerHTML = "Group";
-      var dissolvebutton = head.querySelector("span.button");
+      var dissolvebutton = head.querySelector("span.dissolve");
       dissolvebutton.style.display = "";
 
       dissolvebutton.onmousedown = function () {
         // The main item checks if the event is a drag, and stops propagation if so. This happens `onmousedown', which is fired before it can become an `onclick' (which presumably includes the `onmouseup' also?)
         obj.dissolve();
+      }; // onclick
+
+
+      var enterbutton = head.querySelector("span.enter");
+      enterbutton.style.display = "";
+
+      enterbutton.onmousedown = function () {
+        obj.enter();
       }; // onclick
       // Store the members.
 
@@ -2117,6 +2254,11 @@
 
         obj.temporary = true;
       } // release
+      // Dummy method
+
+    }, {
+      key: "enter",
+      value: function enter() {} // enter
 
     }, {
       key: "dissolve",
@@ -2337,7 +2479,8 @@
           obj.items.forEach(function (item) {
             return item.show();
           });
-          obj.minimap.update();
+          obj.tree.currenttasks = [];
+          obj.hudrefresh();
         } else {
           // Restrict the view to the members of the parent nodes. If one of the parents is the root then all the items should be active tasks.
           var activetasks = connections.parents.reduce(function (acc, parentg) {
@@ -2345,7 +2488,9 @@
               return item.task.taskId;
             }) : acc.concat(parentg.members);
           }, []); // reduce
+          // Update the current active tasks in hte tree also. If the root is one of the parents, then don't highlight anything. Maybe don't highlight activetasks, but the selected tasks?
 
+          obj.tree.currenttasks = connections.group.members;
           obj.items.forEach(function (item) {
             activetasks.includes(item.task.taskId) ? item.show() : item.hide();
           }); // forEach
@@ -2375,8 +2520,11 @@
                 return g.members.includes(item);
               })) {
                 g.hide();
-              }
+              } else {
+                g.reinstate();
+              } // if
               // A.all is written as !A.some(v=>!B.includes(v))
+
 
               if (arrayequal(g.members, clickedgroupitems)) {
                 clickedgroup = g;
@@ -2387,14 +2535,26 @@
 
           if (clickedgroup) {
             clickedgroup.reinstate();
-            obj.minimap.update();
+            obj.hudrefresh();
           } else {
             obj.makegroup(clickedgroupitems, false);
           } // if
 
         } // if
 
-      }; // function
+      }; // obj.tree.moveto
+
+
+      obj.tree.crossreferencein = function (taskids) {
+        // Feed it to the minimap
+        obj.minimap.highlight(taskids);
+      }; // obj.tree.crossreference
+
+
+      obj.tree.crossreferenceout = function () {
+        // Feed it to the minimap
+        obj.minimap.unhighlight();
+      }; // obj.tree.crossreference
 
     } // constructor
     // Getter and setter for groups to allow inactive groups to be filtered out.
@@ -2507,7 +2667,21 @@
 
         var g = new Group(items, temporary);
         g.position = p;
-        g.origin = p; // Add the group to the session.
+        g.origin = p;
+
+        g.enter = function () {
+          // Hide all items that are not in the current set.
+          obj.items.forEach(function (item) {
+            g.members.includes(item) ? item.show() : item.hide();
+          }); // forEach
+          // Just hide all groups.
+
+          obj.groups.forEach(function (g_) {
+            return g_.hide();
+          }); // forEach;
+        }; // enter
+        // Add the group to the session.
+
 
         obj.groups.push(g);
         obj.container.appendChild(g.node); // Update the minimap and the tree data.

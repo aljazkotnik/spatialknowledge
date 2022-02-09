@@ -181,13 +181,19 @@ export default class NavigationManager{
 			// All items should become accessible.
 			obj.groups.forEach(g=>g.hide());
 			obj.items.forEach(item=>item.show());
-			obj.minimap.update();
+			obj.tree.currenttasks = [];
+			obj.hudrefresh();
 		} else {
 			
 			// Restrict the view to the members of the parent nodes. If one of the parents is the root then all the items should be active tasks.
 			let activetasks = connections.parents.reduce(function(acc,parentg){
 				return parentg.root ? obj.items.map(item=>item.task.taskId) : acc.concat(parentg.members);
 			}, []); // reduce
+			
+			
+			// Update the current active tasks in hte tree also. If the root is one of the parents, then don't highlight anything. Maybe don't highlight activetasks, but the selected tasks?
+			obj.tree.currenttasks = connections.group.members;
+			
 			
 			obj.items.forEach(item=>{
 				activetasks.includes(item.task.taskId) ? item.show() : item.hide();
@@ -214,7 +220,9 @@ export default class NavigationManager{
 					// So what happens to tree groups that have a member added? They are turned into a temporary group, and are therefore hidden if navigated to again.
 					if( clickedgroupitems.some(item=>g.members.includes(item)) ){
 						g.hide();
-					}; // if
+					} else {
+						g.reinstate();
+					} // if
 					
 					
 					// A.all is written as !A.some(v=>!B.includes(v))
@@ -227,7 +235,7 @@ export default class NavigationManager{
 			
 			if(clickedgroup){
 				clickedgroup.reinstate();
-				obj.minimap.update();
+				obj.hudrefresh();
 			} else {
 				obj.makegroup(clickedgroupitems, false);
 			} // if
@@ -236,9 +244,25 @@ export default class NavigationManager{
 		
 		
 		
-	} // function
+		
+	} // obj.tree.moveto
+	
+	
+	obj.tree.crossreferencein = function(taskids){
+		// Feed it to the minimap
+		obj.minimap.highlight(taskids);
+	} // obj.tree.crossreference
+	
+	obj.tree.crossreferenceout = function(){
+		// Feed it to the minimap
+		obj.minimap.unhighlight();
+	} // obj.tree.crossreference
 	
   } // constructor
+  
+  
+  
+
   
   
   
@@ -308,7 +332,6 @@ export default class NavigationManager{
   
   
   
-  
   /* GROUPING
   How to handle the grouping?
   
@@ -365,6 +388,16 @@ export default class NavigationManager{
 	
 	g.position = p;
 	g.origin = p;
+	g.enter = function(){  
+		// Hide all items that are not in the current set.
+		obj.items.forEach(item=>{
+			g.members.includes(item) ? item.show() : item.hide();
+		}) // forEach
+		
+		// Just hide all groups.
+		obj.groups.forEach(g_=>g_.hide()) // forEach;
+		
+	} // enter
 
 	// Add the group to the session.
 	obj.groups.push(g);

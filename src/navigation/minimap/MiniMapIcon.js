@@ -36,4 +36,15 @@ export default class MiniMapIcon{
 		}; // if
 	} // update
 	
+	
+	highlight(){
+		let obj = this;
+		obj.node.setAttribute("fill", "orange");
+	} // highlight
+	
+	unhighlight(){
+		let obj = this;
+		obj.node.setAttribute("fill", "cornflowerblue");
+	} // unhighlight
+	
 } // MiniMapIcon
