@@ -81,6 +81,14 @@ export default class TreeKnowledge {
 		return this.hierarchy.annotations;
 	} // get data
 	
+	set temporary(d){
+		this.hierarchy.temporary = d;
+	} // set temporary
+	
+	get temporary(){
+		return this.hierarchy.temporary;
+	} // get temporary
+	
 	clear(){
 		// When clearing by looping through .children and .remove() it only removed the nodes in the last step. When redrawing it added all of them back somehow...
 		let obj = this;

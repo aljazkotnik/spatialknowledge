@@ -9,7 +9,8 @@ A drop in class that provides zooming, panning, minimap, and the tree hierarchy 
 export default class NavigationManager{
 	
   items = []
-  _temporarygroups = []
+  _groups = []
+  
 	
   scale = 1;
   dx = 0;
@@ -84,7 +85,7 @@ export default class NavigationManager{
 		
 		let selectedIndividuals = findItemsInLasso( obj.items );
 		if(selectedIndividuals.length > 1){
-			obj.maketemporarygroup(selectedIndividuals);
+			obj.makegroup(selectedIndividuals, true);
 		} // if
 	} // lasso.onend
 	
@@ -160,30 +161,78 @@ export default class NavigationManager{
 	obj.tree = new TreeKnowledge();
 	obj.sketchpad.querySelector("g.tree").appendChild(obj.tree.node);
 	obj.tree.moveto = function(connections){
-		// When I move to a particular group, do I want the descendant groups created? I guess so?
-		// Clicking to root should return me to the start, with all hte items visible - so the tasks need to be included somehow...
+		/* Requirements: 
+		  - temporary groups need to be made visible to be able to dissolve them - should appear whenever possible?
+		  - the scope of the items needs to be reduced.
+		  - moving to a node is moving to a view with the group visible. So keep the context of the parent. which one? Combined parents?
+		  - the currently selected group should be highlighted on the navigation tree.
+		  - prevent groups with same members from appearing simultaneously
+		
+		  - how to deal with the user navigating to the same group twice? Check if a similar group already exists? What to do if a superset group already exists on screen? Just highlight the superset group?
+		*/
+		
+		// When a new item is added to a tree group it should be re-logged as a new temporary group? The groups will also need to keep track of the annotations to make sure only new ones are sent to the server?
 		
 		
-		// How to show only the immediate children?? I know the actual members. So I can turn all the items on, find the chilren groups, and then reimpose the group rules on the items. The immediate children in this specific case will be all the groups with a single ancestor. But the same approach will have to apply for all the nodes when they're clicked!
+		// The groups that can remain visible are those that are within the set of active tasks.
+		
+		
 		if(connections.group.root){
-			// All items should become accessible. Any child groups should be shown, otherwise they cant be removed as immediate children will not be accessible anymore.
-			obj.items.forEach(item=>item.show());	
+			// All items should become accessible.
+			obj.groups.forEach(g=>g.hide());
+			obj.items.forEach(item=>item.show());
+			obj.minimap.update();
 		} else {
-			// Hide all items and groups not in the selected group.
+			
+			// Restrict the view to the members of the parent nodes. If one of the parents is the root then all the items should be active tasks.
+			let activetasks = connections.parents.reduce(function(acc,parentg){
+				return parentg.root ? obj.items.map(item=>item.task.taskId) : acc.concat(parentg.members);
+			}, []); // reduce
+			
 			obj.items.forEach(item=>{
-				connections.group.members.includes(item.task.taskId) ? item.show() : item.hide();
+				activetasks.includes(item.task.taskId) ? item.show() : item.hide();
+			}) // forEach
+			
+			
+			// The items corresponding to the taskIds of the clicked tree node should form a new group.
+			let clickedgroupitems = obj.items.filter(item=>{
+				return connections.group.members.includes(item.task.taskId);
+			}) // filter
+			
+			
+			// Hide any groups that contain elements outside the currently active tasks. Maybe just keep all the groups in one array, but tick them to be temporary.
+			let clickedgroup
+			obj.groups.forEach(g=>{
+				if( g.members.map(item=>item.task.taskId).some(taskId=>!activetasks.includes(taskId)) ){
+					// A group outside of the current active tasks scope.
+					g.hide();
+				} else {
+					// Potentially a group competing with the desired group.
+					// A competing group is one that is not hidden, and contains some desired items. The user should not be able to have competing groups on the screen at the same time. Force the current selection, and therefore hide the other groups. They will still be accessible through the tree.
+					// But if the group contains all of the clicked items, then it's not competing, then it's a superset group. Still just hide it.
+					// However if a group with exactly th edesired membership exists, then just use that.
+					// So what happens to tree groups that have a member added? They are turned into a temporary group, and are therefore hidden if navigated to again.
+					if( clickedgroupitems.some(item=>g.members.includes(item)) ){
+						g.hide();
+					}; // if
+					
+					
+					// A.all is written as !A.some(v=>!B.includes(v))
+					if( arrayequal(g.members, clickedgroupitems) ){
+						clickedgroup = g;
+					} // if
+				}; // if
 			}); // forEach
 			
-			// Hide temporary groups, apart from those that are fully within the selected tree node.
-			obj.temporarygroups.forEach(g=>{
-				g.hide();
-			}); // forEach
 			
-			connections.descendants.forEach(g=>{
-				let groupitems = obj.items.filter(item=>g.members.includes(item.task.taskId));
-				obj.maketreegroup(groupitems);
-			}); // forEach
+			if(clickedgroup){
+				clickedgroup.reinstate();
+				obj.minimap.update();
+			} else {
+				obj.makegroup(clickedgroupitems, false);
+			} // if
 		} // if
+		
 		
 		
 		
@@ -207,7 +256,7 @@ export default class NavigationManager{
 	item.onend = function(p){
 		// Check if it should be added to a group.
 		// BUT THIS SHOULD ONLY HAPPEN ON MOUSEUP!!
-		obj.temporarygroups.forEach(g=>{
+		obj.groups.forEach(g=>{
 			// Check if the item midpoint is within the group, but only if it's attached. If it's not then the boundingclient rect should come back with all 0s.
 			let irect = item.node.getBoundingClientRect();
 			let grect = g.node.getBoundingClientRect();
@@ -222,9 +271,8 @@ export default class NavigationManager{
 			} // if
 		}); // forEach
 		
-		// Update the minimap accordingly?
-		obj.minimap.update();
-		
+		// Update the minimap and the tree accordingly.
+		obj.hudrefresh();
 		
 		
 	}; // onend
@@ -288,58 +336,73 @@ export default class NavigationManager{
   */
   
   
-  get temporarygroups(){
-	  // Filter out any empty groups
+  get groups(){
 	  let obj = this;
-	  obj._temporarygroups = obj._temporarygroups.filter(g=>{
+	  
+	  // Filter out any empty groups
+	  obj._groups = obj._groups.filter(g=>{
 		  return g.members.length > 0;
 	  })
-	  return obj._temporarygroups;
+	  return obj._groups;
   } // set
   
   
-  maketemporarygroup(items){
+  makegroup(items, temporary){
 	let obj = this;
 	// The user wishes to create a group using lasso selection. Make this group and store it separately from groups that are a direct result of the tree navigation.
 	
-	let g = makegroup(items)
 	
-	obj.temporarygroups.push(g);
+	
+	
+	
+	let p = [0, 0];
+	items.forEach(item=>{
+		p[0] += parseFloat(item.node.style.left) / items.length;
+		p[1] += parseFloat(item.node.style.top) / items.length;
+	}) // forEach
+	
+	let g = new Group(items, temporary);
+	
+	g.position = p;
+	g.origin = p;
+
+	// Add the group to the session.
+	obj.groups.push(g);
 	obj.container.appendChild(g.node);
 	
 	
-	g.onmove = function(){
-		obj.minimap.update();
-	} // onmove
+	
+	
+	
+	
+	
 	
 	
 	// Update the minimap and the tree data.
 	obj.minimap.add(g);
-	obj.minimap.update();
+	
+
+	g.onmove = function(){ obj.minimap.update(); } // onmove
+	g.ondissolve = function(){ obj.hudrefresh(); } // ondissolve
+
+
+	// All temporary groups should be added as annotations to the tree.
+	obj.hudrefresh();
 	
 	
-	obj.tree.hierarchy.temporary = obj.temporarygroups;
-	obj.tree.update();
 	
 	
-	
-	
-	
-  } // maketemporarygroup
+  } // makegroup
   
   
-  maketreegroup(){
+
+
+  hudrefresh(){
 	let obj = this;
-	
-	// The tree groups do need to be stored - furthermore, by dragging additional items into this group the annotation group will have to be converted to a temporary one....
-	
-	
-	
-	
-	
-  } // maketreegroup
-
-
+	obj.minimap.update();
+	obj.tree.temporary = obj.groups.filter(g=>g.temporary);
+	obj.tree.update();
+  } // hudrefresh
 
   
   
@@ -347,24 +410,16 @@ export default class NavigationManager{
 } // NavigationManager
 
 
-function makegroup(items){
-	// Common tasks when creating a group.
-	
-	// Collect the midpoint of the selected items to position the group.
-	let p = [0, 0];
-	items.forEach(item=>{
-		p[0] += parseFloat(item.node.style.left) / items.length;
-		p[1] += parseFloat(item.node.style.top) / items.length;
-	}) // forEach
-	
-	let g = new Group(items);
-	
-	g.position = p;
-	g.origin = p;
-	
-	return g;
-	
-} // makegroup
+
+
+function arrayequal(A,B){
+	let AequalsB = !A.some(v=>!B.includes(v));
+	let BequalsA = !B.some(v=>!A.includes(v));
+	return AequalsB && BequalsA
+} // arrayequal
+
+
+
 
 
 

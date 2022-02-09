@@ -1349,7 +1349,8 @@
               taskId: item.task.taskId
             };
           })); // concat
-        }, []);
+        }, []); // reduce
+
         obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations)).map(function (group) {
           return new TreeNode(group);
         }); // map
@@ -1434,6 +1435,16 @@
       ,
       set: function set(d) {
         this.hierarchy.annotations = d;
+      }
+    }, {
+      key: "temporary",
+      get: // set temporary
+      function get() {
+        return this.hierarchy.temporary;
+      } // get temporary
+      ,
+      set: function set(d) {
+        this.hierarchy.temporary = d;
       }
     }, {
       key: "clear",
@@ -1990,10 +2001,10 @@
     var _super = _createSuper(Group); // Main viewport dimensions;
 
 
-    function Group(items, annotations) {
+    function Group(items, temporary) {
       var _this;
 
-      _classCallCheck(this, Group); // `items' is an array of `Items' which should be grouped together. `annotations' are an optional input for groups that are created based on server saved annotations.
+      _classCallCheck(this, Group); // `items' is an array of `Items' which should be grouped together. `temporary' is a flag that differentiates the groups created based on server served annotations or the users lasso operation.
 
 
       _this = _super.call(this);
@@ -2001,6 +2012,7 @@
       _this.height = 200;
       _this.icons = [];
       _this.members = [];
+      _this.temporary = true;
 
       var obj = _assertThisInitialized(_this); // The label should depcit the group name - where does that come from? Maybe it should just be passed in? Maybe as an array of all names for this group.
 
@@ -2023,6 +2035,7 @@
         obj.addmember(item);
       }); // map
 
+      obj.temporary = temporary;
       return _this;
     } // constructor
 
@@ -2085,6 +2098,7 @@
 
 
         obj.icons.push(iconobj);
+        obj.temporary = true;
       } // addmember
 
     }, {
@@ -2099,7 +2113,9 @@
         obj.current = obj.icons[0].item;
         obj.icons[0].node.style.background = "gray"; // The onmove method is already set to update the minimap - just reuse it.
 
-        obj.onmove();
+        obj.onmove(); // Always when an item is released the group becomes temporary.
+
+        obj.temporary = true;
       } // release
 
     }, {
@@ -2120,8 +2136,24 @@
         }); // forEach
 
         obj.members = [];
-        obj.onmove();
+        obj.ondissolve();
       } // dissolve
+      // Dmmy method
+
+    }, {
+      key: "ondissolve",
+      value: function ondissolve() {} // ondissolve
+
+    }, {
+      key: "reinstate",
+      value: function reinstate() {
+        // Reinstate the group by showing it, and hiding all the constituent items.
+        var obj = this;
+        obj.members.forEach(function (item) {
+          return item.hide();
+        });
+        obj.show();
+      } // reinstate
 
     }]);
 
@@ -2137,7 +2169,7 @@
       _classCallCheck(this, NavigationManager);
 
       this.items = [];
-      this._temporarygroups = [];
+      this._groups = [];
       this.scale = 1;
       this.dx = 0;
       this.dy = 0;
@@ -2199,7 +2231,7 @@
         var selectedIndividuals = findItemsInLasso(obj.items);
 
         if (selectedIndividuals.length > 1) {
-          obj.maketemporarygroup(selectedIndividuals);
+          obj.makegroup(selectedIndividuals, true);
         } // if
 
       }; // lasso.onend
@@ -2286,31 +2318,80 @@
       obj.sketchpad.querySelector("g.tree").appendChild(obj.tree.node);
 
       obj.tree.moveto = function (connections) {
-        // When I move to a particular group, do I want the descendant groups created? I guess so?
-        // Clicking to root should return me to the start, with all hte items visible - so the tasks need to be included somehow...
-        // How to show only the immediate children?? I know the actual members. So I can turn all the items on, find the chilren groups, and then reimpose the group rules on the items. The immediate children in this specific case will be all the groups with a single ancestor. But the same approach will have to apply for all the nodes when they're clicked!
+        /* Requirements: 
+          - temporary groups need to be made visible to be able to dissolve them - should appear whenever possible?
+          - the scope of the items needs to be reduced.
+          - moving to a node is moving to a view with the group visible. So keep the context of the parent. which one? Combined parents?
+          - the currently selected group should be highlighted on the navigation tree.
+          - prevent groups with same members from appearing simultaneously
+        
+          - how to deal with the user navigating to the same group twice? Check if a similar group already exists? What to do if a superset group already exists on screen? Just highlight the superset group?
+        */
+        // When a new item is added to a tree group it should be re-logged as a new temporary group? The groups will also need to keep track of the annotations to make sure only new ones are sent to the server?
+        // The groups that can remain visible are those that are within the set of active tasks.
         if (connections.group.root) {
-          // All items should become accessible. Any child groups should be shown, otherwise they cant be removed as immediate children will not be accessible anymore.
+          // All items should become accessible.
+          obj.groups.forEach(function (g) {
+            return g.hide();
+          });
           obj.items.forEach(function (item) {
             return item.show();
           });
+          obj.minimap.update();
         } else {
-          // Hide all items and groups not in the selected group.
+          // Restrict the view to the members of the parent nodes. If one of the parents is the root then all the items should be active tasks.
+          var activetasks = connections.parents.reduce(function (acc, parentg) {
+            return parentg.root ? obj.items.map(function (item) {
+              return item.task.taskId;
+            }) : acc.concat(parentg.members);
+          }, []); // reduce
+
           obj.items.forEach(function (item) {
-            connections.group.members.includes(item.task.taskId) ? item.show() : item.hide();
+            activetasks.includes(item.task.taskId) ? item.show() : item.hide();
           }); // forEach
-          // Hide temporary groups, apart from those that are fully within the selected tree node.
+          // The items corresponding to the taskIds of the clicked tree node should form a new group.
 
-          obj.temporarygroups.forEach(function (g) {
-            g.hide();
+          var clickedgroupitems = obj.items.filter(function (item) {
+            return connections.group.members.includes(item.task.taskId);
+          }); // filter
+          // Hide any groups that contain elements outside the currently active tasks. Maybe just keep all the groups in one array, but tick them to be temporary.
+
+          var clickedgroup;
+          obj.groups.forEach(function (g) {
+            if (g.members.map(function (item) {
+              return item.task.taskId;
+            }).some(function (taskId) {
+              return !activetasks.includes(taskId);
+            })) {
+              // A group outside of the current active tasks scope.
+              g.hide();
+            } else {
+              // Potentially a group competing with the desired group.
+              // A competing group is one that is not hidden, and contains some desired items. The user should not be able to have competing groups on the screen at the same time. Force the current selection, and therefore hide the other groups. They will still be accessible through the tree.
+              // But if the group contains all of the clicked items, then it's not competing, then it's a superset group. Still just hide it.
+              // However if a group with exactly th edesired membership exists, then just use that.
+              // So what happens to tree groups that have a member added? They are turned into a temporary group, and are therefore hidden if navigated to again.
+              if (clickedgroupitems.some(function (item) {
+                return g.members.includes(item);
+              })) {
+                g.hide();
+              }
+              // A.all is written as !A.some(v=>!B.includes(v))
+
+              if (arrayequal(g.members, clickedgroupitems)) {
+                clickedgroup = g;
+              } // if
+
+            }
           }); // forEach
 
-          connections.descendants.forEach(function (g) {
-            var groupitems = obj.items.filter(function (item) {
-              return g.members.includes(item.task.taskId);
-            });
-            obj.maketreegroup(groupitems);
-          }); // forEach
+          if (clickedgroup) {
+            clickedgroup.reinstate();
+            obj.minimap.update();
+          } else {
+            obj.makegroup(clickedgroupitems, false);
+          } // if
+
         } // if
 
       }; // function
@@ -2328,7 +2409,7 @@
         item.onend = function (p) {
           // Check if it should be added to a group.
           // BUT THIS SHOULD ONLY HAPPEN ON MOUSEUP!!
-          obj.temporarygroups.forEach(function (g) {
+          obj.groups.forEach(function (g) {
             // Check if the item midpoint is within the group, but only if it's attached. If it's not then the boundingclient rect should come back with all 0s.
             var irect = item.node.getBoundingClientRect();
             var grect = g.node.getBoundingClientRect();
@@ -2341,9 +2422,9 @@
             } // if
 
           }); // forEach
-          // Update the minimap accordingly?
+          // Update the minimap and the tree accordingly.
 
-          obj.minimap.update();
+          obj.hudrefresh();
         }; // onend
 
 
@@ -2376,7 +2457,7 @@
         return "scale(".concat(obj.scale, ") translate(").concat(obj.dx, "px,").concat(obj.dy, "px)");
       }
     }, {
-      key: "temporarygroups",
+      key: "groups",
       get: // gettransform
 
       /* GROUPING
@@ -2405,59 +2486,73 @@
       
       */
       function get() {
-        // Filter out any empty groups
-        var obj = this;
-        obj._temporarygroups = obj._temporarygroups.filter(function (g) {
+        var obj = this; // Filter out any empty groups
+
+        obj._groups = obj._groups.filter(function (g) {
           return g.members.length > 0;
         });
-        return obj._temporarygroups;
+        return obj._groups;
       } // set
 
     }, {
-      key: "maketemporarygroup",
-      value: function maketemporarygroup(items) {
+      key: "makegroup",
+      value: function makegroup(items, temporary) {
         var obj = this; // The user wishes to create a group using lasso selection. Make this group and store it separately from groups that are a direct result of the tree navigation.
 
-        var g = makegroup(items);
-        obj.temporarygroups.push(g);
-        obj.container.appendChild(g.node);
+        var p = [0, 0];
+        items.forEach(function (item) {
+          p[0] += parseFloat(item.node.style.left) / items.length;
+          p[1] += parseFloat(item.node.style.top) / items.length;
+        }); // forEach
+
+        var g = new Group(items, temporary);
+        g.position = p;
+        g.origin = p; // Add the group to the session.
+
+        obj.groups.push(g);
+        obj.container.appendChild(g.node); // Update the minimap and the tree data.
+
+        obj.minimap.add(g);
 
         g.onmove = function () {
           obj.minimap.update();
         }; // onmove
-        // Update the minimap and the tree data.
 
 
-        obj.minimap.add(g);
-        obj.minimap.update();
-        obj.tree.hierarchy.temporary = obj.temporarygroups;
-        obj.tree.update();
-      } // maketemporarygroup
+        g.ondissolve = function () {
+          obj.hudrefresh();
+        }; // ondissolve
+        // All temporary groups should be added as annotations to the tree.
+
+
+        obj.hudrefresh();
+      } // makegroup
 
     }, {
-      key: "maketreegroup",
-      value: function maketreegroup() {
-      } // maketreegroup
+      key: "hudrefresh",
+      value: function hudrefresh() {
+        var obj = this;
+        obj.minimap.update();
+        obj.tree.temporary = obj.groups.filter(function (g) {
+          return g.temporary;
+        });
+        obj.tree.update();
+      } // hudrefresh
 
     }]);
 
     return NavigationManager;
   }(); // NavigationManager
 
-  function makegroup(items) {
-    // Common tasks when creating a group.
-    // Collect the midpoint of the selected items to position the group.
-    var p = [0, 0];
-    items.forEach(function (item) {
-      p[0] += parseFloat(item.node.style.left) / items.length;
-      p[1] += parseFloat(item.node.style.top) / items.length;
-    }); // forEach
-
-    var g = new Group(items);
-    g.position = p;
-    g.origin = p;
-    return g;
-  } // makegroup
+  function arrayequal(A, B) {
+    var AequalsB = !A.some(function (v) {
+      return !B.includes(v);
+    });
+    var BequalsA = !B.some(function (v) {
+      return !A.includes(v);
+    });
+    return AequalsB && BequalsA;
+  } // arrayequal
 
   var testannotations2 = [{
     id: "0",

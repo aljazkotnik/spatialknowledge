@@ -27,7 +27,7 @@ export default class TreeHierarchy{
 			i += 1;
 			return {id: `temp${i}`, name: "Unsaved", author: undefined, taskId: item.task.taskId}
 		})) // concat
-	}, [])
+	}, []); // reduce
 	
 	
 	obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations)).map(group=>{

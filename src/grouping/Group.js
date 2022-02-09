@@ -86,9 +86,11 @@ export default class Group extends Item {
   
   icons = [];
   members = [];
+  
+  temporary = true;
 	
-  constructor(items, annotations){
-	// `items' is an array of `Items' which should be grouped together. `annotations' are an optional input for groups that are created based on server saved annotations.
+  constructor(items, temporary){
+	// `items' is an array of `Items' which should be grouped together. `temporary' is a flag that differentiates the groups created based on server served annotations or the users lasso operation.
 	super();
     let obj = this;
 
@@ -116,7 +118,7 @@ export default class Group extends Item {
 		obj.addmember(item);
 	}) // map
 	
-
+	obj.temporary = temporary;
 	
   } // constructor
   
@@ -179,6 +181,9 @@ export default class Group extends Item {
 	}; // onmousedown
 	
 	obj.icons.push(iconobj);
+	
+	
+	obj.temporary = true;
 	  
   } // addmember
   
@@ -199,6 +204,9 @@ export default class Group extends Item {
 	  
 	  // The onmove method is already set to update the minimap - just reuse it.
 	  obj.onmove();
+	  
+	  // Always when an item is released the group becomes temporary.
+	  obj.temporary = true;
   } // release
   
   
@@ -228,7 +236,20 @@ export default class Group extends Item {
 	  
 	  obj.members = [];
 	  
-	  obj.onmove();
+	  obj.ondissolve();
   } // dissolve
+  
+  
+  // Dmmy method
+  ondissolve(){} // ondissolve
+  
+  
+  reinstate(){
+	  // Reinstate the group by showing it, and hiding all the constituent items.
+	  let obj = this;
+	  
+	  obj.members.forEach(item=>item.hide());
+	  obj.show();
+  } // reinstate
   
 } // Group
