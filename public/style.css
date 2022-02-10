@@ -116,3 +116,13 @@ div.previewicon {
 	background: gainsboro;
 	float: left;
 }
+
+
+/* CORRELATION SELECTION MENU */
+.hover-highlight {
+	cursor: pointer;
+}
+
+.hover-highlight:hover {
+	font-size: 15px;
+}

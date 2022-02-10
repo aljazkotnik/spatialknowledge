@@ -16,22 +16,22 @@ import KnowledgeManager from "./knowledge/KnowledgeManager.js";
 
 
 const data = [
-{taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon"},
-{taskId: "task 1", sepal_length: 4.9, sepal_width: 3, color: "sandybrown"},
-{taskId: "task 2", sepal_length: 4.7, sepal_width: 3.2, color: "seagreen"},
-{taskId: "task 3", sepal_length: 4.6, sepal_width: 3.1, color: "seashell"},
-{taskId: "task 4", sepal_length: 5, sepal_width: 3.6, color: "sienna"},
-{taskId: "task 5", sepal_length: 5.4, sepal_width: 3.9, color: "skyblue"},
-{taskId: "task 6", sepal_length: 4.6, sepal_width: 3.4, color: "slateblue"},
-{taskId: "task 7", sepal_length: 5, sepal_width: 3.4, color: "springgreen"},
-{taskId: "task 8", sepal_length: 4.4, sepal_width: 2.9, color: "tan"},
-{taskId: "task 9", sepal_length: 4.9, sepal_width: 3.1, color: "thistle"},
-{taskId: "task 10", sepal_length: 5.4, sepal_width: 3.7, color: "tomato"},
-{taskId: "task 11", sepal_length: 4.8, sepal_width: 3.4, color: "turquoise"},
-{taskId: "task 12", sepal_length: 4.8, sepal_width: 3, color: "violet"},
-{taskId: "task 13", sepal_length: 4.3, sepal_width: 3, color: "wheat"},
-{taskId: "task 14", sepal_length: 5.8, sepal_width: 4, color: "lightpink"},
-{taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite"}
+{taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red"},
+{taskId: "task 1", sepal_length: 4.9, sepal_width: 3, color: "sandybrown", cat: "brown"},
+{taskId: "task 2", sepal_length: 4.7, sepal_width: 3.2, color: "seagreen", cat: "sea"},
+{taskId: "task 3", sepal_length: 4.6, sepal_width: 3.1, color: "seashell", cat: "sea"},
+{taskId: "task 4", sepal_length: 5, sepal_width: 3.6, color: "sienna", cat: "brown"},
+{taskId: "task 5", sepal_length: 5.4, sepal_width: 3.9, color: "skyblue", cat: "sea"},
+{taskId: "task 6", sepal_length: 4.6, sepal_width: 3.4, color: "slateblue", cat: "sea"},
+{taskId: "task 7", sepal_length: 5, sepal_width: 3.4, color: "springgreen", cat: "sea"},
+{taskId: "task 8", sepal_length: 4.4, sepal_width: 2.9, color: "tan", cat: "brown"},
+{taskId: "task 9", sepal_length: 4.9, sepal_width: 3.1, color: "thistle", cat: "red"},
+{taskId: "task 10", sepal_length: 5.4, sepal_width: 3.7, color: "tomato", cat: "red"},
+{taskId: "task 11", sepal_length: 4.8, sepal_width: 3.4, color: "turquoise", cat: "sea"},
+{taskId: "task 12", sepal_length: 4.8, sepal_width: 3, color: "violet", cat: "red"},
+{taskId: "task 13", sepal_length: 4.3, sepal_width: 3, color: "wheat", cat: "brown"},
+{taskId: "task 14", sepal_length: 5.8, sepal_width: 4, color: "lightpink", cat: "red"},
+{taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite", cat: "brown"}
 ]; // data
 
 // Items

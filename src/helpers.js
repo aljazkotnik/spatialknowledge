@@ -168,6 +168,16 @@ function mapSpaceAValueToSpaceB(v, A, B){
 
 
 // From regular helpers.
+export function unique(d){		
+	// https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+	function onlyUnique(value, index, self) { 
+		return self.indexOf(value) === index;
+	} // unique
+	
+	return d.filter( onlyUnique )
+
+} // unique
+
 export function arrayEqual(A, B){
 	
 	return arrayIncludesAll(A, B)

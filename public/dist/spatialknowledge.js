@@ -240,6 +240,16 @@
   // From regular helpers.
 
 
+  function unique(d) {
+    // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    } // unique
+
+
+    return d.filter(onlyUnique);
+  } // unique
+
   function arrayEqual(A, B) {
     return arrayIncludesAll(A, B) && arrayIncludesAll(B, A);
   } // arrayEqual
@@ -253,7 +263,7 @@
     return f.length == 0 ? true : false;
   } // arrayIncludesAll
 
-  var template$7 = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"view\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"controls\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$9 = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"view\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"controls\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -268,7 +278,7 @@
       this.width = 300;
       this.height = 200;
       var obj = this;
-      obj.node = html2element(template$7);
+      obj.node = html2element(template$9);
       obj.node.style.position = "absolute";
       obj.viewnode = obj.node.querySelector("div.view");
       obj.viewnode.style.height = obj.height + "px";
@@ -506,7 +516,7 @@
     return DrawLink;
   }(); // DrawLink
 
-  var template$6 = "\n<g class=\"bundle\">\n  <path stroke=\"white\" stroke-width=\"5\" fill=\"none\"></path>\n  <path stroke=\"black\" stroke-width=\"2\" fill=\"none\"></path>\n</g>\n"; // tempalte
+  var template$8 = "\n<g class=\"bundle\">\n  <path stroke=\"white\" stroke-width=\"5\" fill=\"none\"></path>\n  <path stroke=\"black\" stroke-width=\"2\" fill=\"none\"></path>\n</g>\n"; // tempalte
   // These should just be exposed at the link level... The tree level also has them, and it's non hygienic.
 
   var node_label_width$1 = 70;
@@ -523,7 +533,7 @@
       // NOTE: seednode is a `treenode' instance, but parents and children are `taskgroup' instances. The level is only defined for the node because it can change when the user interacts with the tree.
 
       var obj = this;
-      obj.node = svg2element(template$6);
+      obj.node = svg2element(template$8);
       obj.author = author, obj.level = seednode.level;
       obj.parents = seednode.connections.parents;
       obj.children = [seednode.connections.group];
@@ -891,7 +901,7 @@
 
   // text -> 	"x", node => node.labelx, "y", node => node.labely, label node=>node.label
 
-  var template$5 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
+  var template$7 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
   // A treenode object is a higher level wrapper that contains all the dimensioning information. The `connections' attribute is supposed to hold the `treegroup' object, which contains a reference the an individual group, all it's ancestors, it's direct parents, and all its descendants.
 
   var TreeNode = /*#__PURE__*/function () {
@@ -908,7 +918,7 @@
       this.nbundlesout = 0;
       this.hidden = false;
       var obj = this;
-      obj.node = svg2element(template$5); // The treegroup holds all the connections of a particular group.
+      obj.node = svg2element(template$7); // The treegroup holds all the connections of a particular group.
 
       obj.connections = treegroup;
       var label = obj.node.querySelector("g.label");
@@ -1453,7 +1463,7 @@
   - Fix node mouseover css - css affects specific child of mover g.
   */
 
-  var template$4 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"bundles\"></g>\n  <g class=\"nodes\"></g>\n  <g class=\"nodetooltip\"></g>\n  <g class=\"linktooltip\"></g>\n</g>\n";
+  var template$6 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"bundles\"></g>\n  <g class=\"nodes\"></g>\n  <g class=\"nodetooltip\"></g>\n  <g class=\"linktooltip\"></g>\n</g>\n";
 
   var TreeKnowledge = /*#__PURE__*/function () {
     function TreeKnowledge() {
@@ -1463,7 +1473,7 @@
 
       obj.hierarchy = new TreeHierarchy(); // Drawing
 
-      obj.node = svg2element(template$4);
+      obj.node = svg2element(template$6);
       obj.gnodes = obj.node.querySelector("g.nodes");
       obj.gbundles = obj.node.querySelector("g.bundles");
       obj.color = new scaleCategorical(); // The tree is redrawn on every interaction. To allow the user to ee where on the tree they currently are just highlight the group that contains all the relevant items.
@@ -1595,7 +1605,7 @@
     return TreeKnowledge;
   }(); // TreeKnowledge
 
-  var template$3 = "<circle r=\"5\" fill=\"cornflowerblue\"></circle>"; // template
+  var template$5 = "<circle r=\"5\" fill=\"cornflowerblue\"></circle>"; // template
 
   var MiniMapIcon = /*#__PURE__*/function () {
     function MiniMapIcon(item) {
@@ -1603,7 +1613,7 @@
 
       var obj = this;
       obj.item = item;
-      obj.node = svg2element(template$3);
+      obj.node = svg2element(template$5);
     } // constructor
 
 
@@ -1647,14 +1657,14 @@
     return MiniMapIcon;
   }(); // MiniMapIcon
 
-  var template$2 = "<rect class=\"current\" x=\"50\" y=\"10\" width=\"150\" height=\"50\" fill=\"black\" opacity=\"0.5\"></rect>";
+  var template$4 = "<rect class=\"current\" x=\"50\" y=\"10\" width=\"150\" height=\"50\" fill=\"black\" opacity=\"0.2\"></rect>";
 
   var MiniMapViewRect = /*#__PURE__*/function () {
     function MiniMapViewRect() {
       _classCallCheck(this, MiniMapViewRect);
 
       var obj = this;
-      obj.node = svg2element(template$2); // Make it draggable.
+      obj.node = svg2element(template$4); // Make it draggable.
 
       var active, clickedItemOffset;
 
@@ -1731,6 +1741,357 @@
     return MiniMapViewRect;
   }(); // MiniMapViewRect
 
+  var css = {
+    menu: "\n\t  background-color: white;\n\t  border: 2px solid black;\n\t  border-radius: 5px;\n\t  display: none; \n\t  position: absolute;\n\t  max-height: 120px;\n\t  overflow-y: auto;\n\t",
+    ul: "\n\t  list-style-type: none;\n\t  font-size: 10px;\n\t  font-weight: bold;\n\t  padding-left: 4px;\n\t  padding-right: 4px;\n\t"
+  }; // css
+
+  var template$3 = "\n<div class=\"variable-select-menu\" style=\"".concat(css.menu, "\">\n  <ul style=\"").concat(css.ul, "\">\n  </ul>\n</div>\n"); // Differentite between an x and a y one.
+
+  var CorrelationsMenu = /*#__PURE__*/function () {
+    function CorrelationsMenu(axis) {
+      _classCallCheck(this, CorrelationsMenu);
+
+      var obj = this;
+      obj.node = html2element(template$3); // axis = 0/1 for x/y
+
+      obj.axis = axis;
+    } // constructor
+    // Just update with variables here? No, but update with CORRELATIONS!!!!
+
+
+    _createClass(CorrelationsMenu, [{
+      key: "update",
+      value: function update(correlations) {
+        var obj = this; // First remove all li.
+
+        var ul = obj.node.querySelector("ul");
+
+        while (ul.lastChild) {
+          ul.removeChild(ul.lastChild);
+        } // while
+        // Now add in the needed li objects.
+
+
+        correlations.forEach(function (c) {
+          var sign = c[obj.axis] > 0 ? "+" : "-";
+          var li = html2element("<li class=\"hover-highlight\">".concat(sign, " ").concat(c.name, "</li>"));
+          ul.appendChild(li); // Color it.
+
+          li.style.backgroundColor = green(Math.abs(c[obj.axis])); // On click the menu should updat ethe current selection, close itself, and launch the appropriate effect.
+
+          li.addEventListener("click", function (event) {
+            // If event propagation is stopped here then additional functionality can't be attached to the menu.
+            obj.current = c.name;
+            obj.hide();
+            obj.onvariableselect(c);
+          }); // addEventListener
+        });
+      } // update
+
+    }, {
+      key: "toggle",
+      value: function toggle(correlations, p) {
+        var obj = this;
+
+        if (obj.node.style.display == "none") {
+          obj.update(correlations);
+
+          if (obj.axis == 0) {
+            obj.node.style.left = p[0] + "px";
+            obj.node.style.bottom = p[1] + "px";
+          } else {
+            obj.position(p);
+          } // if
+
+
+          obj.show();
+        } else {
+          obj.hide();
+        } // if
+
+      } // toggle
+
+    }, {
+      key: "position",
+      value: function position(p) {
+        var obj = this;
+        obj.node.style.left = p[0] + "px";
+        obj.node.style.top = p[1] + "px";
+      } // position
+
+    }, {
+      key: "show",
+      value: function show() {
+        var obj = this;
+        obj.node.style.display = "inline-block";
+      } // show
+
+    }, {
+      key: "hide",
+      value: function hide() {
+        var obj = this;
+        obj.node.style.display = "none";
+      } // hide
+      // dummy method.
+
+    }, {
+      key: "onvariableselect",
+      value: function onvariableselect(variable) {}
+    }]);
+
+    return CorrelationsMenu;
+  }(); // CorrelationsMenu
+
+  function green(t) {
+    // t should be between 0 and 1.
+    t = t > 1 ? 1 : t;
+    t = t < 0 ? 0 : t;
+    var r = Math.round(247 / 2 * (Math.cos(t * Math.PI) + 1));
+    var g = Math.round(252 * Math.cos(t * 2 / 5 * Math.PI));
+    var b = Math.round(245 - (245 - 28) * t);
+    return "rgb(".concat(r, ",").concat(g, ",").concat(b, ")");
+  } // green
+
+  /*
+  Handle the variable->arrangement and arrangement->variable alleyways.
+
+
+
+
+  Approaches: menu vs figure based visualisation and interaction.
+
+  MENU:
+  + : qualitative, intuitive interaction, no additional mode, no clutter
+  - : no cross correlations against both axes
+
+
+  FIGURE:
+  + : correlations visualised
+  - : non-intuitive interaction, additional mode, clutter, quantitative correlations
+
+
+  A combination of both? Where the figure is brought up, but the menu is used fo rthe interaction? Maybe the Correlations menu should just have a figure attached? So that it's a small widget? But that is a figure mode then....
+
+  Just stick to the menu for now, and figure something out later...
+
+  Maybe click on the axes to show the menu, and that shows the figure? And then when a selection is made the figure disappears??
+
+
+
+  If the Spatial correlations are on the sketchpad svg in the background then they are not clickable. So maybe it mag=kes sene to place them on separate svg elements, and put them into the HUD html. Then they can be positioned via css properties as opposed to explicitly.
+
+  */
+
+  var template$2 = "\n<g transform=\"translate(10,390)\">\n  <path class=\"horizontal\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label horizontal\"></text>\n  \n  <path class=\"vertical\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label vertical\" transform=\"rotate(-90)\"></text>\n</g>\n"; // The paths only depend on how close together the arrows should be.
+
+  var arrowheadwidth = 15; // arrowheadwidth
+
+  var arrowheadlength = 20; // arrowheadlength
+
+  var length = 30; // whole arrow length
+
+  var relativeHorizontalArrow = "\n  l".concat(length, ",0 \n  m-").concat(arrowheadlength, ",-").concat(arrowheadwidth / 2, " \n  c 0,0 ").concat(arrowheadlength / 6, ",").concat(arrowheadwidth / 2, " ").concat(arrowheadlength, ",").concat(arrowheadwidth / 2, " \n  m-").concat(arrowheadlength, ",").concat(arrowheadwidth / 2, "\n  c 0,0 ").concat(arrowheadlength / 6, ",-").concat(arrowheadwidth / 2, " ").concat(arrowheadlength, ",-").concat(arrowheadwidth / 2);
+  var relativeVerticalArrow = "\n  l0,-".concat(length, " \n  m-").concat(arrowheadwidth / 2, ",").concat(arrowheadlength, "\n  c 0,0 ").concat(arrowheadwidth / 2, ",-").concat(arrowheadlength / 6, " ").concat(arrowheadwidth / 2, ",-").concat(arrowheadlength, "\n  m").concat(arrowheadwidth / 2, ",").concat(arrowheadlength, "\n  c 0,0 -").concat(arrowheadwidth / 2, ",-").concat(arrowheadlength / 6, " -").concat(arrowheadwidth / 2, ",-").concat(arrowheadlength);
+
+  var SpatialCorrelations = /*#__PURE__*/function () {
+    // offset from axes origin point
+    function SpatialCorrelations(variables) {
+      _classCallCheck(this, SpatialCorrelations);
+
+      this.xoffset = 300;
+      this.yoffset = 300;
+      var obj = this;
+      obj.node = svg2element(template$2);
+      obj.th = obj.node.querySelector("text.horizontal");
+      obj.tv = obj.node.querySelector("text.vertical");
+
+      obj.th.onclick = function () {
+        console.log("Hello Horizontal!");
+      };
+
+      obj.tv.onclick = function () {
+        console.log("Hello Vertical!");
+      }; // The variables need to include undefined/unknown, and that is the default selection everytime when the user doesn't specifically click on the menu. Every interaction should revert the menu selection back to unknown.
+
+
+      obj.yvariable = "Unknown";
+      obj.xvariable = "Unknown";
+      obj.xmenu = new CorrelationsMenu(0);
+      obj.ymenu = new CorrelationsMenu(1);
+    } // constructor
+
+
+    _createClass(SpatialCorrelations, [{
+      key: "update",
+      value: function update() {
+        var obj = this;
+        var textmargin = 5; // offset between arrow and text
+
+        obj.node.querySelector("path.horizontal").setAttribute("d", "M".concat(obj.xoffset - length, ",-").concat(arrowheadwidth / 2, " ").concat(relativeHorizontalArrow));
+        obj.th.innerHTML = clipstring(obj.xvariable);
+        obj.th.setAttribute("x", obj.xoffset - length - obj.th.getBoundingClientRect().width - textmargin);
+        obj.th.setAttribute("y", -arrowheadwidth / 2 + textmargin);
+        obj.node.querySelector("path.vertical").setAttribute("d", "M".concat(arrowheadwidth / 2, ",-").concat(obj.yoffset - length, " ").concat(relativeVerticalArrow));
+        obj.tv.innerHTML = clipstring(obj.yvariable);
+        obj.tv.setAttribute("x", obj.yoffset - length - obj.tv.getBoundingClientRect().height - textmargin);
+        obj.tv.setAttribute("y", arrowheadwidth / 2 + 3);
+      } // update
+
+    }, {
+      key: "position",
+      value: function position(p) {
+        var obj = this;
+        obj.node.setAttribute("transform", "translate(".concat(p[0], ",").concat(p[1], ")"));
+      } // position
+
+    }, {
+      key: "calculate",
+      value: function calculate(d) {
+        var obj = this; // When collecting the scores we're banking on the fact that the originally created items are never destroyed. Only the groups get destroyed when no longer needed. Items are always accessed in the same order.
+
+        var os = obj.ordinalscores(d);
+        var cs = obj.categoricalscores(d);
+        return os.concat(cs);
+      } // calculate
+
+    }, {
+      key: "ordinalscores",
+      value: function ordinalscores(d) {
+        var scores = d.ordinals.map(function (ordinal) {
+          var sp = [spearman(d.spatial[0], ordinal), spearman(d.spatial[1], ordinal)];
+          sp.name = ordinal.name;
+          return sp;
+        }); // forEach
+
+        return scores;
+      } // ordinalscores
+
+    }, {
+      key: "categoricalscores",
+      value: function categoricalscores(d) {
+        var scores = d.categoricals.map(function (categorical) {
+          // The categorical values need to first be mapped to ordinal values. The mapping in the x and y directions may be different.
+          var mapping = categoricalmapping(d.spatial[0], d.spatial[1], categorical);
+          var sp = [spearman(d.spatial[0], categorical.map(function (c) {
+            return mapping[c].x;
+          })), spearman(d.spatial[1], categorical.map(function (c) {
+            return mapping[c].y;
+          }))];
+          sp.name = categorical.name; // Provide the mapping also if it needs to be used outside.
+
+          sp.mapping = mapping;
+          return sp;
+        }); // forEach
+
+        return scores;
+      } // get categoricalscores
+
+    }]);
+
+    return SpatialCorrelations;
+  }(); // SpatialCorrelations
+
+  function clipstring(s) {
+    var n_max = 15;
+    return s.substr(0, n_max) + (s.length > n_max ? "..." : "");
+  } // clipstring
+
+
+  function categoricalmapping(x, y, v) {
+    // This is the mapping of a single metadata variable to numerical values. All that is needed are the x,y, and metadata values.
+    var uniquevals = unique(v); // unique
+    // Just assign all unique value their median point no? Or just return hte appropriate dictionary?
+
+    return uniquevals.reduce(function (acc, uniqueval) {
+      var xpos = x.filter(function (_x, i) {
+        return v[i] == uniqueval;
+      });
+      var ypos = y.filter(function (_y, i) {
+        return v[i] == uniqueval;
+      });
+      acc[uniqueval] = {
+        x: median(xpos),
+        y: median(ypos)
+      };
+      return acc;
+    }, {}); // reduce
+  } // categoricalmapping
+  // ACTUAL STATISTICS FUNCTIONS
+
+
+  function spearman(x, y) {
+    // The inputs are two variable arrays, which are expected to also have a 'mu' and 'sigma' property.
+    // Get Spearman's rank correlation scores for the order in the x direction.
+    // (https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient)
+    // The coefficient is
+    // covariance (x_rank, y_rank ) / ( sigma(rank_x) sigma(rank_y) )
+    // First precalculate some statistics:
+    x = calcStatistics(x);
+    y = calcStatistics(y);
+    return covariance(x, y) / (x.sigma * y.sigma);
+  } // spearman
+
+
+  function calcStatistics(A) {
+    // Give array A the mean, standard deviation, and name properties.
+    A.mu = mean(A);
+    A.sigma = Math.pow(variance(A), 0.5);
+    A.sigma = A.sigma == 0 ? Infinity : A.sigma;
+    return A;
+  } // variable
+
+
+  function covariance(x, y) {
+    // 'd' is an array of observations. Calculate the covariance between x and the metadata variable.
+    var N = x.length;
+    var s = 0;
+
+    for (var i = 0; i < N; i++) {
+      s += (x[i] - x.mu) * (y[i] - y.mu);
+    }
+
+    return 1 / (N - 1) * s;
+  } // covariance
+
+
+  function variance(x) {
+    // variance is a special case of covariance.
+    return covariance(x, x);
+  } // variance
+
+
+  function median(numbers) {
+    // https://stackoverflow.com/questions/45309447/calculating-median-javascript
+    var sorted = numbers.slice().sort(function (a, b) {
+      return a - b;
+    });
+    var middle = Math.floor(sorted.length / 2);
+
+    if (sorted.length % 2 === 0) {
+      return (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    return sorted[middle];
+  } // median
+
+
+  function mean(d) {
+    return sum(d) / d.length;
+  } // mean
+
+
+  function sum(objarray, accessor) {
+    var _accessor = accessor ? accessor : function (d) {
+      return d;
+    };
+
+    return objarray.reduce(function (acc, obj) {
+      return acc += _accessor(obj);
+    }, 0);
+  } // sum
+   // min
+
   /*
   The initial arrangement is not the problem of this module. This module just visualises the current arrangement, and allows global navigation.
 
@@ -1762,6 +2123,22 @@
       obj.yscale = new scaleLinear();
       obj.yscale.range = [0, obj.height]; // Maybe it's just simpler to keep re-rendering the MiniMap? So the update doesn't have to be called everywhere?
       // Maybe not, because a lot of the time it's just the re-centering of hte data that is needed?
+      // Let the minimap host the correlations.
+      // CORRELATIONS
+      // The metadata is passed in with the items themselves - or should it be created here instead? Maybe that's a good approach, then inside the module need not think about ordinals and categoricals.
+
+      /* Requirements:
+         - when the items are moving the axes variables should be `Unknown'
+         - correlations only updated when the hud elements are clicked
+         - Maybe it can all be merged to the minimap? Reduces some clutter!
+      */
+
+      obj.correlations = new SpatialCorrelations();
+      obj.node.appendChild(obj.correlations.node);
+      obj.correlations.position([5, obj.height - 5]);
+      obj.correlations.xoffset = obj.width - 15;
+      obj.correlations.yoffset = obj.height - 15;
+      obj.correlations.update(); // The correlations text is incorrect at first, because it relies on boundingClientRect to get the width of the text...
     } // constructor
 
 
@@ -2344,9 +2721,56 @@
 
         obj.container.style.transform = obj.currenttransform();
       }; // reposition
+      // CORRELATIONS!
+
+
+      var c = obj.minimap.correlations;
+      c.update();
+      document.getElementById("menucontainer").appendChild(c.xmenu.node);
+
+      c.th.onclick = function () {
+        var sp = c.calculate(obj.collectSpatialCorrelationData());
+        var p = c.th.getBoundingClientRect();
+        c.xmenu.toggle(sp, [p.x, window.innerHeight - p.y]);
+      }; // onclick
+
+
+      document.getElementById("menucontainer").appendChild(c.ymenu.node);
+
+      c.tv.onclick = function () {
+        var sp = c.calculate(obj.collectSpatialCorrelationData());
+        var p = c.tv.getBoundingClientRect();
+        c.ymenu.toggle(sp, [p.x + 20, p.y]);
+      }; // onclick
+      // Click on an option should arrange by that variable.
+
+
+      c.xmenu.onvariableselect = function (correlation) {
+        c.xvariable = correlation.name;
+        c.update();
+        obj.arrangeItemsByMetadata("x", correlation);
+      }; // onvariableselect
+
+
+      c.ymenu.onvariableselect = function (correlation) {
+        c.yvariable = correlation.name;
+        c.update();
+        obj.arrangeItemsByMetadata("y", correlation);
+      }; // onvariableselect
+      // Click outside of the menu shoul dclose it.
+
+
+      obj.sketchpad.addEventListener("mousedown", function () {
+        c.xmenu.hide();
+        c.ymenu.hide();
+      }); // addEventListener
+
+      obj.minimap.node.addEventListener("mousedown", function () {
+        c.xmenu.hide();
+        c.ymenu.hide();
+      }); // addEventListener
       // LASSO 
       // Originally the lasso produced a tooltip, with the options: group, tag, close. Some of the tagging is now done through the commenting system. The lasso can still highlight the selection, and the interface based option for spatial value tags can be used for the tagging. Should that just be a menu on the right?
-
 
       obj.lasso = new Lasso(obj.sketchpad);
 
@@ -2439,18 +2863,6 @@
       obj.tabletop.onmouseleave = function () {
         active = false;
       }; // onmouseleave
-      // CORRELATIONS
-      // How should the metadata be passed in? Within hte items themselves?
-      // Should be reworked so that the elements sit in the HUD. Then the actual interactions should be defined. Maybe the dragging of individual correlations was not bad? It should just be explicitly dragging the variable onto the axis (e.g. the point moves, if released prematurely it returns to its position, if released over axes it arranges.)
-
-      /*
-      obj.correlations = new SpatialCorrelations();
-      obj.sketchpad.appendChild(obj.correlations.node);
-      obj.correlations.position([5, window.innerHeight - 5]);
-      obj.correlations.xoffset = window.innerWidth - 15;
-      obj.correlations.yoffset = window.innerHeight - 15;
-      obj.correlations.update();
-      */
       // KNOWLEDGE TREE
       // The knowledge tree is added here because it is nominally a navigation element. However the data for it comes from the KnowledgeManager, which will have to interact with the NavigationManager.
       // So now the hudsvg will just keep on passing the events to the tabletop? Can I just rename the hudsvg to sketchpad? And add other interactible elements to it, e.g. the lasso, and correlations??
@@ -2595,6 +3007,7 @@
 
         obj.items.push(item);
       } // additem
+      // TABLETOP NAVIGATION
 
     }, {
       key: "adjustview",
@@ -2617,8 +3030,107 @@
         return "scale(".concat(obj.scale, ") translate(").concat(obj.dx, "px,").concat(obj.dy, "px)");
       }
     }, {
-      key: "groups",
-      get: // gettransform
+      key: "collectSpatialCorrelationData",
+      value: // gettransform
+
+      /* SPATIAL CORRELATION DATA COLLECTION
+      
+      */
+      // Why not just gather all the metadata at once? And then run through all of it?
+      // For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
+      // Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
+      function collectSpatialCorrelationData() {
+        var obj = this; // Two kinds of items need to be dealt with - individuals and groups. Grouped items should use the position of the group for the spatial correlations.
+
+        var groupedItemData = obj.groups.reduce(function (acc, g) {
+          var d = g.members.map(function (item) {
+            return {
+              spatial: {
+                x: g.position[0],
+                y: g.position[1]
+              },
+              metadata: item.task
+            };
+          }); // map
+
+          return acc.concat(d);
+        }, []); // reduce
+
+        var individualItemData = obj.items.map(function (item) {
+          return {
+            spatial: {
+              x: item.position[0],
+              y: item.position[1]
+            },
+            metadata: item.task
+          };
+        });
+        var d = groupedItemData.concat(individualItemData); // Reorient here, and introduce ordinalvariables and categoricalvariables properties? But it doesn't matter in the end, as long as the categoricals are mapped correctly it's all good?
+
+        var spatial = [makeNamedArray(d.map(function (d_) {
+          return d_.spatial.x;
+        }), "x"), makeNamedArray(d.map(function (d_) {
+          return d_.spatial.y;
+        }), "y")]; // spatial
+        // The METADATA COULD BE FILTERED INITIALLY TO REMOVE ANY NONINFORMATIVE VALUES?
+        // Or just prevent non-informative values to be used for correlations - probably better.
+
+        var ordinals = ["sepal_length", "sepal_width"].map(function (variable) {
+          return makeNamedArray(d.map(function (d_) {
+            return d_.metadata[variable];
+          }), variable);
+        }); // map
+        // ANY CATEGORICALS WITH ALL DIFFERENT VALUES SHOULD BE REMOVED!!
+
+        var categoricals = ["color", "cat"].map(function (variable) {
+          return makeNamedArray(d.map(function (d_) {
+            return d_.metadata[variable];
+          }), variable);
+        }); // map
+
+        return {
+          spatial: spatial,
+          ordinals: ordinals,
+          categoricals: categoricals
+        };
+      } // collectSpatialCorrelationData
+
+    }, {
+      key: "arrangeItemsByMetadata",
+      value: function arrangeItemsByMetadata(axis, correlation) {
+        var obj = this;
+        var i_axis = axis == "x" ? 0 : 1; // Ok, I should reposition all the items, and all hte groups. The repositioning should be done in the range of positions available, and in a square - so the max range determines the positioning.
+
+        var d = obj.items.reduce(function (acc, item) {
+          // Go for total range so things spread out a bit if needed. Enforce a minimum range?
+          acc.range[0] = Math.min(acc.range[0], parseInt(item.node.style.top), parseInt(item.node.style.left));
+          acc.range[1] = Math.max(acc.range[1], parseInt(item.node.style.top), parseInt(item.node.style.left));
+          var v_ = item.task[correlation.name];
+          var v = correlation.mapping ? correlation.mapping[v_][axis] : v_;
+          acc.domain[0] = Math.min(acc.domain[0], v);
+          acc.domain[1] = Math.max(acc.domain[1], v);
+          return acc;
+        }, {
+          range: [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY],
+          domain: [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]
+        }); // reduce
+        // What do if the variable is categorical? Now the correlation also has the mapping attribute.
+
+        var scale = new scaleLinear();
+        scale.domain = d.domain;
+        scale.range = d.range; // Actually loop through the items and arrange them.
+
+        obj.items.forEach(function (item) {
+          var v_ = item.task[correlation.name];
+          var v = correlation.mapping ? correlation.mapping[v_][axis] : v_;
+          var p = item.position;
+          p[i_axis] = scale.dom2range(v);
+          item.position = p;
+        }); // forEach
+        // Now go through the groups and select what to do with them.
+
+        obj.minimap.update(); // console.log(`Arrange ${axis}-axis by: `, correlation, scale)
+      } // arrangeItemsByMetadata
 
       /* GROUPING
       How to handle the grouping?
@@ -2645,7 +3157,10 @@
       The tree needs to correctly position the temporary group also. How should it do this?
       
       */
-      function get() {
+
+    }, {
+      key: "groups",
+      get: function get() {
         var obj = this; // Filter out any empty groups
 
         obj._groups = obj._groups.filter(function (g) {
@@ -2716,7 +3231,11 @@
         obj.tree.temporary = obj.groups.filter(function (g) {
           return g.temporary;
         });
-        obj.tree.update();
+        obj.tree.update(); // Update the correlations also in case any correlation is above 0.95, in which case the highest one in that direction should appear on the minimap axes.
+
+        obj.minimap.correlations.xvariable = "Unknown";
+        obj.minimap.correlations.yvariable = "Unknown";
+        obj.minimap.correlations.update();
       } // hudrefresh
 
     }]);
@@ -2733,6 +3252,12 @@
     });
     return AequalsB && BequalsA;
   } // arrayequal
+
+
+  function makeNamedArray(A, name) {
+    A.name = name;
+    return A;
+  } // namedArray
 
   var testannotations2 = [{
     id: "0",
@@ -2866,82 +3391,98 @@
     taskId: "task 0",
     sepal_length: 5.1,
     sepal_width: 3.5,
-    color: "salmon"
+    color: "salmon",
+    cat: "red"
   }, {
     taskId: "task 1",
     sepal_length: 4.9,
     sepal_width: 3,
-    color: "sandybrown"
+    color: "sandybrown",
+    cat: "brown"
   }, {
     taskId: "task 2",
     sepal_length: 4.7,
     sepal_width: 3.2,
-    color: "seagreen"
+    color: "seagreen",
+    cat: "sea"
   }, {
     taskId: "task 3",
     sepal_length: 4.6,
     sepal_width: 3.1,
-    color: "seashell"
+    color: "seashell",
+    cat: "sea"
   }, {
     taskId: "task 4",
     sepal_length: 5,
     sepal_width: 3.6,
-    color: "sienna"
+    color: "sienna",
+    cat: "brown"
   }, {
     taskId: "task 5",
     sepal_length: 5.4,
     sepal_width: 3.9,
-    color: "skyblue"
+    color: "skyblue",
+    cat: "sea"
   }, {
     taskId: "task 6",
     sepal_length: 4.6,
     sepal_width: 3.4,
-    color: "slateblue"
+    color: "slateblue",
+    cat: "sea"
   }, {
     taskId: "task 7",
     sepal_length: 5,
     sepal_width: 3.4,
-    color: "springgreen"
+    color: "springgreen",
+    cat: "sea"
   }, {
     taskId: "task 8",
     sepal_length: 4.4,
     sepal_width: 2.9,
-    color: "tan"
+    color: "tan",
+    cat: "brown"
   }, {
     taskId: "task 9",
     sepal_length: 4.9,
     sepal_width: 3.1,
-    color: "thistle"
+    color: "thistle",
+    cat: "red"
   }, {
     taskId: "task 10",
     sepal_length: 5.4,
     sepal_width: 3.7,
-    color: "tomato"
+    color: "tomato",
+    cat: "red"
   }, {
     taskId: "task 11",
     sepal_length: 4.8,
     sepal_width: 3.4,
-    color: "turquoise"
+    color: "turquoise",
+    cat: "sea"
   }, {
     taskId: "task 12",
     sepal_length: 4.8,
     sepal_width: 3,
-    color: "violet"
+    color: "violet",
+    cat: "red"
   }, {
     taskId: "task 13",
     sepal_length: 4.3,
     sepal_width: 3,
-    color: "wheat"
+    color: "wheat",
+    cat: "brown"
   }, {
     taskId: "task 14",
     sepal_length: 5.8,
     sepal_width: 4,
-    color: "lightpink"
+    color: "lightpink",
+    cat: "red"
   }, {
     taskId: "task 15",
     sepal_length: 5.7,
     sepal_width: 4.4,
-    color: "antiquewhite"
+    color: "antiquewhite",
+    cat: "brown"
   }]; // data
   // Items
 

@@ -1,6 +1,6 @@
 import { svg2element, isWithinBoundingClientRect } from "../../helpers.js";
 
-let template = `<rect class="current" x="50" y="10" width="150" height="50" fill="black" opacity="0.5"></rect>`
+let template = `<rect class="current" x="50" y="10" width="150" height="50" fill="black" opacity="0.2"></rect>`
 
 export default class MiniMapViewRect{
 	

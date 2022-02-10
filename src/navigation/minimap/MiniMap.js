@@ -1,6 +1,7 @@
 import { svg2element, scaleLinear, isWithinBoundingClientRect } from "../../helpers.js";
 import MiniMapIcon from "./MiniMapIcon.js";
 import MiniMapViewRect from "./MiniMapViewRect.js";
+import SpatialCorrelations from "../arrangement/SpatialCorrelations.js";
 /*
 The initial arrangement is not the problem of this module. This module just visualises the current arrangement, and allows global navigation.
 
@@ -47,6 +48,29 @@ export default class MiniMap{
 		
 		// Maybe it's just simpler to keep re-rendering the MiniMap? So the update doesn't have to be called everywhere?
 		// Maybe not, because a lot of the time it's just the re-centering of hte data that is needed?
+		
+		
+		// Let the minimap host the correlations.
+		
+		// CORRELATIONS
+		// The metadata is passed in with the items themselves - or should it be created here instead? Maybe that's a good approach, then inside the module need not think about ordinals and categoricals.
+		
+		/* Requirements:
+		   - when the items are moving the axes variables should be `Unknown'
+		   - correlations only updated when the hud elements are clicked
+		   - Maybe it can all be merged to the minimap? Reduces some clutter!
+		*/
+		obj.correlations = new SpatialCorrelations();
+		obj.node.appendChild(obj.correlations.node);
+		obj.correlations.position([5, obj.height - 5]);
+		obj.correlations.xoffset = obj.width - 15;
+		obj.correlations.yoffset = obj.height - 15;
+		obj.correlations.update();
+		// The correlations text is incorrect at first, because it relies on boundingClientRect to get the width of the text...
+		
+		
+		
+		
 		
 	} // constructor
 	

@@ -1,8 +1,8 @@
-import SpatialCorrelations from "./arrangement/SpatialCorrelations.js";
 import TreeKnowledge from "./tree/TreeKnowledge.js";
 import MiniMap from "./minimap/MiniMap.js";
 import Lasso from "./lasso/Lasso.js";
 import Group from "../grouping/Group.js";
+import { scaleLinear } from "../helpers.js";
 /*
 A drop in class that provides zooming, panning, minimap, and the tree hierarchy navigaton.
 */
@@ -56,6 +56,51 @@ export default class NavigationManager{
 		// No minimap update here!!
 		obj.container.style.transform = obj.currenttransform();
 	}; // reposition
+	
+	// CORRELATIONS!
+	let c = obj.minimap.correlations;
+	c.update();
+	document.getElementById("menucontainer").appendChild(c.xmenu.node)
+	c.th.onclick = function(){
+		let sp = c.calculate( obj.collectSpatialCorrelationData() );
+		let p = c.th.getBoundingClientRect();
+		c.xmenu.toggle(sp, [p.x, window.innerHeight - p.y]);
+	} // onclick
+	
+	document.getElementById("menucontainer").appendChild(c.ymenu.node)
+	c.tv.onclick = function(){
+		let sp = c.calculate( obj.collectSpatialCorrelationData() );
+		let p = c.tv.getBoundingClientRect();
+		c.ymenu.toggle(sp, [p.x+20, p.y]);
+	} // onclick
+	
+	
+	// Click on an option should arrange by that variable.
+	c.xmenu.onvariableselect = function(correlation){
+		c.xvariable = correlation.name;
+		c.update();
+		obj.arrangeItemsByMetadata("x", correlation);
+	} // onvariableselect
+	
+	c.ymenu.onvariableselect = function(correlation){
+		c.yvariable = correlation.name;
+		c.update();
+		obj.arrangeItemsByMetadata("y", correlation);
+	} // onvariableselect
+	
+	
+	
+	// Click outside of the menu shoul dclose it.
+	obj.sketchpad.addEventListener("mousedown", function(){
+		c.xmenu.hide();
+		c.ymenu.hide();
+	}) // addEventListener
+	
+	obj.minimap.node.addEventListener("mousedown", function(){
+		c.xmenu.hide();
+		c.ymenu.hide();
+	}) // addEventListener
+	
 	
 	
 	// LASSO 
@@ -139,17 +184,8 @@ export default class NavigationManager{
 	
 	
 	
-	// CORRELATIONS
-	// How should the metadata be passed in? Within hte items themselves?
-	// Should be reworked so that the elements sit in the HUD. Then the actual interactions should be defined. Maybe the dragging of individual correlations was not bad? It should just be explicitly dragging the variable onto the axis (e.g. the point moves, if released prematurely it returns to its position, if released over axes it arranges.)
-	/*
-	obj.correlations = new SpatialCorrelations();
-	obj.sketchpad.appendChild(obj.correlations.node);
-	obj.correlations.position([5, window.innerHeight - 5]);
-	obj.correlations.xoffset = window.innerWidth - 15;
-	obj.correlations.yoffset = window.innerHeight - 15;
-	obj.correlations.update();
-	*/
+	
+	
 	
 	
 	
@@ -309,6 +345,7 @@ export default class NavigationManager{
   } // additem
   
   
+  // TABLETOP NAVIGATION
   adjustview(){
 	let obj = this;
 	// When the view is adjusted the items should also be told to check their sizes, and react is needed.
@@ -330,7 +367,106 @@ export default class NavigationManager{
   
   
   
+  /* SPATIAL CORRELATION DATA COLLECTION
   
+  */
+  
+  // Why not just gather all the metadata at once? And then run through all of it?
+  // For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
+  // Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
+  collectSpatialCorrelationData(){
+	let obj = this;
+	
+	// Two kinds of items need to be dealt with - individuals and groups. Grouped items should use the position of the group for the spatial correlations.
+	let groupedItemData = obj.groups.reduce((acc,g)=>{
+		let d = g.members.map(item=>{
+			return {spatial: {x: g.position[0], y: g.position[1]}, metadata: item.task}
+		}); // map
+		return acc.concat(d);
+	}, []) // reduce
+	
+	
+	let individualItemData = obj.items.map(item=>{
+		return {spatial: {x: item.position[0], y: item.position[1]}, metadata: item.task}
+	})
+	
+	
+	let d = groupedItemData.concat(individualItemData); 
+	
+	// Reorient here, and introduce ordinalvariables and categoricalvariables properties? But it doesn't matter in the end, as long as the categoricals are mapped correctly it's all good?
+	let spatial = [
+		makeNamedArray(d.map(d_=>d_.spatial.x), "x"),
+		makeNamedArray(d.map(d_=>d_.spatial.y), "y")
+	]; // spatial
+	
+	
+	
+	// The METADATA COULD BE FILTERED INITIALLY TO REMOVE ANY NONINFORMATIVE VALUES?
+	// Or just prevent non-informative values to be used for correlations - probably better.
+	let ordinals = ["sepal_length", "sepal_width"].map(variable=>{
+		return makeNamedArray( d.map(d_=>d_.metadata[variable]), variable );
+	}) // map
+	
+	
+	// ANY CATEGORICALS WITH ALL DIFFERENT VALUES SHOULD BE REMOVED!!
+
+	let categoricals = ["color", "cat"].map(variable=>{
+		return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
+	}) // map
+	
+	
+	return {
+		spatial: spatial,
+		ordinals: ordinals,
+		categoricals : categoricals
+	};
+  } // collectSpatialCorrelationData
+  
+  
+  arrangeItemsByMetadata(axis, correlation){
+	let obj = this;
+	
+	
+	let i_axis = axis == "x" ? 0 : 1;
+	
+	// Ok, I should reposition all the items, and all hte groups. The repositioning should be done in the range of positions available, and in a square - so the max range determines the positioning.
+	let d = obj.items.reduce((acc,item)=>{
+		// Go for total range so things spread out a bit if needed. Enforce a minimum range?
+		acc.range[0] = Math.min(acc.range[0], parseInt(item.node.style.top), parseInt(item.node.style.left));
+		acc.range[1] = Math.max(acc.range[1], parseInt(item.node.style.top), parseInt(item.node.style.left));
+		
+		let v_ = item.task[correlation.name];
+		let v = correlation.mapping ? correlation.mapping[v_][axis] : v_;
+		acc.domain[0] = Math.min(acc.domain[0], v);
+		acc.domain[1] = Math.max(acc.domain[1], v);
+		return acc;
+	}, {
+		range: [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY], 
+		domain: [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]
+	}); // reduce
+	
+	// What do if the variable is categorical? Now the correlation also has the mapping attribute.
+	let scale = new scaleLinear();
+	scale.domain = d.domain;
+	scale.range = d.range;
+	
+	
+	// Actually loop through the items and arrange them.
+	obj.items.forEach(item=>{
+		let v_ = item.task[correlation.name];
+		let v = correlation.mapping ? correlation.mapping[v_][axis] : v_;
+		
+		let p = item.position;
+		p[i_axis] = scale.dom2range(v);
+		item.position = p;
+	}) // forEach
+	
+	// Now go through the groups and select what to do with them.
+	obj.minimap.update()
+	// console.log(`Arrange ${axis}-axis by: `, correlation, scale)
+	
+	
+  } // arrangeItemsByMetadata
   
   /* GROUPING
   How to handle the grouping?
@@ -368,7 +504,6 @@ export default class NavigationManager{
 	  })
 	  return obj._groups;
   } // set
-  
   
   makegroup(items, temporary){
 	let obj = this;
@@ -439,6 +574,11 @@ export default class NavigationManager{
 	obj.minimap.update();
 	obj.tree.temporary = obj.groups.filter(g=>g.temporary);
 	obj.tree.update();
+	
+	// Update the correlations also in case any correlation is above 0.95, in which case the highest one in that direction should appear on the minimap axes.
+	obj.minimap.correlations.xvariable = "Unknown";
+	obj.minimap.correlations.yvariable = "Unknown";
+	obj.minimap.correlations.update();
   } // hudrefresh
 
   
@@ -455,7 +595,10 @@ function arrayequal(A,B){
 	return AequalsB && BequalsA
 } // arrayequal
 
-
+function makeNamedArray(A, name){
+	A.name = name;
+	return A
+} // namedArray
 
 
 
