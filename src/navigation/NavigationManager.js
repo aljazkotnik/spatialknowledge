@@ -309,8 +309,6 @@ export default class NavigationManager{
   track(item){
 	let obj = this;
 	
-	obj.container.appendChild(item.node);
-	
 	
 	// On Drag END chck if item should be placed into group.
 	item.onend = function(p){
@@ -562,11 +560,13 @@ export default class NavigationManager{
 	obj.hudrefresh();
 	
 	
-	
+	obj.updateRenderingItems(obj.items.concat(obj.groups));
 	
   } // makegroup
   
   
+  // DUMMY METHOD.
+  updateRenderingItems(items){} // updateRenderingItems 
 
 
   hudrefresh(){

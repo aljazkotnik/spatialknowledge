@@ -1,7 +1,8 @@
 import { html2element } from "../helpers.js";
 import Item from "./Item.js";
 
-
+// Rendering modules
+import UnsteadyPlayer2D from "../renderers/UnsteadyPlayer2D.js";
 
 
 /*
@@ -86,6 +87,7 @@ export default class Group extends Item {
   
   icons = [];
   members = [];
+  _current = undefined
   
   temporary = true;
 	
@@ -114,13 +116,12 @@ export default class Group extends Item {
 
 	
 	
-	// Store the members.
+	
+	
+	// Maybe just do it the other way around - set a temporary viewnode to the renderer, and allow it to use that?
+	
+	// Store the members. Has to be done after the renderer is established, as one of them will supersede its geometry.
 	obj.current = items[0];
-	
-	// When deleting an item the current item WILL be deleted (because it was moused onto first). Therefore another item will have to be selected
-	
-	
-	
 	
 	
 	items.forEach(item=>{
@@ -130,6 +131,40 @@ export default class Group extends Item {
 	obj.temporary = temporary;
 	
   } // constructor
+  
+  
+  set current(item){
+	let obj = this;
+	
+	
+	// The first time there is no current node to return the renderer node.
+	if(obj._current){
+		obj._current.viewnode.appendChild(obj._current.renderer.node);
+	} // if
+	
+	
+	// Should I just try appending the whole renderer node?? But how to return it to its owner afterwards? Maybe here, before the current is swapped out?
+	// Store the current item
+	obj._current = item;
+	obj.renderer = item.renderer;
+	obj.viewnode.appendChild(item.renderer.node);
+	
+	
+	
+	
+	
+	
+	// Size the view node to the appropriate size.
+	// obj.viewnode.style.height = obj.renderer.view.style.height;
+	// obj.viewnode.style.width = obj.renderer.view.style.width;
+	
+	// Itshould also have immitation controls no? These will have to be added here directly I think.
+  } // set current
+  
+  
+  get current(){
+	return this._current;
+  } // get current
   
   
   
@@ -163,11 +198,6 @@ export default class Group extends Item {
 	  // coordinate the colors.
 	  uncolorAllIcons();
 	  iconobj.node.style.background = "gray";
-			
-			
-	  // Dummy rendering
-	  obj.viewnode.style.background = obj.current.task.color;
-	  obj.viewnode.style.opacity = 1;
 	} // onmouseenter
 		
 		
@@ -233,6 +263,7 @@ export default class Group extends Item {
 	  
 	  
 	  // When the group is created the items remain at their locations, and are simply hidden. When the group is dissolved an offset is applied to account for th egroup moving. For items that are included individually by dragging and dropping.
+	  obj._current.viewnode.appendChild(obj._current.renderer.node);
 	  
 	  let offset = [
 	    obj.position[0] - obj.origin[0],

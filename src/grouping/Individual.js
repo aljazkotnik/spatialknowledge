@@ -1,16 +1,50 @@
+/* Superclass framework 
+
+ATTRIBUTES:
+node
+viewnode
+previewnode
+
+METHODS: 
+set/get position
+show
+hide
+checksize
+
+DUMMY METHODS:
+onmove
+onend
+*/ 
 import Item from "./Item.js";
+
+
+
+// Rendering modules
+import UnsteadyPlayer2D from "../renderers/UnsteadyPlayer2D.js";
+
+
 
 
 // How will the individual draw? The group will have to follow the same idea. Or? maybe the drawing would just access a specific module, like geometry or smth, and that isn't implemented yet. And then the same thing can be added to the group?
 export default class Individual extends Item {
-  constructor(task){
+  constructor(task, gl){
     super();
     let obj = this;
 	
-	// The task is important, because 
+	// The task is important!
 	obj.task = task;
 	obj.node.querySelector("span.label").innerHTML = task.taskId;
 	
+	
+	
+	// There should ever only be one individual, and it should have the option to switch between renderers when ordered to do so. The order of the renderer should come from a slice configuration file. The allowed option renderers still need to be imported here.
+	
+	
+	// The MeshRenderer2D should be outside completely? Yes! And there could be a MeshRenderer3D running at the same time, and they just check which of them should perform the render? But then the code that applies to the gl needs to be swapped out everytime? In that case there could be a canvas for 2D and one for 3D if necessary. Would this be needed at all??
+	
+	// maybe it's more sensible to let hte renderer create the view node etc?
+	obj.renderer = new UnsteadyPlayer2D(gl, task.entropy2d);
+	obj.viewnode.appendChild(obj.renderer.node)
   } // constructor
   
   checksize(){
@@ -19,13 +53,11 @@ export default class Individual extends Item {
 	
 	let rect = obj.node.getBoundingClientRect();
 	if(rect.width < 200){
-		// Paint the inside red.
-		obj.viewnode.style.background = obj.task.color;
-		obj.viewnode.style.opacity = 1;
+		// Signal that the drawing should no longer occur.
+		obj.viewnode.style.border = `5px solid ${obj.task.color}`;
 	} else {
 		// Turn it back to default values.
-		obj.viewnode.style.background = "";
-		obj.viewnode.style.opacity = 0.001;
+		obj.viewnode.style.border = "";
 	} // if
   } // checksize
   

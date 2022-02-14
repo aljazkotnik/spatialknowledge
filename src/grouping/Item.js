@@ -7,9 +7,8 @@ let template = `
 	<span class="button dissolve" style="display: none;">✖</span>
 	<span class="button enter" style="display: none;">⮊</span>
   </div>
-  <div class="view"></div>
+  <div class="viewcontainer"></div>
   <div class="preview"></div>
-  <div class="controls"></div>
   <div class="commenting"></div>
 </div>
 `;
@@ -32,12 +31,12 @@ export default class Item{
 	obj.node = html2element(template);
 	obj.node.style.position = "absolute";
 	  
-	obj.viewnode = obj.node.querySelector("div.view");
-	obj.viewnode.style.height = obj.height + "px";
-	obj.viewnode.style.width = obj.width + "px";
+	obj.viewnode = obj.node.querySelector("div.viewcontainer");
+	// obj.viewnode.style.height = obj.height + "px";
+	// obj.viewnode.style.width = obj.width + "px";
 	  
 	obj.previewnode = obj.node.querySelector("div.preview");
-	obj.previewnode.style.maxWidth = obj.width + "px";
+	// obj.previewnode.style.maxWidth = obj.width + "px";
 	
 	// Add the dragging in here. The dragging is supposed to be in a scaled, and potentially tranlated div, so the offset to the div needs to be removed.
 	let active = false;
@@ -49,7 +48,7 @@ export default class Item{
 	// `obj.node.contains(e.target)' allows any children to launch the dragging, but this will interfere with the panning and zooming in the viewport div.
 	// Maybe any child that is contained by obj.node. but not the viewport node?
 	obj.node.onmousedown = function(e){
-	  if(obj.node.contains(e.target) && e.target != obj.viewnode && obj.node.isConnected){
+	  if(obj.node.contains(e.target) && !obj.viewnode.contains(e.target) && obj.node.isConnected){
 		e.preventDefault();
 		let rect = obj.node.getBoundingClientRect();
 		
