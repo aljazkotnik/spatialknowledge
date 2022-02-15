@@ -1,5 +1,8 @@
 /*
-Should these be split up into a Mesh2D superclass and an UnsteadyMesh2D childclass?
+Should these be split up into a Mesh2D superclass and an UnsteadyMesh2D childclass? The unsteady case is a superclass of hte steady one!
+
+
+Mesh2D does the loading of required timestep files, so it should do the memory hanling as well. Maybe just give it a size limit of what it can take up, and it should trim its memory accordingly.
 */
   
 
@@ -33,6 +36,13 @@ let initdomain = {
 
 
 export default class Mesh2D{
+  
+  _currentFrameInd = 0
+  
+  // Initial byte length limit is 1MB
+  frameByteLength = 225420
+  limitByteLength = 10**6
+  
   constructor(gl, unsteadyMetadataFilename){
 	let obj = this;
 
@@ -63,18 +73,24 @@ export default class Mesh2D{
 	
 	
 	// If teh index defines which frame to play next, then the timesteps need to be ordered. Maybe it's best to just enforce this by sorting the timesteps when they are loaded.
-	obj._currentFrameInd = 0;
 	
 	
 	
 	// Imagine that some metadata was loaded in.
 	// "./data/testmetadata.json"
+	let t0 = performance.now();
 	
 	// The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
 	if(unsteadyMetadataFilename){
 		fetch(unsteadyMetadataFilename)
 		  .then(res=>res.json())
 		  .then(content=>{
+			
+			
+			// The domain and timesteps get assigned within the batch promise to make sure outside processes can't access them beforehand?
+			obj.domain = content.domain;
+			obj.timesteps = content.timesteps;
+			
 			
 			// But all three need to be available at the same time before rendering.
 			let indicesPromise = loadBinData(content.indices)
@@ -86,19 +102,15 @@ export default class Mesh2D{
 			/* The values should be loaded in separately from the vertices and indices.
 			
 			Do we just loop through some timesteps and make the promises. However, the data size restrictions should be maintained at all times! The data loading function should keep that in mind.
-			*/
-			let valuesPromise = loadBinData(content.timesteps[obj.currentFrameInd].filename)
-			  .then(ab=>{ return new Uint8Array(ab) })
+			*/  
+			obj.currentFrameInd = 0;
+			let valuesPromise = obj.timesteps[obj.currentFrameInd].valuesPromise
 			  .then(ui8=>{ return Float32Array.from(ui8) })
 			
 			
 			Promise.all([indicesPromise, verticesPromise, valuesPromise]).then(d=>{
 			  
-			  
-			  // Domain has to be overwritten when the actual data is loaded. Afterwards, only the 'c' property should change with the timesteps. By changing the global color value ranges the colorbar can be adjusted by the user.]
-			  obj.domain = content.domain;
-			  obj.timesteps = content.timesteps;
-			  
+
 			  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
 			  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d[0], gl.STATIC_DRAW);
 			  obj.indicesLength = d[0].length;
@@ -109,10 +121,8 @@ export default class Mesh2D{
 			  gl.bindBuffer(gl.ARRAY_BUFFER, valuesBuffer);
 			  gl.bufferData(gl.ARRAY_BUFFER, d[2], gl.STATIC_DRAW);
 			
-			  
-			  
-			  
 			
+			  console.log("time to draw: ",  performance.now() - t0, "[ms]");
 			}) // then
 			
 			
@@ -129,6 +139,8 @@ export default class Mesh2D{
   // The 'values' are stored as a 'scaled uint8 array' to save memory. The values are retransformed back into the original domain on the GPU by mapping them from [0,255] to 'currentUintRange', which is obtained from the metadata file of this unsteady simulation.
   
   // The MeshRenderer2D looks at the domain to determine what the full value domain of this small multiple will be. It looks at the c to determine the uint compression domain.
+  
+  // Domain has to be overwritten when the actual data is loaded. Afterwards, only the 'c' property should change with the timesteps. By changing the global color value ranges the colorbar can be adjusted by the user.]
   domain = initdomain
   timesteps = []
   
@@ -148,6 +160,7 @@ export default class Mesh2D{
   } // currentTimestep
   
   get memoryUsed(){
+	// This is currently only the memory the values files take up.
 	let obj = this;
 	
 	let memory = 0;
@@ -172,17 +185,13 @@ export default class Mesh2D{
 	let obj = this;
 	
 	
-	let i = 0;
-	let dist = Number.POSITIVE_INFINITY;
-	obj.timesteps.forEach((timestep,j)=>{
-		let d = Math.abs( timestep.t-t )
-		if(d < dist){
-			dist = d;
-			i = j;
-		} // if
-	}) // forEach
+	// Find the closest timestep.
+	let t_closest = obj.timesteps.reduce((closest, timestep)=>{
+		return Math.abs( closest.t - t ) < Math.abs( timestep.t - t ) ? closest : timestep;
+	}) // reduce
 	
-	obj.currentFrameInd = i;
+	// Set the index of the closest timestep as the current frame index
+	obj.currentFrameInd = obj.timesteps.indexOf(t_closest);
 
   } // timestepCurrentFrame
   
@@ -194,16 +203,8 @@ export default class Mesh2D{
 	
 	obj._currentFrameInd = i;
 	
-	// For now just load the current frame here, and save it to the timestep.
-	let timestep = obj.timesteps[obj._currentFrameInd];
-	if(timestep.valuesPromise == undefined){
-		timestep.valuesPromise = loadBinData(timestep.filename)
-		  .then(ab=>{ return new Uint8Array(ab) })
-		timestep.valuesPromise.then(ui8=>{
-			timestep.byteLength = ui8.byteLength
-		})
-	} // if
-	
+	obj.buffering(i);
+	obj.updateCurrentFrameBuffer();
   } // set currentFrameInd
   
   get currentFrameInd(){
@@ -229,6 +230,80 @@ export default class Mesh2D{
 	
   } // updateCurrentFrameBuffer
   
+  
+  /*
+  MEMORY HANDLING
+  
+  - DONE: Buffer the required files ASAP
+  - DONE: Unload all files when prompted
+  - Prevent buffering if off-screen 
+      Just unload, and rely that they won't be updated? OR - Manipulate the limit they are allowed to use, and then let the object handle itself.
+  - The data requests/buffering should be throttled.
+      How to throttle them? The throttle should be consistent across several items also, so that the files that will be needed earlier are transported earlier.
+      Within one individual it's possible to just wrap them up into a throttling promise, which waits for everything in hte queue before to be executed, and then starts doing it's thing. Maybe thi swould work across several items also as the queues would clear alongside each other.
+  
+  */
+  buffering(i_closest){
+	// `t' is the current playing time. For only forward playing any timesteps before this one can be unloaded, and any after need to be loaded, up to the limit. For t approaching max t the initial timesteps should start loading to allow the player to loop around.
+ 	let obj = this;
+	
+	let n_all = obj.timesteps.length;
+	let n_max = Math.floor( obj.limitByteLength / obj.frameByteLength );
+	
+	// Maybe chain the required promises somehow?
+	
+	
+	// Maybe it's better to unload all not needed promises at the beginning?? And then focus on the ones that need to be loaded?
+	for(let i=0; i< n_all; i++){
+		let timestep = obj.timesteps[(i_closest + i)%n_all];
+		if( i < n_max ){
+			// Should hve a value promise, but doesn't yet.
+			if(!timestep.valuesPromise){
+				timestep.valuesPromise = loadBinData(timestep.filename)
+				  .then(ab=>{ return new Uint8Array(ab) })
+				timestep.valuesPromise.then(ui8=>{
+					timestep.byteLength = ui8.byteLength
+				})
+			} // if
+		} else {
+			// The promise should be deleted to conserve memory. The byte length must be the same for all of them anyway. However, some allowance will have to be made for the 32 bit arrays - 3 of them in total. The length of the values array in bytes is given by the 32 float arrays along with the assumption of the uint8 encoding anyway.
+			delete timestep.valuesPromise
+			delete timestep.byteLength
+		} // if
+	} // for
+	
+  } // buffering
+  
+  
+  
+  // So the buffering needs to be updated on the go, but all the data should be unloaded when the item is no longer on screen, and then reloaded when it comes back on screen. - Just have an `unload' method? I guess the data loaded in the buffers will persist until changed?
+  get t_buffered(){
+	  let obj = this;
+	  
+	  // Go through the promises and return the lates one in a row that is ready. We know that a promise is ready if the timestep has a byteLength declared.
+	  let t_current = obj.timesteps[obj.currentFrameInd];
+	  let t_buffered = t_current ? t_current.t : 0;
+	  for(let i=obj.currentFrameInd; i<obj.timesteps.length; i++){
+		  let timestep = obj.timesteps[i];
+		  
+		  if(timestep.byteLength){
+			  t_buffered = timestep.t
+		  } else {
+			  return t_buffered
+		  } // if
+	  } // for
+	  
+	  return t_buffered
+  } // t_buffered
+  
+  
+  unload(){
+	  let obj = this;
+	  obj.timesteps.forEach(timestep=>{
+		  delete timestep.valuesPromise
+		  delete timestep.byteLength
+	  }) // forEach
+  } // unload
   
 } // Mesh2D
 

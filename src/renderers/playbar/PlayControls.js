@@ -5,8 +5,7 @@ PLAYBAR only controls the appearance of the playbar, but does not control the pl
 
 
 // Helepr to make an html element.
-import {html2element, svg2element, scaleLinear, joinDataToElements} from "./helpers.js";
-
+import {html2element, svg2element, scaleLinear, joinDataToElements} from "../../helpers.js";
 
 import PlayButton from "./PlayButton.js";
 import PlayBar from "./PlayBar.js";
@@ -67,9 +66,10 @@ export default class PlayControls{
 		// On click the playbar should register the correct time.
 		
 		// The tscale takes inputs in the svg coordinates, and the event returns them in the client coordinates. Therefore the client coordinates must be adjusted for the position of the SVG.
-		let x1 = event.clientX;
-		let x0 = obj.node.getBoundingClientRect().x
-		let t = obj.bar.tscale.range2dom(x1-x0)
+		// Because there is a transformation applied the scale needs to be corrected for that also. Maybe calculate where 
+		let barrect = obj.bar.node.getBoundingClientRect();
+		
+		let t = obj.bar.t_min + (event.clientX - barrect.x)/(barrect.width)*(obj.bar.t_max - obj.bar.t_min);
 		
 		// Now just set the t to the right value, and update the view.
 		obj.bar.t_play = t;
@@ -92,6 +92,30 @@ export default class PlayControls{
 	// Annotations. Comments should be based on the chapter tags I think. The discussion is intended to be based on observed events. The logical progress is that events need to first be identified, and then discussed in a separate step. There should be a single dialogue box, and in that one tags can be added. This allows a single comment to be seen in multiple threads. Replies will have to be handled separately. Eventually the user should also be able to pin comments.
 	
   } // constructor
+  
+  
+
+  
+  get t_play(){
+	return this.bar.t_play;
+  } // get t_play
+  
+  set t_play(t){
+	this.bar.t_play = t;
+	this.bar.update();
+  } // set t_play
+  
+  get t_buffered(){
+	this.bar.t_buffered;
+  } // get t_buffer
+  
+  set t_buffered(t){
+	this.bar.t_buffered = t;
+	this.bar.update();
+  } // set t_buffered
+  
+  
+  
   
   
   set t_domain(t){

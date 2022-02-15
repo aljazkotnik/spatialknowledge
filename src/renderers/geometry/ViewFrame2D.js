@@ -53,7 +53,6 @@ export default class ViewFrame2D{
 	
 	// obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 	obj.view = obj.node.querySelector("div.view");
-	obj.secondaryview = undefined;
 	
 	// Some initial dummy geometry to allow initialisation.
 	obj.geometry = { 
@@ -188,7 +187,7 @@ export default class ViewFrame2D{
 	
 	
 	// The viewframe may want to be projected to another frame than the one it was created with. For that reason check here if a secondary view was specified.
-	let rect = obj.secondaryview ? obj.secondaryview.getBoundingClientRect() : obj.view.getBoundingClientRect();
+	let rect = obj.view.getBoundingClientRect();
     
 	// The viewport bottom is measured from the bottom of the screen.
 	let width  = rect.right - rect.left;

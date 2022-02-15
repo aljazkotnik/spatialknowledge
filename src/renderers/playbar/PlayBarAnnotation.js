@@ -1,4 +1,4 @@
-import { svg2element } from "./helpers.js";
+import { svg2element } from "../../helpers.js";
 
 
 let defaultRectAttributes = `stroke="white" stroke-width="2px"`;
@@ -43,7 +43,7 @@ export default class PlayBarAnnotation{
 	}) // addEventListener
   } // constructor
   
-  update(t_play, t_buffer){
+  update(t_play, t_buffered){
 	let obj = this;
 	
 	let y = obj.y;
@@ -56,7 +56,7 @@ export default class PlayBarAnnotation{
 	 
 	obj.buffering.setAttribute("y", y)
 	obj.buffering.setAttribute("x", x);
-	obj.buffering.setAttribute("width", obj.width*obj.timeFraction(t_buffer))
+	obj.buffering.setAttribute("width", obj.width*obj.timeFraction(t_buffered))
 	obj.buffering.setAttribute("height", obj.height)
 	  
 	obj.foreground.setAttribute("y", y)

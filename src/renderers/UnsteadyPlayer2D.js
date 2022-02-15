@@ -13,8 +13,8 @@ import Mesh2D from "./geometry/Mesh2D.js";
 
 
 // Load in hte external modules. Should all this be wrapped up in one item?
-import InteractivePlayerUI from "./controls/InteractivePlayerUI.js"
-
+// import InteractivePlayerUI from "./controls/InteractivePlayerUI.js";
+import PlayControls from "./playbar/PlayControls.js";
 
 
 
@@ -44,10 +44,12 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	
 	
 	// Add in precofigured UI. The metadata filename identifies this small multiple.
-	obj.ui = new InteractivePlayerUI();
+	obj.ui = new PlayControls();
 	obj.node.querySelector("div.controls").appendChild(obj.ui.node);
   } // constructor
   
+  
+  // The update runs at requestAnimationFrame rate, so it can b eused to pass the messages between hte modules.
   update(now){
 	let obj = this;
 	
@@ -68,8 +70,12 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	  } // if
 	} // if
     
+	
+	obj.ui.t_buffered = obj.geometry.t_buffered;
     
 	// The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
+	
+	// This should be moved to the constructor, as it only needs to be executed once!!
 	obj.ui.t_domain = obj.geometry.domain.t;
   } // update
   
@@ -93,7 +99,6 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	  obj.ui.t_play = obj.geometry.currentTime;
 	} // if
 	
-	obj.geometry.updateCurrentFrameBuffer();
   } // incrementTimeStep
   
   

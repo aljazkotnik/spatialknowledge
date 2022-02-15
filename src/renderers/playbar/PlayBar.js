@@ -1,4 +1,4 @@
-import { svg2element, scaleLinear, joinDataToElements } from "./helpers.js";
+import { svg2element, scaleLinear, joinDataToElements } from "../../helpers.js";
 import PlayBarAnnotation from "./PlayBarAnnotation.js";
 
 // This class is in charge of drawing the play bar. It takes in user prescribed annotations and the min and maximum times. It fills the gaps between the user prescribed annotations and the min/max times with empty chapters. The process is repeated anytime a new annotation is added.
@@ -17,7 +17,7 @@ export default class PlayBar{
   t_min = 0
   t_max = 1
 	
-  t_buffer = 0
+  t_buffered = 0
   t_play = 0
 	
   constructor(){
@@ -93,7 +93,7 @@ export default class PlayBar{
   update(){
 	let obj = this;
 	obj.chapters.forEach(chapter=>{
-		chapter.update( obj.t_play, obj.t_buffer );
+		chapter.update( obj.t_play, obj.t_buffered );
 	})
   } // update
   

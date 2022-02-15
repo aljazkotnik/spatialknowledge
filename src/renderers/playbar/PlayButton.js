@@ -1,4 +1,4 @@
-import { svg2element } from "./helpers.js";
+import { svg2element } from "../../helpers.js";
 
 
 

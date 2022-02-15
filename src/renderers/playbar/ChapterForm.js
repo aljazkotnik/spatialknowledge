@@ -1,4 +1,4 @@
-import {html2element} from "./helpers.js";
+import {html2element} from "../../helpers.js";
 
 let css = {
   button: `

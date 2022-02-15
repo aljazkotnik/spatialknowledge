@@ -135,14 +135,14 @@
     throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  function html2element$1(html) {
+  function html2element(html) {
     var template = document.createElement('template');
     template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
 
     return template.content.firstChild;
   } // html2element
 
-  function svg2element$1(svg) {
+  function svg2element(svg) {
     var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.innerHTML = svg.trim();
     return g.firstChild;
@@ -189,7 +189,7 @@
     return scaleCategorical;
   }(); // scaleCategorical
 
-  var scaleLinear$1 = /*#__PURE__*/function () {
+  var scaleLinear = /*#__PURE__*/function () {
     function scaleLinear() {
       _classCallCheck(this, scaleLinear);
 
@@ -220,13 +220,13 @@
     }, {
       key: "dom2range",
       value: function dom2range(v) {
-        return mapSpaceAValueToSpaceB$1(v, this.domain, this.range);
+        return mapSpaceAValueToSpaceB(v, this.domain, this.range);
       } // dom2range
 
     }, {
       key: "range2dom",
       value: function range2dom(v) {
-        return mapSpaceAValueToSpaceB$1(v, this.range, this.domain);
+        return mapSpaceAValueToSpaceB(v, this.range, this.domain);
       } // range2dom
 
     }]);
@@ -234,7 +234,7 @@
     return scaleLinear;
   }(); // scaleLinear
 
-  function mapSpaceAValueToSpaceB$1(v, A, B) {
+  function mapSpaceAValueToSpaceB(v, A, B) {
     return (v - A[0]) / (A[1] - A[0]) * (B[1] - B[0]) + B[0];
   } // mapSpaceAValueToSpaceB
   // From regular helpers.
@@ -262,8 +262,9 @@
     });
     return f.length == 0 ? true : false;
   } // arrayIncludesAll
+   // joinDataToElements
 
-  var template$f = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$e = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -278,7 +279,7 @@
       this.width = 300;
       this.height = 200;
       var obj = this;
-      obj.node = html2element$1(template$f);
+      obj.node = html2element(template$e);
       obj.node.style.position = "absolute";
       obj.viewnode = obj.node.querySelector("div.viewcontainer"); // obj.viewnode.style.height = obj.height + "px";
       // obj.viewnode.style.width = obj.width + "px";
@@ -635,7 +636,7 @@
     return Math.max(Math.min(v, b), a);
   } // constrainValue
 
-  var template$e = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
+  var template$d = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
 
   var ViewFrame2D = /*#__PURE__*/function () {
     function ViewFrame2D(gl) {
@@ -644,10 +645,9 @@
       var obj = this;
       obj.gl = gl; // Okay, create the whole player here, and then just append it in hte item. The Item should then adjust the size to the player!!
 
-      obj.node = html2element$1(template$e); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
+      obj.node = html2element(template$d); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 
-      obj.view = obj.node.querySelector("div.view");
-      obj.secondaryview = undefined; // Some initial dummy geometry to allow initialisation.
+      obj.view = obj.node.querySelector("div.view"); // Some initial dummy geometry to allow initialisation.
 
       obj.geometry = {
         domain: {
@@ -761,7 +761,7 @@
       get: function get() {
         var obj = this; // The viewframe may want to be projected to another frame than the one it was created with. For that reason check here if a secondary view was specified.
 
-        var rect = obj.secondaryview ? obj.secondaryview.getBoundingClientRect() : obj.view.getBoundingClientRect(); // The viewport bottom is measured from the bottom of the screen.
+        var rect = obj.view.getBoundingClientRect(); // The viewport bottom is measured from the bottom of the screen.
 
         var width = rect.right - rect.left;
         var height = rect.bottom - rect.top;
@@ -842,7 +842,10 @@
   }(); // ViewFrame2D
 
   /*
-  Should these be split up into a Mesh2D superclass and an UnsteadyMesh2D childclass?
+  Should these be split up into a Mesh2D superclass and an UnsteadyMesh2D childclass? The unsteady case is a superclass of hte steady one!
+
+
+  Mesh2D does the loading of required timestep files, so it should do the memory hanling as well. Maybe just give it a size limit of what it can take up, and it should trim its memory accordingly.
   */
   // Some geometry to initialise the buffers.
 
@@ -863,9 +866,13 @@
   };
 
   var Mesh2D = /*#__PURE__*/function () {
+    // Initial byte length limit is 1MB
     function Mesh2D(gl, unsteadyMetadataFilename) {
       _classCallCheck(this, Mesh2D);
 
+      this._currentFrameInd = 0;
+      this.frameByteLength = 225420;
+      this.limitByteLength = Math.pow(10, 6);
       this.domain = initdomain;
       this.timesteps = [];
       var obj = this;
@@ -888,16 +895,19 @@
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
       obj.indicesBuffer = indicesBuffer;
       obj.indicesLength = indices.length; // If teh index defines which frame to play next, then the timesteps need to be ordered. Maybe it's best to just enforce this by sorting the timesteps when they are loaded.
-
-      obj._currentFrameInd = 0; // Imagine that some metadata was loaded in.
+      // Imagine that some metadata was loaded in.
       // "./data/testmetadata.json"
-      // The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
+
+      var t0 = performance.now(); // The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
 
       if (unsteadyMetadataFilename) {
         fetch(unsteadyMetadataFilename).then(function (res) {
           return res.json();
         }).then(function (content) {
-          // But all three need to be available at the same time before rendering.
+          // The domain and timesteps get assigned within the batch promise to make sure outside processes can't access them beforehand?
+          obj.domain = content.domain;
+          obj.timesteps = content.timesteps; // But all three need to be available at the same time before rendering.
+
           var indicesPromise = loadBinData(content.indices).then(function (ab) {
             return new Uint32Array(ab);
           });
@@ -909,15 +919,11 @@
           Do we just loop through some timesteps and make the promises. However, the data size restrictions should be maintained at all times! The data loading function should keep that in mind.
           */
 
-          var valuesPromise = loadBinData(content.timesteps[obj.currentFrameInd].filename).then(function (ab) {
-            return new Uint8Array(ab);
-          }).then(function (ui8) {
+          obj.currentFrameInd = 0;
+          var valuesPromise = obj.timesteps[obj.currentFrameInd].valuesPromise.then(function (ui8) {
             return Float32Array.from(ui8);
           });
           Promise.all([indicesPromise, verticesPromise, valuesPromise]).then(function (d) {
-            // Domain has to be overwritten when the actual data is loaded. Afterwards, only the 'c' property should change with the timesteps. By changing the global color value ranges the colorbar can be adjusted by the user.]
-            obj.domain = content.domain;
-            obj.timesteps = content.timesteps;
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d[0], gl.STATIC_DRAW);
             obj.indicesLength = d[0].length;
@@ -925,6 +931,7 @@
             gl.bufferData(gl.ARRAY_BUFFER, d[1], gl.STATIC_DRAW);
             gl.bindBuffer(gl.ARRAY_BUFFER, valuesBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, d[2], gl.STATIC_DRAW);
+            console.log("time to draw: ", performance.now() - t0, "[ms]");
           }); // then
         }); // fetch
       } // if
@@ -932,6 +939,7 @@
     } // constructor
     // The 'values' are stored as a 'scaled uint8 array' to save memory. The values are retransformed back into the original domain on the GPU by mapping them from [0,255] to 'currentUintRange', which is obtained from the metadata file of this unsteady simulation.
     // The MeshRenderer2D looks at the domain to determine what the full value domain of this small multiple will be. It looks at the c to determine the uint compression domain.
+    // Domain has to be overwritten when the actual data is loaded. Afterwards, only the 'c' property should change with the timesteps. By changing the global color value ranges the colorbar can be adjusted by the user.]
 
 
     _createClass(Mesh2D, [{
@@ -953,6 +961,7 @@
     }, {
       key: "memoryUsed",
       get: function get() {
+        // This is currently only the memory the values files take up.
         var obj = this;
         var memory = 0;
         obj.timesteps.forEach(function (t) {
@@ -977,20 +986,14 @@
       key: "timestepCurrentFrame",
       value: function timestepCurrentFrame(t) {
         // Different players can start at different times. However, if a dt is passed in to increment the current frame the incrementing can truncate a part of the dt, leading to different players to be at different times. Therefore the actual time is expected. If t is outside of the time range available, the min or max frame indices are returned as appropriate.
-        var obj = this;
-        var i = 0;
-        var dist = Number.POSITIVE_INFINITY;
-        obj.timesteps.forEach(function (timestep, j) {
-          var d = Math.abs(timestep.t - t);
+        var obj = this; // Find the closest timestep.
 
-          if (d < dist) {
-            dist = d;
-            i = j;
-          } // if
+        var t_closest = obj.timesteps.reduce(function (closest, timestep) {
+          return Math.abs(closest.t - t) < Math.abs(timestep.t - t) ? closest : timestep;
+        }); // reduce
+        // Set the index of the closest timestep as the current frame index
 
-        }); // forEach
-
-        obj.currentFrameInd = i;
+        obj.currentFrameInd = obj.timesteps.indexOf(t_closest);
       } // timestepCurrentFrame
       // This should be reworked into an outside call, because eventually it would be beneficial if the files can be loaded by a library system, and the mesh is only responsible to declare what it would like?
 
@@ -1004,19 +1007,9 @@
       set: function set(i) {
         // When the index is set automatically manage the data. This will allow the data to be loaded once and kept in memory.
         var obj = this;
-        obj._currentFrameInd = i; // For now just load the current frame here, and save it to the timestep.
-
-        var timestep = obj.timesteps[obj._currentFrameInd];
-
-        if (timestep.valuesPromise == undefined) {
-          timestep.valuesPromise = loadBinData(timestep.filename).then(function (ab) {
-            return new Uint8Array(ab);
-          });
-          timestep.valuesPromise.then(function (ui8) {
-            timestep.byteLength = ui8.byteLength;
-          });
-        } // if
-
+        obj._currentFrameInd = i;
+        obj.buffering(i);
+        obj.updateCurrentFrameBuffer();
       }
     }, {
       key: "updateCurrentFrameBuffer",
@@ -1033,6 +1026,90 @@
           gl.bufferData(gl.ARRAY_BUFFER, f32, gl.STATIC_DRAW);
         });
       } // updateCurrentFrameBuffer
+
+      /*
+      MEMORY HANDLING
+      
+      - DONE: Buffer the required files ASAP
+      - DONE: Unload all files when prompted
+      - Prevent buffering if off-screen 
+          Just unload, and rely that they won't be updated? OR - Manipulate the limit they are allowed to use, and then let the object handle itself.
+      - The data requests/buffering should be throttled.
+          How to throttle them? The throttle should be consistent across several items also, so that the files that will be needed earlier are transported earlier.
+          Within one individual it's possible to just wrap them up into a throttling promise, which waits for everything in hte queue before to be executed, and then starts doing it's thing. Maybe thi swould work across several items also as the queues would clear alongside each other.
+      
+      */
+
+    }, {
+      key: "buffering",
+      value: function buffering(i_closest) {
+        // `t' is the current playing time. For only forward playing any timesteps before this one can be unloaded, and any after need to be loaded, up to the limit. For t approaching max t the initial timesteps should start loading to allow the player to loop around.
+        var obj = this;
+        var n_all = obj.timesteps.length;
+        var n_max = Math.floor(obj.limitByteLength / obj.frameByteLength); // Maybe chain the required promises somehow?
+        // Maybe it's better to unload all not needed promises at the beginning?? And then focus on the ones that need to be loaded?
+
+        var _loop = function _loop(i) {
+          var timestep = obj.timesteps[(i_closest + i) % n_all];
+
+          if (i < n_max) {
+            // Should hve a value promise, but doesn't yet.
+            if (!timestep.valuesPromise) {
+              timestep.valuesPromise = loadBinData(timestep.filename).then(function (ab) {
+                return new Uint8Array(ab);
+              });
+              timestep.valuesPromise.then(function (ui8) {
+                timestep.byteLength = ui8.byteLength;
+              });
+            } // if
+
+          } else {
+            // The promise should be deleted to conserve memory. The byte length must be the same for all of them anyway. However, some allowance will have to be made for the 32 bit arrays - 3 of them in total. The length of the values array in bytes is given by the 32 float arrays along with the assumption of the uint8 encoding anyway.
+            delete timestep.valuesPromise;
+            delete timestep.byteLength;
+          } // if
+
+        };
+
+        for (var i = 0; i < n_all; i++) {
+          _loop(i);
+        } // for
+
+      } // buffering
+      // So the buffering needs to be updated on the go, but all the data should be unloaded when the item is no longer on screen, and then reloaded when it comes back on screen. - Just have an `unload' method? I guess the data loaded in the buffers will persist until changed?
+
+    }, {
+      key: "t_buffered",
+      get: function get() {
+        var obj = this; // Go through the promises and return the lates one in a row that is ready. We know that a promise is ready if the timestep has a byteLength declared.
+
+        var t_current = obj.timesteps[obj.currentFrameInd];
+        var t_buffered = t_current ? t_current.t : 0;
+
+        for (var i = obj.currentFrameInd; i < obj.timesteps.length; i++) {
+          var timestep = obj.timesteps[i];
+
+          if (timestep.byteLength) {
+            t_buffered = timestep.t;
+          } else {
+            return t_buffered;
+          } // if
+
+        } // for
+
+
+        return t_buffered;
+      } // t_buffered
+
+    }, {
+      key: "unload",
+      value: function unload() {
+        var obj = this;
+        obj.timesteps.forEach(function (timestep) {
+          delete timestep.valuesPromise;
+          delete timestep.byteLength;
+        }); // forEach
+      } // unload
 
     }]);
 
@@ -1052,69 +1129,6 @@
   	v: [870.4389253677576, 977.0020293037556]
   }
   */
-
-  function html2element(html) {
-    var template = document.createElement('template');
-    template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
-
-    return template.content.firstChild;
-  } // html2element
-
-  function svg2element(svg) {
-    var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g.innerHTML = svg.trim();
-    return g.firstChild;
-  } // svg2element
-
-  var scaleLinear = /*#__PURE__*/function () {
-    function scaleLinear() {
-      _classCallCheck(this, scaleLinear);
-
-      this._domain = [0, 1];
-      this._range = [0, 1];
-    }
-
-    _createClass(scaleLinear, [{
-      key: "domain",
-      get: // domain
-      function get() {
-        return this._domain;
-      } // domain
-      ,
-      set: function set(d) {
-        this._domain = d;
-      }
-    }, {
-      key: "range",
-      get: // range
-      function get() {
-        return this._range;
-      } // range
-      ,
-      set: function set(r) {
-        this._range = r;
-      }
-    }, {
-      key: "dom2range",
-      value: function dom2range(v) {
-        return mapSpaceAValueToSpaceB(v, this.domain, this.range);
-      } // dom2range
-
-    }, {
-      key: "range2dom",
-      value: function range2dom(v) {
-        return mapSpaceAValueToSpaceB(v, this.range, this.domain);
-      } // range2dom
-
-    }]);
-
-    return scaleLinear;
-  }(); // scaleLinear
-
-  function mapSpaceAValueToSpaceB(v, A, B) {
-    return (v - A[0]) / (A[1] - A[0]) * (B[1] - B[0]) + B[0];
-  } // mapSpaceAValueToSpaceB
-   // joinDataToElements
 
   function play(width, y) {
     // Calculate the size of the triangle, and where the drawing should begin.
@@ -1142,7 +1156,7 @@
   } // pausePath
 
 
-  var template$d = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
+  var template$c = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
   // textHeight + textBottomMargin + rectHighlightHeightDelta + rectHeight/2 - H/2
 
   var PlayButton = /*#__PURE__*/function () {
@@ -1153,7 +1167,7 @@
       this.y = 20 * 2 * Math.sqrt(3) / 3 / 2;
       this.width = 20;
       var obj = this;
-      obj.node = svg2element(template$d);
+      obj.node = svg2element(template$c);
     } // constructor
 
 
@@ -1171,7 +1185,7 @@
   }(); // PlayButton
 
   var defaultRectAttributes = "stroke=\"white\" stroke-width=\"2px\"";
-  var template$c = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
+  var template$b = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
 
   var PlayBarAnnotation = /*#__PURE__*/function () {
     // y = textHeight + textBottomMargin + highlightHeightDelta
@@ -1182,7 +1196,7 @@
       this.height = 10;
       this.dh = 4;
       var obj = this;
-      obj.node = svg2element(template$c);
+      obj.node = svg2element(template$b);
       obj.background = obj.node.querySelector("rect.background");
       obj.buffering = obj.node.querySelector("rect.buffering");
       obj.foreground = obj.node.querySelector("rect.foreground");
@@ -1205,7 +1219,7 @@
 
     _createClass(PlayBarAnnotation, [{
       key: "update",
-      value: function update(t_play, t_buffer) {
+      value: function update(t_play, t_buffered) {
         var obj = this;
         var y = obj.y;
         var x = obj.tscale.dom2range(obj.config.starttime);
@@ -1215,7 +1229,7 @@
         obj.background.setAttribute("height", obj.height);
         obj.buffering.setAttribute("y", y);
         obj.buffering.setAttribute("x", x);
-        obj.buffering.setAttribute("width", obj.width * obj.timeFraction(t_buffer));
+        obj.buffering.setAttribute("width", obj.width * obj.timeFraction(t_buffered));
         obj.buffering.setAttribute("height", obj.height);
         obj.foreground.setAttribute("y", y);
         obj.foreground.setAttribute("x", x);
@@ -1280,7 +1294,7 @@
     r.y.baseVal.value = y;
   } // unhighlightRectangle
 
-  var template$b = "<g style=\"cursor: pointer;\"></g>"; // template
+  var template$a = "<g style=\"cursor: pointer;\"></g>"; // template
 
   var PlayBar = /*#__PURE__*/function () {
     // Coordinates in whole svg frame.
@@ -1293,10 +1307,10 @@
       this.annotations = [];
       this.t_min = 0;
       this.t_max = 1;
-      this.t_buffer = 0;
+      this.t_buffered = 0;
       this.t_play = 0;
       var obj = this;
-      obj.node = svg2element(template$b);
+      obj.node = svg2element(template$a);
       obj._tscale = new scaleLinear();
     } // constructor
 
@@ -1373,7 +1387,7 @@
       value: function update() {
         var obj = this;
         obj.chapters.forEach(function (chapter) {
-          chapter.update(obj.t_play, obj.t_buffer);
+          chapter.update(obj.t_play, obj.t_buffered);
         });
       } // update
 
@@ -1400,7 +1414,7 @@
     return PlayBar;
   }(); // PlayBar
 
-  var template$a = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
+  var template$9 = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
 
   var PlayControls = /*#__PURE__*/function () {
     function PlayControls() {
@@ -1410,7 +1424,7 @@
       this.textBottomMargin = 2;
       this.highlightHeightDelta = 3;
       var obj = this;
-      obj.node = html2element(template$a);
+      obj.node = html2element(template$9);
       var y = obj.textHeight + obj.textBottomMargin + obj.highlightHeightDelta; // Make a play button.
 
       obj.button = new PlayButton();
@@ -1433,9 +1447,9 @@
       obj.bar.node.addEventListener("click", function (event) {
         // On click the playbar should register the correct time.
         // The tscale takes inputs in the svg coordinates, and the event returns them in the client coordinates. Therefore the client coordinates must be adjusted for the position of the SVG.
-        var x1 = event.clientX;
-        var x0 = obj.node.getBoundingClientRect().x;
-        var t = obj.bar.tscale.range2dom(x1 - x0); // Now just set the t to the right value, and update the view.
+        // Because there is a transformation applied the scale needs to be corrected for that also. Maybe calculate where 
+        var barrect = obj.bar.node.getBoundingClientRect();
+        var t = obj.bar.t_min + (event.clientX - barrect.x) / barrect.width * (obj.bar.t_max - obj.bar.t_min); // Now just set the t to the right value, and update the view.
 
         obj.bar.t_play = t;
         obj.bar.update(); // The playtime changed, therefore pause the video.
@@ -1452,6 +1466,28 @@
 
 
     _createClass(PlayControls, [{
+      key: "t_play",
+      get: function get() {
+        return this.bar.t_play;
+      } // get t_play
+      ,
+      set: function set(t) {
+        this.bar.t_play = t;
+        this.bar.update();
+      } // set t_play
+
+    }, {
+      key: "t_buffered",
+      get: function get() {
+        this.bar.t_buffered;
+      } // get t_buffer
+      ,
+      set: function set(t) {
+        this.bar.t_buffered = t;
+        this.bar.update();
+      } // set t_buffered
+
+    }, {
       key: "t_domain",
       get: // set t_domain
       function get() {
@@ -1496,78 +1532,6 @@
     return PlayControls;
   }(); // PlayControls
 
-  // On the other hand, when discussing the tags it's good to avoid misunderstaning.
-  // Furthermore, it would be good to just accept someone elses tags. What about clicking on the users name? Then select adopting their annotations? How do you revert back? A clear all button? Allow reloading of annotations for editing??
-  // Anyway, the commenting should show all possible annotations.
-  // What about showing the most popular annotations by default?? Ideally, the annotations would show up when the comment addressing them would be hovered over.
-
-  var template$9 = "\n<div class=\"playcontrols-wrapper\"></div>\n"; // template
-
-  var interactivePlayerUI = /*#__PURE__*/function () {
-    function interactivePlayerUI() {
-      _classCallCheck(this, interactivePlayerUI);
-
-      var obj = this;
-      obj.node = html2element$1(template$9); // Add in a playbar
-
-      obj.playcontrols = new PlayControls();
-      obj.node.appendChild(obj.playcontrols.node); // Add onhover events to the tagged keywords in the text? That allows the user to show exactly which part of the data they meant, and also to compare it to others interpretations.
-      // What happens when the user replies in a thread for which he does not have an annotation for? For replies, it's the parent annotations that get pasted in. But what if you're making a general comment without having the playbar annotations? Which one should get selected? Or should just the text tags be retained? But in that case I can't show the different versions. Maybe keep the tag names, but also keep the annotations separate - that way they can only be added for mouseover if they're in hte text? And in the text they need to be marked using a #? But then no disagreements with the thread parent comment are possible... How to deal with this? Only allow the user to use their own annotations?
-      // Anyyyyyway, first include the tree navigation
-    } // constructor
-
-    /*
-    Getters and setters to simplify the API:
-    t_domain
-    t
-    playing
-    skipped
-    user
-    */
-
-
-    _createClass(interactivePlayerUI, [{
-      key: "playing",
-      get: function get() {
-        return this.playcontrols.playing;
-      } // get playing
-
-    }, {
-      key: "skipped",
-      get: function get() {
-        return this.playcontrols.skipped;
-      } // get skipped
-      ,
-      set: function set(v) {
-        this.playcontrols.skipped = false;
-      } // set skipped
-
-    }, {
-      key: "t_play",
-      get: function get() {
-        return this.playcontrols.bar.t_play;
-      } // get t_play
-      ,
-      set: function set(t) {
-        this.playcontrols.bar.t_play = t;
-        this.playcontrols.bar.update();
-      } // set t_play
-
-    }, {
-      key: "t_domain",
-      get: function get() {
-        return this.playcontrols.t_domain;
-      } // get t_domain
-      ,
-      set: function set(t) {
-        this.playcontrols.t_domain = t;
-      } // set t_domain
-
-    }]);
-
-    return interactivePlayerUI;
-  }(); // interactivePlayerUI
-
   // It's advantageous to inherit from ViewFrame2D because the geometry changes on the go - first some dummy geometry is specified, and after the actual geometry is loaded in that just gets automatically used on next FrameAnimationRate step. If the ViewFrame is a module then the UnsteadyPlayer has to monitor when the geometry changes, and update the ViewFrame accordingly.
   // Because it's advantageous to inherit from ViewFrame2D it is also advantageous to create the outside html player wrapper in it. Then the unsteady player only needs to add other modules into it.
 
@@ -1593,10 +1557,11 @@
       obj.dt = 1000 / obj.fps;
       obj.timelastdraw = 0; // Add in precofigured UI. The metadata filename identifies this small multiple.
 
-      obj.ui = new interactivePlayerUI();
+      obj.ui = new PlayControls();
       obj.node.querySelector("div.controls").appendChild(obj.ui.node);
       return _this;
     } // constructor
+    // The update runs at requestAnimationFrame rate, so it can b eused to pass the messages between hte modules.
 
 
     _createClass(UnsteadyPlayer2D, [{
@@ -1619,8 +1584,10 @@
           } // if
 
         } // if
-        // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
 
+
+        obj.ui.t_buffered = obj.geometry.t_buffered; // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
+        // This should be moved to the constructor, as it only needs to be executed once!!
 
         obj.ui.t_domain = obj.geometry.domain.t;
       } // update
@@ -1646,8 +1613,6 @@
           obj.ui.t_play = obj.geometry.currentTime;
         } // if
 
-
-        obj.geometry.updateCurrentFrameBuffer();
       } // incrementTimeStep
 
     }, {
@@ -1816,7 +1781,7 @@
       // NOTE: seednode is a `treenode' instance, but parents and children are `taskgroup' instances. The level is only defined for the node because it can change when the user interacts with the tree.
 
       var obj = this;
-      obj.node = svg2element$1(template$8);
+      obj.node = svg2element(template$8);
       obj.author = author, obj.level = seednode.level;
       obj.parents = seednode.connections.parents;
       obj.children = [seednode.connections.group];
@@ -2201,7 +2166,7 @@
       this.nbundlesout = 0;
       this.hidden = false;
       var obj = this;
-      obj.node = svg2element$1(template$7); // The treegroup holds all the connections of a particular group.
+      obj.node = svg2element(template$7); // The treegroup holds all the connections of a particular group.
 
       obj.connections = treegroup;
       var label = obj.node.querySelector("g.label");
@@ -2756,7 +2721,7 @@
 
       obj.hierarchy = new TreeHierarchy(); // Drawing
 
-      obj.node = svg2element$1(template$6);
+      obj.node = svg2element(template$6);
       obj.gnodes = obj.node.querySelector("g.nodes");
       obj.gbundles = obj.node.querySelector("g.bundles");
       obj.color = new scaleCategorical(); // The tree is redrawn on every interaction. To allow the user to ee where on the tree they currently are just highlight the group that contains all the relevant items.
@@ -2896,7 +2861,7 @@
 
       var obj = this;
       obj.item = item;
-      obj.node = svg2element$1(template$5);
+      obj.node = svg2element(template$5);
     } // constructor
 
 
@@ -2947,7 +2912,7 @@
       _classCallCheck(this, MiniMapViewRect);
 
       var obj = this;
-      obj.node = svg2element$1(template$4); // Make it draggable.
+      obj.node = svg2element(template$4); // Make it draggable.
 
       var active, clickedItemOffset;
 
@@ -3036,7 +3001,7 @@
       _classCallCheck(this, CorrelationsMenu);
 
       var obj = this;
-      obj.node = html2element$1(template$3); // axis = 0/1 for x/y
+      obj.node = html2element(template$3); // axis = 0/1 for x/y
 
       obj.axis = axis;
     } // constructor
@@ -3058,7 +3023,7 @@
 
         correlations.forEach(function (c) {
           var sign = c[obj.axis] > 0 ? "+" : "-";
-          var li = html2element$1("<li class=\"hover-highlight\">".concat(sign, " ").concat(c.name, "</li>"));
+          var li = html2element("<li class=\"hover-highlight\">".concat(sign, " ").concat(c.name, "</li>"));
           ul.appendChild(li); // Color it.
 
           li.style.backgroundColor = green(Math.abs(c[obj.axis])); // On click the menu should updat ethe current selection, close itself, and launch the appropriate effect.
@@ -3185,7 +3150,7 @@
       this.xoffset = 300;
       this.yoffset = 300;
       var obj = this;
-      obj.node = svg2element$1(template$2);
+      obj.node = svg2element(template$2);
       obj.th = obj.node.querySelector("text.horizontal");
       obj.tv = obj.node.querySelector("text.vertical");
 
@@ -3392,7 +3357,7 @@
       this.height = 200;
       this._icons = [];
       var obj = this;
-      obj.node = svg2element$1(template$1);
+      obj.node = svg2element(template$1);
       obj.node.setAttribute("width", obj.width);
       obj.node.setAttribute("height", obj.height); // The rectangle should have the proportions of the screen.
       // Abstract the viewrect out??
@@ -3401,9 +3366,9 @@
       obj.node.appendChild(obj.viewrect.node); // Scrolling is added to the the rect externally!
       // Create the scales to map the necessary range to the size of the svg.
 
-      obj.xscale = new scaleLinear$1();
+      obj.xscale = new scaleLinear();
       obj.xscale.range = [0, obj.width];
-      obj.yscale = new scaleLinear$1();
+      obj.yscale = new scaleLinear();
       obj.yscale.range = [0, obj.height]; // Maybe it's just simpler to keep re-rendering the MiniMap? So the update doesn't have to be called everywhere?
       // Maybe not, because a lot of the time it's just the re-centering of hte data that is needed?
       // Let the minimap host the correlations.
@@ -3598,7 +3563,7 @@
 
       var obj = this;
       obj.svg = svg;
-      obj.polygon = svg.appendChild(svg2element$1(template)); // An internal boundary is used for all the drawing, and an external boundary is presented to other interested modules. Only the exposed boundary is observable. The exposed boundary is used to determine the lasso selection.
+      obj.polygon = svg.appendChild(svg2element(template)); // An internal boundary is used for all the drawing, and an external boundary is presented to other interested modules. Only the exposed boundary is observable. The exposed boundary is used to determine the lasso selection.
 
       obj._boundary = [];
       obj.boundary = []; // Should the boundary be stored at all??
@@ -3878,7 +3843,7 @@
 
         var iconobj = {
           item: item,
-          node: html2element$1(icontemplate)
+          node: html2element(icontemplate)
         }; // return
         // Give the correct initial color, and append it.
 
@@ -4422,7 +4387,7 @@
         }); // reduce
         // What do if the variable is categorical? Now the correlation also has the mapping attribute.
 
-        var scale = new scaleLinear$1();
+        var scale = new scaleLinear();
         scale.domain = d.domain;
         scale.range = d.range; // Actually loop through the items and arrange them.
 
@@ -6293,6 +6258,12 @@
     cat: "brown",
     entropy2d: "./data/0000/unsteady_contour2d_meta.json"
   }]; // data
+
+  /*
+  const data = [
+  {taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
+  ]; // data
+  */
   // Items
 
   var workspace = new NavigationManager();
@@ -6336,6 +6307,7 @@
   workspace.updateRenderingItems = function (items) {
     renderer.items = items;
   }; // updateRenderingItems
+  // How to do the memory handling. And how to make it appear in the navigation bar!
 
 
   console.log(workspace, renderer);

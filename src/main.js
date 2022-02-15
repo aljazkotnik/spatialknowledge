@@ -34,6 +34,13 @@ const data = [
 {taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
 ]; // data
 
+/*
+const data = [
+{taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
+]; // data
+*/
+
+
 // Items
 var workspace = new NavigationManager();
 var renderer = new MeshRenderer2D( document.getElementById("canvas") );
@@ -88,13 +95,13 @@ renderer.draw();
 
 
 
-
-
 workspace.updateRenderingItems = function(items){
 	renderer.items = items;
 } // updateRenderingItems
 
 
+
+// How to do the memory handling. And how to make it appear in the navigation bar!
 console.log(workspace, renderer)
 
 
