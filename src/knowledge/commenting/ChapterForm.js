@@ -153,7 +153,7 @@ export default class ChapterForm{
 	if(timestamps.some(t=>!isNaN(t))){
 		// In this case at least one of the values is defined, and should be included.
 	    tag.type = "chapter";
-		tag.timestamps = timestamps;
+		tag.timestamps = JSON.stringify( timestamps );
 	} else {
 		tag.type = "tag";
 	}; // if

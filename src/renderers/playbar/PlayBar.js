@@ -50,35 +50,38 @@ export default class PlayBar{
 	} // for
 	
 	// The creation of the chapters to show after somme annotations have been pushed still needs to be implemented.
-	function makeChapterObj(label, starttime, endtime){
-		return {label: label, starttime: starttime, endtime: endtime==undefined ? obj.t_max : endtime}
+	function makeChapterObj(label, timestamps){
+		// Don't assign 
+		return {
+			label: label, 
+			starttime: timestamps[0]===null ? obj.t_min : timestamps[0], 
+			endtime:   timestamps[1]===null ? obj.t_max : timestamps[1]}
 	} // makeChapterObj
 	
 	
 	// The ultimate way of doing it would be for the annotations to persist below other smaller annotations.
 	let chapters = obj.annotations.reduce((acc, a, i)=>{
 		
+		// Don't curtail hte previous one but instead allow it to draw completely. This allows the chapters to be 'stacked'. Ordering them by start time ensures they all have a handle available.
 		let previous = acc[acc.length - 1];
-		let current = makeChapterObj( a.label, a.starttime, a.endtime );
+		let current = makeChapterObj( a.name, a.timestamps );
 		
 		if(previous.endtime < current.starttime){
-			// Don't curtail hte previous one but instead allow it to draw completely. This allows the chapters to be 'stacked'. Ordering them by start time ensures they all have a handle available.
-			
 			// Push in the needed padding, and then the annotation.
-			acc.push( makeChapterObj( "", previous.endtime, current.starttime ) );
+			acc.push( makeChapterObj( "", [previous.endtime, current.starttime] ) );
 		} // if
 		
 		acc.push( current )
 		
 		if(i==(obj.annotations.length-1) && current.endtime < obj.t_max){
-		    acc.push( makeChapterObj( "", current.endtime, obj.t_max ) )
+		    acc.push( makeChapterObj( "", [current.endtime, obj.t_max] ) )
 		} // if
 		
 		return acc
-	}, [ makeChapterObj("", obj.t_min, obj.t_max) ])
+	}, [ makeChapterObj("", [obj.t_min, obj.t_max]) ])
 	
 	// Cpters need to be sorted by starttime in order for all start points to be visible.
-	obj.chapters = chapters.sort((a,b)=>a.starttime-b.starttime).map(c=>{
+	obj.chapters = chapters.sort((a,b)=>a.starttime-b.starttime || b.endtime-a.endtime).map(c=>{
 		let a = new PlayBarAnnotation(c, obj.tscale);
 		a.y = obj.y;
 		return a;
@@ -97,11 +100,18 @@ export default class PlayBar{
 	})
   } // update
   
-  addchapter(tag){
+  addchapters(tags){
 	// The player may need to be updated when the serverr pushes updates. Also if other users update the annotations it should appear straightaway.
 	let obj = this;
 	
-	// tags are required to have a 'starttime'.
+	// Tags may not have both the startand end time specified. 
+	obj.annotations = obj.annotations.concat(tags);
+	
+	// Update the bar.
+	obj.rebuild();
+	obj.update();
+	
+	/*
 	if(tag.starttime){
 		let i = obj.annotations.findIndex(a=>a.id==tag.id);
 		obj.annotations.splice(i>-1 ? i : 0, i>-1, tag);
@@ -110,5 +120,6 @@ export default class PlayBar{
 		obj.rebuild();
 		obj.update();
 	} // if
+	*/
   } // addchapter
 } // PlayBar

@@ -32,16 +32,17 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	super(gl)
 	let obj = this;
 	
-	
-	// Actual geometry to be drawn.
-	obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename);
-	
 	// The FPS at which to swap out data.
 	obj.fps = 24;
 	obj.dt = 1000 / obj.fps;
 	obj.timelastdraw = 0;
 	
 	
+	// Actual geometry to be drawn. The time domain will change after the geometry loads in its data.
+	obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename);
+	obj.geometry.metadatapromise.then(content=>{
+		obj.ui.t_domain = content.domain.t;
+	}) //then
 	
 	// Add in precofigured UI. The metadata filename identifies this small multiple.
 	obj.ui = new PlayControls();
@@ -71,12 +72,22 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	} // if
     
 	
-	obj.ui.t_buffered = obj.geometry.t_buffered;
+	// Try to prevent unnecessary updating.
+	if(obj.ui.t_buffered != obj.geometry.t_buffered){
+		console.log("Changing t_buffered")
+		obj.ui.t_buffered = obj.geometry.t_buffered;
+	} // if
+	
     
 	// The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
 	
 	// This should be moved to the constructor, as it only needs to be executed once!!
-	obj.ui.t_domain = obj.geometry.domain.t;
+	/*
+	if(obj.ui.t_domain != obj.geometry.domain.t){
+		console.log("Changing t_domain")
+		obj.ui.t_domain = obj.geometry.domain.t;
+	} // if
+	*/
   } // update
   
   

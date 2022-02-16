@@ -255,23 +255,24 @@ export default class KnowledgeManager{
   
   purge(){
 	let obj = this;
+	console.log("Purging")
 	// What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
 	
 	// Purge the navigation tree of obsolete knowledge.
 	obj.nm.tree.purge();
 	
 	
-	console.log("Purging")
+	
   } // purge
 	
   process(d){
 	let obj = this;
-	
+	// console.log("Process", d)
 
 	// How will this processing work? First filter by taskId, and then filter by type?
 	// I'm expecting to see tags, chapters, comments for now.
 	
-	
+	// CHAPTERS SHOULD BE ADDED HERE TOO!!!
 	// All the tags can be pushed to the tree. But this is really pushed, not replaced!!
 	let tags = d.filter(a=>a.type==="tag");
 	tags.forEach(tag=>{
@@ -280,10 +281,34 @@ export default class KnowledgeManager{
 	obj.nm.tree.update();
 	
 	
+	
+	// CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
 	// The chapters need to be distributed to hte appropriate items.
+	let chapters = d.filter(a=>a.type==="chapter");
+	console.log("Chapters", chapters)
+	
+	let distribution = chapters.reduce((acc,c)=>{
+		
+		// Chpters should have their timestamps parsed back into JSON objects.
+		c.timestamps = JSON.parse(c.timestamps);
+		
+		if(acc[c.taskId]){
+			acc[c.taskId].push(c);
+		} else {
+			acc[c.taskId] = [c];
+		} // if
+		return acc
+	},{})
 	
 	
-	console.log("Process", d)
+	obj.nm.items.forEach(item=>{
+		if(distribution[item.task.taskId]){
+			// The chapters are routed to the playbar.
+			item.renderer.ui.bar.addchapters(distribution[item.task.taskId]);
+			console.log(`Chapters of ${ item.task.taskId }:`, distribution[item.task.taskId])
+		} // if
+	}) // forEach
+	
   } // process
 } // KnowledgeManager
 

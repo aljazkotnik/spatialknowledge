@@ -82,9 +82,8 @@ export default class Mesh2D{
 	
 	// The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
 	if(unsteadyMetadataFilename){
-		fetch(unsteadyMetadataFilename)
-		  .then(res=>res.json())
-		  .then(content=>{
+		obj.metadatapromise = fetch(unsteadyMetadataFilename).then(res=>res.json())
+		obj.metadatapromise.then(content=>{
 			
 			
 			// The domain and timesteps get assigned within the batch promise to make sure outside processes can't access them beforehand?

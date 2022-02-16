@@ -933,9 +933,10 @@
       var t0 = performance.now(); // The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
 
       if (unsteadyMetadataFilename) {
-        fetch(unsteadyMetadataFilename).then(function (res) {
+        obj.metadatapromise = fetch(unsteadyMetadataFilename).then(function (res) {
           return res.json();
-        }).then(function (content) {
+        });
+        obj.metadatapromise.then(function (content) {
           // The domain and timesteps get assigned within the batch promise to make sure outside processes can't access them beforehand?
           obj.domain = content.domain;
           obj.timesteps = content.timesteps; // But all three need to be available at the same time before rendering.
@@ -1388,39 +1389,40 @@
         // The creation of the chapters to show after somme annotations have been pushed still needs to be implemented.
 
 
-        function makeChapterObj(label, starttime, endtime) {
+        function makeChapterObj(label, timestamps) {
+          // Don't assign 
           return {
             label: label,
-            starttime: starttime,
-            endtime: endtime == undefined ? obj.t_max : endtime
+            starttime: timestamps[0] === null ? obj.t_min : timestamps[0],
+            endtime: timestamps[1] === null ? obj.t_max : timestamps[1]
           };
         } // makeChapterObj
         // The ultimate way of doing it would be for the annotations to persist below other smaller annotations.
 
 
         var chapters = obj.annotations.reduce(function (acc, a, i) {
+          // Don't curtail hte previous one but instead allow it to draw completely. This allows the chapters to be 'stacked'. Ordering them by start time ensures they all have a handle available.
           var previous = acc[acc.length - 1];
-          var current = makeChapterObj(a.label, a.starttime, a.endtime);
+          var current = makeChapterObj(a.name, a.timestamps);
 
           if (previous.endtime < current.starttime) {
-            // Don't curtail hte previous one but instead allow it to draw completely. This allows the chapters to be 'stacked'. Ordering them by start time ensures they all have a handle available.
             // Push in the needed padding, and then the annotation.
-            acc.push(makeChapterObj("", previous.endtime, current.starttime));
+            acc.push(makeChapterObj("", [previous.endtime, current.starttime]));
           } // if
 
 
           acc.push(current);
 
           if (i == obj.annotations.length - 1 && current.endtime < obj.t_max) {
-            acc.push(makeChapterObj("", current.endtime, obj.t_max));
+            acc.push(makeChapterObj("", [current.endtime, obj.t_max]));
           } // if
 
 
           return acc;
-        }, [makeChapterObj("", obj.t_min, obj.t_max)]); // Cpters need to be sorted by starttime in order for all start points to be visible.
+        }, [makeChapterObj("", [obj.t_min, obj.t_max])]); // Cpters need to be sorted by starttime in order for all start points to be visible.
 
         obj.chapters = chapters.sort(function (a, b) {
-          return a.starttime - b.starttime;
+          return a.starttime - b.starttime || b.endtime - a.endtime;
         }).map(function (c) {
           var a = new PlayBarAnnotation(c, obj.tscale);
           a.y = obj.y;
@@ -1442,21 +1444,25 @@
       } // update
 
     }, {
-      key: "addchapter",
-      value: function addchapter(tag) {
+      key: "addchapters",
+      value: function addchapters(tags) {
         // The player may need to be updated when the serverr pushes updates. Also if other users update the annotations it should appear straightaway.
-        var obj = this; // tags are required to have a 'starttime'.
+        var obj = this; // Tags may not have both the startand end time specified. 
 
-        if (tag.starttime) {
-          var i = obj.annotations.findIndex(function (a) {
-            return a.id == tag.id;
-          });
-          obj.annotations.splice(i > -1 ? i : 0, i > -1, tag); // Update the bar.
+        obj.annotations = obj.annotations.concat(tags); // Update the bar.
 
-          obj.rebuild();
-          obj.update();
+        obj.rebuild();
+        obj.update();
+        /*
+        if(tag.starttime){
+        	let i = obj.annotations.findIndex(a=>a.id==tag.id);
+        	obj.annotations.splice(i>-1 ? i : 0, i>-1, tag);
+        
+        	// Update the bar.
+        	obj.rebuild();
+        	obj.update();
         } // if
-
+        */
       } // addchapter
 
     }]);
@@ -1529,7 +1535,7 @@
     }, {
       key: "t_buffered",
       get: function get() {
-        this.bar.t_buffered;
+        return this.bar.t_buffered;
       } // get t_buffer
       ,
       set: function set(t) {
@@ -1598,14 +1604,18 @@
 
       _this = _super.call(this, gl);
 
-      var obj = _assertThisInitialized(_this); // Actual geometry to be drawn.
+      var obj = _assertThisInitialized(_this); // The FPS at which to swap out data.
 
-
-      obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename); // The FPS at which to swap out data.
 
       obj.fps = 24;
       obj.dt = 1000 / obj.fps;
-      obj.timelastdraw = 0; // Add in precofigured UI. The metadata filename identifies this small multiple.
+      obj.timelastdraw = 0; // Actual geometry to be drawn. The time domain will change after the geometry loads in its data.
+
+      obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename);
+      obj.geometry.metadatapromise.then(function (content) {
+        obj.ui.t_domain = content.domain.t;
+      }); //then
+      // Add in precofigured UI. The metadata filename identifies this small multiple.
 
       obj.ui = new PlayControls();
       obj.node.querySelector("div.controls").appendChild(obj.ui.node);
@@ -1634,12 +1644,23 @@
           } // if
 
         } // if
+        // Try to prevent unnecessary updating.
 
 
-        obj.ui.t_buffered = obj.geometry.t_buffered; // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
+        if (obj.ui.t_buffered != obj.geometry.t_buffered) {
+          console.log("Changing t_buffered");
+          obj.ui.t_buffered = obj.geometry.t_buffered;
+        } // if
+        // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
         // This should be moved to the constructor, as it only needs to be executed once!!
 
-        obj.ui.t_domain = obj.geometry.domain.t;
+        /*
+        if(obj.ui.t_domain != obj.geometry.domain.t){
+        	console.log("Changing t_domain")
+        	obj.ui.t_domain = obj.geometry.domain.t;
+        } // if
+        */
+
       } // update
 
     }, {
@@ -1820,7 +1841,7 @@
         })) {
           // In this case at least one of the values is defined, and should be included.
           tag.type = "chapter";
-          tag.timestamps = timestamps;
+          tag.timestamps = JSON.stringify(timestamps);
         } else {
           tag.type = "tag";
         }
@@ -5723,18 +5744,20 @@
     }, {
       key: "purge",
       value: function purge() {
-        var obj = this; // What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
+        var obj = this;
+        console.log("Purging"); // What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
         // Purge the navigation tree of obsolete knowledge.
 
         obj.nm.tree.purge();
-        console.log("Purging");
       } // purge
 
     }, {
       key: "process",
       value: function process(d) {
-        var obj = this; // How will this processing work? First filter by taskId, and then filter by type?
+        var obj = this; // console.log("Process", d)
+        // How will this processing work? First filter by taskId, and then filter by type?
         // I'm expecting to see tags, chapters, comments for now.
+        // CHAPTERS SHOULD BE ADDED HERE TOO!!!
         // All the tags can be pushed to the tree. But this is really pushed, not replaced!!
 
         var tags = d.filter(function (a) {
@@ -5744,9 +5767,34 @@
           obj.nm.tree.addtagannotation(tag);
         }); // forEach
 
-        obj.nm.tree.update(); // The chapters need to be distributed to hte appropriate items.
+        obj.nm.tree.update(); // CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
+        // The chapters need to be distributed to hte appropriate items.
 
-        console.log("Process", d);
+        var chapters = d.filter(function (a) {
+          return a.type === "chapter";
+        });
+        console.log("Chapters", chapters);
+        var distribution = chapters.reduce(function (acc, c) {
+          // Chpters should have their timestamps parsed back into JSON objects.
+          c.timestamps = JSON.parse(c.timestamps);
+
+          if (acc[c.taskId]) {
+            acc[c.taskId].push(c);
+          } else {
+            acc[c.taskId] = [c];
+          } // if
+
+
+          return acc;
+        }, {});
+        obj.nm.items.forEach(function (item) {
+          if (distribution[item.task.taskId]) {
+            // The chapters are routed to the playbar.
+            item.renderer.ui.bar.addchapters(distribution[item.task.taskId]);
+            console.log("Chapters of ".concat(item.task.taskId, ":"), distribution[item.task.taskId]);
+          } // if
+
+        }); // forEach
       } // process
 
     }]);

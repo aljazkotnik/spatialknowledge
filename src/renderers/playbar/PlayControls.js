@@ -106,7 +106,7 @@ export default class PlayControls{
   } // set t_play
   
   get t_buffered(){
-	this.bar.t_buffered;
+	return this.bar.t_buffered;
   } // get t_buffer
   
   set t_buffered(t){
