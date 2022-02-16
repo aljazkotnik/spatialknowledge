@@ -49,7 +49,7 @@ export default class Item{
 	// Maybe any child that is contained by obj.node. but not the viewport node?
 	obj.node.onmousedown = function(e){
 	  if(obj.node.contains(e.target) && !obj.viewnode.contains(e.target) && obj.node.isConnected){
-		e.preventDefault();
+		// e.preventDefault();
 		let rect = obj.node.getBoundingClientRect();
 		
 		active = true;

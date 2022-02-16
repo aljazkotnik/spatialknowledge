@@ -21,7 +21,7 @@ import Item from "./Item.js";
 
 // Rendering modules
 import UnsteadyPlayer2D from "../renderers/UnsteadyPlayer2D.js";
-
+import CommentingSystem from "../knowledge/CommentingSystem.js";
 
 
 
@@ -45,6 +45,17 @@ export default class Individual extends Item {
 	// maybe it's more sensible to let hte renderer create the view node etc?
 	obj.renderer = new UnsteadyPlayer2D(gl, task.entropy2d);
 	obj.viewnode.appendChild(obj.renderer.node)
+	
+	
+	// Add in a Commenting system also.
+	obj.commenting = new CommentingSystem(task.taskId);
+	obj.node.querySelector("div.commenting").appendChild(obj.commenting.node);
+	
+	// Maybe the chapterform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
+	// The chapterform needs to have access to the playbar current time.
+	obj.commenting.chapterform.t = function(){
+		return obj.renderer.ui.t_play;
+	} // chapterform t.
   } // constructor
   
   checksize(){

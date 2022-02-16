@@ -216,8 +216,8 @@ export default class MeshRenderer2D{
 	*/
 
 	// cmin/cmax give the global (for all small multiples) colorbar range.
-	gl.uniform1f(locations.cmin, obj.globalColormapRange[0] ) // 0   880
-	gl.uniform1f(locations.cmax, obj.globalColormapRange[1] ) // 255   920
+	gl.uniform1f(locations.cmin, obj.colormapRange[0] ) // 0   880
+	gl.uniform1f(locations.cmax, obj.colormapRange[1] ) // 255   920
 	
 	// uint_cmin/uint_cmax give the local (particular small multiple) colorbar range,
 	gl.uniform1f(locations.uint_cmin, geometry.currentUintRange[0] ) // 0   880
@@ -264,6 +264,14 @@ export default class MeshRenderer2D{
 	
 	return item.renderer.isOnScreen && !isCovered
   } // isItemVisible
+  
+  
+  get colormapRange(){
+	let obj = this;
+	
+	return obj.customColormapRange ? obj.customColormapRange : obj.globalColormapRange
+  } // get colormapRange
+  
   
   get globalColormapRange(){
 	let obj = this;

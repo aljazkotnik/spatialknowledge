@@ -37,8 +37,6 @@ let template = `
 
 export default class ChapterForm{
   
-  user = "Default user: Aljaz"
-  
   constructor(){
     let obj = this;
 	obj.node = html2element(template);
@@ -46,38 +44,49 @@ export default class ChapterForm{
 	obj.input = obj.node.querySelector("input");
 	
 	// This value will be overwritten during interactions, and is where the tag manager collects the time for the timestamps.
-	obj.t = 0;
 	obj.clear();
 	// The button should cycle through black, green, and red. It will need some way of tracking its current state, and a way to load in existing tags! This will allow users to subsequently change the tag if needed? Maybe this is a bit much for now. It will need a submit button.
 	// If the tag is loaded and the button switches to timestamping then any user can add the ned timesteps. Then the users name needs to be checked in addition. Maybe some way of filtering out the tags that are added? How would that work?
 	// For now add 3 buttons. A starttime endtime and submit button. For the submit button only the start and name need to be filled in. The buttons must also show the selected times!
 	
-	// If one of the times is set, it should check with the other time to make sure it's set correctly.
+	
+	obj.input.onmousedown = function(e){
+		e.stopPropagation()
+	} // onmousedown
 	
 	
-	obj.node.querySelector("button.starttime").onclick = function(){
-		obj.starttime = obj.t;
+	// Update the form when the text is typed in to activate the submit button.
+	obj.input.oninput = function(){
+		obj.update()
+	} // oninput
+	
+	// Maybe it's simpler if the time is assigned from the outside?
+	obj.node.querySelector("button.starttime").onmousedown = function(e){
+		e.stopPropagation();
+		obj.starttime = obj.t();
 		obj.update();
-	} // onclick
+	} // onmousedown
 	
-	obj.node.querySelector("button.endtime").onclick = function(){
-		obj.endtime = obj.t;
+	obj.node.querySelector("button.endtime").onmousedown = function(e){
+		e.stopPropagation();
+		obj.endtime = obj.t();
 		obj.update();
-	} // onclick
+	} // onmousedown
 	
-	obj.node.querySelector("button.submit").onclick = function(){
+	obj.node.querySelector("button.submit").onmousedown = function(e){
+		e.stopPropagation();
 		let tag = obj.tag;
 		if(tag){
 			obj.submit(tag);
 			obj.clear()
 		} // if
-	} // onclick
-	
-	obj.input.oninput = function(){
-		obj.update();
-	} // oninput
+	} // onmousedown
 	
   } // constructor
+  
+  
+  // Dummy method to facilitate outside supply of the timesteps.
+  t(){ return undefined }
   
   update(){
 	let obj = this;
@@ -123,15 +132,36 @@ export default class ChapterForm{
   get tag(){
 	// Chapter tag should belong to the task id so that the observations across multiple slices are available together to the user.
 	let obj = this;
+		
+	
+	
+	let tag = { 
+		name: obj.input.value,
+	} // tag
+	
+	
+	// How should the timestamps be handled? CANNOT always store two values, as the chapterform is ot aware of the extent of the timestep. So do I place undefined in one of the slots? And How would that be interpreted by JSON?
+	
+	let timestamps = [obj.starttime, obj.endtime];
+	
+	/* Expected behavior:
+		[undefined, undefined] -> tag
+	    [  value  , undefined] -> chapter
+		[undefined,   value  ] -> chapter
+		[  value  ,   value  ] -> chapter
+	*/
+	if(timestamps.some(t=>!isNaN(t))){
+		// In this case at least one of the values is defined, and should be included.
+	    tag.type = "chapter";
+		tag.timestamps = timestamps;
+	} else {
+		tag.type = "tag";
+	}; // if
+	
+	// This only collects the name and the optional timestamps. The author is supplied outside, in the knowledge manager, to avoid sending the author into this object.
 	// The time should be defined, but it can also be 0, or less than 0!
-	return obj.user && obj.input.value && ( obj.starttime != undefined ) ? { 
-		taskId: obj.taskId,
-		label: obj.input.value,	
-		author: obj.user,  
-		starttime: obj.starttime, 
-		endtime: obj.endtime,
-		id: `${obj.user} ${Date()}`
-	} : false; 
+	// obj.user && obj.input.value && ( obj.starttime != undefined ) ? tag : false; 
+	return obj.input.value ? tag : false; 
   } // tag
 
   // Placeholder for communication between classes.

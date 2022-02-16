@@ -75,15 +75,14 @@ export default class TreeKnowledge {
 		
 	} // constructor
 	
+	purge(){
+		// Remove all the server-based annotations.
+		this.hierarchy.annotations = [];
+	} // purge
 	
-	
-	set data(d){
-		this.hierarchy.annotations = d;
-	} // set data
-	
-	get data(){
-		return this.hierarchy.annotations;
-	} // get data
+	addtagannotation(tag){
+		this.hierarchy.annotations.push(tag)
+	} // addtagannotation
 	
 	set temporary(d){
 		this.hierarchy.temporary = d;

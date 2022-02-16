@@ -1,3 +1,5 @@
+
+
 /*
 This class should connect with the server to get and save the knowledge captured.
 
@@ -22,7 +24,7 @@ What kind of knowledge is there, and what does it need to interact with, and how
 
 
 All properties	
-id, taskId, author, datetime, name, value, geometry, comment, upvotes, downvotes
+id, taskId, author, datetime, name, value, timestamps, geometry, comment, upvotes, downvotes
 
 
 Compulsory properties:
@@ -33,6 +35,30 @@ The id should be an annotation specific id!!! What should this be??? Just sequen
 
 The tree should only track the knowledge, and not all the taskIds.
 */
+
+
+
+
+/*
+      Database doesn't exist yet - create Knowledge table. Single table could hold all possible annotations.
+      
+      id - annotation id, created on the fly by SQL table
+      type - annotation type (tag, chapter, name-value pair,...)
+      taskId - the taskId it corresponds to
+      author - who contributed the knowledge
+      datetime - when was it contributed, created server side
+      name - tag name
+      value - tag value
+      timestamps - chapter start and end times saved as stringified array
+      geometry - stringified array of [x,y] arrays
+      comment - text comment
+      upvotes - string of authors that upvoted, with special server-side update method
+      downvotes - string of authros who downvoted, with special server-side update method
+*/
+
+
+/*
+
 
 
 // Task 11 is in two groups!!
@@ -81,16 +107,194 @@ const testannotations2 = [
 ]; // atestannotation2
 
 
+*/
+
+
+
+
 
 export default class KnowledgeManager{
   constructor(nm){
 	let obj = this;
 	
 	// `nm' is a NavigationManager object.
-	// For now just push the given annotations to the tree?? Justto see if the tree is working? Where and how are the events attached to the tree?
-	nm.tree.data = testannotations2;
-	nm.tree.update();
+	// Keep a reference to the navigation manager, because the tree navigation must have it's data updated with the knowledge, and the items can be accessed through it.
+	obj.nm = nm;
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	/* WEBSOCKET INITIALISATION
+	So - send over a list of taskIds, and then get back the initial set of comments.
+	Everytime the connection is remade the comments will reload.
+	*/
+
+	
+	const serverAddress = "wss://continuous-brief-nylon.glitch.me"; 
+	setupWebSocket();
+
+	function setupWebSocket(){
+		/*
+		The websocket connection can be closed if there is a connection problem between
+		the client and server, or if the connection is inactive for too long. In case
+		there is an error when opening the connection the client tries to reconnect after
+		1s. It also tries to reconnect if the connection is closed for some reason. To
+		minimise the reconnections due to inactivity the client pings the server every t<300s
+		to maintain the connection. The server pongs it back to keep the connection on its side.
+		*/
+		obj.ws = new WebSocket(serverAddress, "json");
+		
+		obj.ws.onerror = function(){
+			setTimeout(setupWebSocket, 1000);
+		}; // onerror
+		
+	  
+		obj.ws.onopen = function(){
+			// When the connection is initialised the server should send all pertinent comments.
+			obj.ws.send( JSON.stringify({type: "query"}) )
+		  
+			function ping(){
+			   // This should recursively call itself.
+			   console.log("ping")
+			   obj.ws.send(JSON.stringify({type: "ping"}));
+			   setTimeout(ping, 100*1000); // 299*1000   
+			} // ping
+			
+			ping();
+		}; // onopen
+		
+		// This will have to be reworked to differentiate between message and upvotes. Ultimately also annotations.
+		obj.ws.onmessage = function(msg){
+		  // Should differentiate between receiving a 'pong', receiving a single item, and receiving an array.
+		  // A single item is just added, while an array requires a purge of existing comments first.
+		  let action = JSON.parse( msg.data );
+		  console.log(action)
+		  switch(action.type){
+			case "pong":
+			  break;
+			case "query":
+			  // Purge the existing comments
+			  obj.purge();
+			case "relay":
+			  // But relays can be new comments, or they can be upvotes/downvotes/...
+			  obj.process(action.data)
+			  break;
+		  }; // switch
+		  
+		}; // onmessage
+	  
+		obj.ws.onclose = function(){
+			setTimeout(setupWebSocket, 1000);
+		}; // onclose
+	} // setupWebSocket
+
+
+
+
+
+	/* IMPLEMENT THE POSTING DIRECTLY FROM THE FORMS
+	The forms have dummy `submit' methods added to them, which receive the collected information as an input. The rest of the information should be fed into this object here.
+	
+	*/
+
+
+	
+	/* Configure the items to send things to the server
+	WebSockets support sending and receiving: strings, typed arrays (ArrayBuffer) 
+	and Blobs. Javascript objects must be serialized to one of the above types 
+	before sending.
+	
+	type: comment allows the server to handle different packages differently.
+	*/
+	nm.items.forEach(item=>{
+		item.commenting.chapterform.submit = function(tag){
+			
+			/* The author and taskId are obligatory
+			Author is required to fom groups for the treenavigation, and the taskId allows the annotations to be piped to the corresponding data.
+			*/ 
+			if(obj.username){
+				tag.taskId = item.task.taskId;
+				tag.author = obj.username;
+				
+				obj.ws.send( JSON.stringify( tag ) );
+			} else {
+				console.log("You need to log in", tag)
+			} // if			
+		} // onclick
+	}) // forEach
+
+
+
+
+	// Loop to keep updating the comments every 10 seconds - this is just so that the time labels are getting updated.
+	/*
+	function update(){
+	  comments.forEach(c=>{
+		c.update()
+	  }) // forEach
+	  setTimeout(update, 10*1000)
+	} // update
+	update();
+	*/
   } // constructor
+  
+  
+  get username(){
+	return document.getElementById("username").value
+  }
+  
+  
+  
+  purge(){
+	let obj = this;
+	// What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
+	
+	// Purge the navigation tree of obsolete knowledge.
+	obj.nm.tree.purge();
+	
+	
+	console.log("Purging")
+  } // purge
+	
+  process(d){
+	let obj = this;
+	
+
+	// How will this processing work? First filter by taskId, and then filter by type?
+	// I'm expecting to see tags, chapters, comments for now.
+	
+	
+	// All the tags can be pushed to the tree. But this is really pushed, not replaced!!
+	let tags = d.filter(a=>a.type==="tag");
+	tags.forEach(tag=>{
+		obj.nm.tree.addtagannotation(tag);
+	}) // forEach
+	obj.nm.tree.update();
+	
+	
+	// The chapters need to be distributed to hte appropriate items.
+	
+	
+	console.log("Process", d)
+  } // process
 } // KnowledgeManager
+
+
+
+
+
+
+
+
+
+
+
+

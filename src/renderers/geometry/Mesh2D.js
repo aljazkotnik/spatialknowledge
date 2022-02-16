@@ -41,7 +41,7 @@ export default class Mesh2D{
   
   // Initial byte length limit is 1MB
   frameByteLength = 225420
-  limitByteLength = 10**6
+  limitByteLength = 10**7
   
   constructor(gl, unsteadyMetadataFilename){
 	let obj = this;
@@ -239,8 +239,9 @@ export default class Mesh2D{
   - Prevent buffering if off-screen 
       Just unload, and rely that they won't be updated? OR - Manipulate the limit they are allowed to use, and then let the object handle itself.
   - The data requests/buffering should be throttled.
-      How to throttle them? The throttle should be consistent across several items also, so that the files that will be needed earlier are transported earlier.
-      Within one individual it's possible to just wrap them up into a throttling promise, which waits for everything in hte queue before to be executed, and then starts doing it's thing. Maybe thi swould work across several items also as the queues would clear alongside each other.
+      Throttling is done with `Promise.all' and a loading promise array `queue'. Some coordination between the items still wouldn't hurt.
+	  
+	  How will the items that are off-screen handle the initial loading? Just do the initial loading, and afterwards immediately unload them? Or how to do it?
   
   */
   buffering(i_closest){
@@ -254,16 +255,37 @@ export default class Mesh2D{
 	
 	
 	// Maybe it's better to unload all not needed promises at the beginning?? And then focus on the ones that need to be loaded?
+	let queue = [];
 	for(let i=0; i< n_all; i++){
 		let timestep = obj.timesteps[(i_closest + i)%n_all];
 		if( i < n_max ){
 			// Should hve a value promise, but doesn't yet.
 			if(!timestep.valuesPromise){
-				timestep.valuesPromise = loadBinData(timestep.filename)
-				  .then(ab=>{ return new Uint8Array(ab) })
-				timestep.valuesPromise.then(ui8=>{
-					timestep.byteLength = ui8.byteLength
-				})
+				
+				// Instead of fetching the data straight ahead wait for the established queue to free up. In the case of an empty queue just skip the promise?
+				
+				if(queue.length>0){
+					
+					Promise.all(queue).then(res=>{
+						timestep.valuesPromise = loadBinData(timestep.filename)
+						  .then(ab=>{ return new Uint8Array(ab) })
+						timestep.valuesPromise.then(ui8=>{
+							timestep.byteLength = ui8.byteLength
+						})
+						queue.push(timestep.valuesPromise)
+					}) // Promise.all
+					
+				} else {
+					timestep.valuesPromise = loadBinData(timestep.filename)
+					  .then(ab=>{ return new Uint8Array(ab) })
+					timestep.valuesPromise.then(ui8=>{
+						timestep.byteLength = ui8.byteLength
+					})
+					queue.push(timestep.valuesPromise)
+				} // if
+				
+				
+				
 			} // if
 		} else {
 			// The promise should be deleted to conserve memory. The byte length must be the same for all of them anyway. However, some allowance will have to be made for the 32 bit arrays - 3 of them in total. The length of the values array in bytes is given by the 32 float arrays along with the assumption of the uint8 encoding anyway.

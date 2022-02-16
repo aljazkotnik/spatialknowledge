@@ -17,21 +17,21 @@ import MeshRenderer2D from "./renderers/MeshRenderer2D.js";
 
 const data = [
 {taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 1", sepal_length: 4.9, sepal_width: 3, color: "sandybrown", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 2", sepal_length: 4.7, sepal_width: 3.2, color: "seagreen", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 3", sepal_length: 4.6, sepal_width: 3.1, color: "seashell", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 4", sepal_length: 5, sepal_width: 3.6, color: "sienna", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 5", sepal_length: 5.4, sepal_width: 3.9, color: "skyblue", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 6", sepal_length: 4.6, sepal_width: 3.4, color: "slateblue", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 7", sepal_length: 5, sepal_width: 3.4, color: "springgreen", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 8", sepal_length: 4.4, sepal_width: 2.9, color: "tan", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 9", sepal_length: 4.9, sepal_width: 3.1, color: "thistle", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 10", sepal_length: 5.4, sepal_width: 3.7, color: "tomato", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 11", sepal_length: 4.8, sepal_width: 3.4, color: "turquoise", cat: "sea", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 12", sepal_length: 4.8, sepal_width: 3, color: "violet", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 13", sepal_length: 4.3, sepal_width: 3, color: "wheat", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 14", sepal_length: 5.8, sepal_width: 4, color: "lightpink", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite", cat: "brown", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
+{taskId: "task 1", sepal_length: 4.9, sepal_width: 3, color: "sandybrown", cat: "brown", entropy2d: "./data/0001/unsteady_contour2d_meta.json"},
+{taskId: "task 2", sepal_length: 4.7, sepal_width: 3.2, color: "seagreen", cat: "sea", entropy2d: "./data/0002/unsteady_contour2d_meta.json"},
+{taskId: "task 3", sepal_length: 4.6, sepal_width: 3.1, color: "seashell", cat: "sea", entropy2d: "./data/0003/unsteady_contour2d_meta.json"},
+{taskId: "task 4", sepal_length: 5, sepal_width: 3.6, color: "sienna", cat: "brown", entropy2d: "./data/0004/unsteady_contour2d_meta.json"},
+{taskId: "task 5", sepal_length: 5.4, sepal_width: 3.9, color: "skyblue", cat: "sea", entropy2d: "./data/0005/unsteady_contour2d_meta.json"},
+{taskId: "task 6", sepal_length: 4.6, sepal_width: 3.4, color: "slateblue", cat: "sea", entropy2d: "./data/0006/unsteady_contour2d_meta.json"},
+{taskId: "task 7", sepal_length: 5, sepal_width: 3.4, color: "springgreen", cat: "sea", entropy2d: "./data/0007/unsteady_contour2d_meta.json"},
+{taskId: "task 8", sepal_length: 4.4, sepal_width: 2.9, color: "tan", cat: "brown", entropy2d: "./data/0008/unsteady_contour2d_meta.json"},
+{taskId: "task 9", sepal_length: 4.9, sepal_width: 3.1, color: "thistle", cat: "red", entropy2d: "./data/0009/unsteady_contour2d_meta.json"},
+{taskId: "task 10", sepal_length: 5.4, sepal_width: 3.7, color: "tomato", cat: "red", entropy2d: "./data/0010/unsteady_contour2d_meta.json"},
+{taskId: "task 11", sepal_length: 4.8, sepal_width: 3.4, color: "turquoise", cat: "sea", entropy2d: "./data/0011/unsteady_contour2d_meta.json"},
+{taskId: "task 12", sepal_length: 4.8, sepal_width: 3, color: "violet", cat: "red", entropy2d: "./data/0012/unsteady_contour2d_meta.json"},
+{taskId: "task 13", sepal_length: 4.3, sepal_width: 3, color: "wheat", cat: "brown", entropy2d: "./data/0013/unsteady_contour2d_meta.json"},
+{taskId: "task 14", sepal_length: 5.8, sepal_width: 4, color: "lightpink", cat: "red", entropy2d: "./data/0014/unsteady_contour2d_meta.json"},
+{taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite", cat: "brown", entropy2d: "./data/0015/unsteady_contour2d_meta.json"}
 ]; // data
 
 /*
@@ -93,6 +93,8 @@ var knowledge = new KnowledgeManager(workspace);
 // How should the renderer recognise that it needs to change the set of groups to iterate over?
 renderer.draw();
 
+// To change the colormap values a custom range can be specified:
+// renderer.customColormapRange = [1140, 1150]
 
 
 workspace.updateRenderingItems = function(items){
@@ -102,7 +104,7 @@ workspace.updateRenderingItems = function(items){
 
 
 // How to do the memory handling. And how to make it appear in the navigation bar!
-console.log(workspace, renderer)
+console.log(workspace, renderer, knowledge)
 
 
 

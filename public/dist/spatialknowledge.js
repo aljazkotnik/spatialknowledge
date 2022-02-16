@@ -262,9 +262,41 @@
     });
     return f.length == 0 ? true : false;
   } // arrayIncludesAll
-   // joinDataToElements
 
-  var template$e = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  function joinDataToElements(data, elements, idAccessor) {
+    // Find data that has no elements, find the elements that have data, and the leftover.
+    var elementsArray = _toConsumableArray(elements);
+
+    var elementsDataIds = elementsArray.map(function (el) {
+      return idAccessor(el.__data__);
+    });
+    var g = elementsArray.reduce(function (acc, el) {
+      var d = data.filter(function (d_) {
+        return idAccessor(el.__data__) == idAccessor(d_);
+      }); // filter
+
+      if (d.length > 0) {
+        el.__data__ = d[0];
+        acc.update.push(el);
+      } else {
+        acc.exit.push(el);
+      } // if
+
+
+      return acc;
+    }, {
+      update: [],
+      exit: []
+    }); // filter
+
+    g.enter = data.filter(function (d) {
+      return !elementsDataIds.includes(idAccessor(d));
+    }); // filter
+
+    return g;
+  } // joinDataToElements
+
+  var template$l = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -279,7 +311,7 @@
       this.width = 300;
       this.height = 200;
       var obj = this;
-      obj.node = html2element(template$e);
+      obj.node = html2element(template$l);
       obj.node.style.position = "absolute";
       obj.viewnode = obj.node.querySelector("div.viewcontainer"); // obj.viewnode.style.height = obj.height + "px";
       // obj.viewnode.style.width = obj.width + "px";
@@ -295,7 +327,7 @@
 
       obj.node.onmousedown = function (e) {
         if (obj.node.contains(e.target) && !obj.viewnode.contains(e.target) && obj.node.isConnected) {
-          e.preventDefault();
+          // e.preventDefault();
           var rect = obj.node.getBoundingClientRect();
           active = true;
           itemStartPosition = obj.position;
@@ -636,7 +668,7 @@
     return Math.max(Math.min(v, b), a);
   } // constrainValue
 
-  var template$d = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
+  var template$k = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
 
   var ViewFrame2D = /*#__PURE__*/function () {
     function ViewFrame2D(gl) {
@@ -645,7 +677,7 @@
       var obj = this;
       obj.gl = gl; // Okay, create the whole player here, and then just append it in hte item. The Item should then adjust the size to the player!!
 
-      obj.node = html2element(template$d); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
+      obj.node = html2element(template$k); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 
       obj.view = obj.node.querySelector("div.view"); // Some initial dummy geometry to allow initialisation.
 
@@ -872,7 +904,7 @@
 
       this._currentFrameInd = 0;
       this.frameByteLength = 225420;
-      this.limitByteLength = Math.pow(10, 6);
+      this.limitByteLength = Math.pow(10, 7);
       this.domain = initdomain;
       this.timesteps = [];
       var obj = this;
@@ -1035,8 +1067,9 @@
       - Prevent buffering if off-screen 
           Just unload, and rely that they won't be updated? OR - Manipulate the limit they are allowed to use, and then let the object handle itself.
       - The data requests/buffering should be throttled.
-          How to throttle them? The throttle should be consistent across several items also, so that the files that will be needed earlier are transported earlier.
-          Within one individual it's possible to just wrap them up into a throttling promise, which waits for everything in hte queue before to be executed, and then starts doing it's thing. Maybe thi swould work across several items also as the queues would clear alongside each other.
+          Throttling is done with `Promise.all' and a loading promise array `queue'. Some coordination between the items still wouldn't hurt.
+       
+       How will the items that are off-screen handle the initial loading? Just do the initial loading, and afterwards immediately unload them? Or how to do it?
       
       */
 
@@ -1049,18 +1082,35 @@
         var n_max = Math.floor(obj.limitByteLength / obj.frameByteLength); // Maybe chain the required promises somehow?
         // Maybe it's better to unload all not needed promises at the beginning?? And then focus on the ones that need to be loaded?
 
+        var queue = [];
+
         var _loop = function _loop(i) {
           var timestep = obj.timesteps[(i_closest + i) % n_all];
 
           if (i < n_max) {
             // Should hve a value promise, but doesn't yet.
             if (!timestep.valuesPromise) {
-              timestep.valuesPromise = loadBinData(timestep.filename).then(function (ab) {
-                return new Uint8Array(ab);
-              });
-              timestep.valuesPromise.then(function (ui8) {
-                timestep.byteLength = ui8.byteLength;
-              });
+              // Instead of fetching the data straight ahead wait for the established queue to free up. In the case of an empty queue just skip the promise?
+              if (queue.length > 0) {
+                Promise.all(queue).then(function (res) {
+                  timestep.valuesPromise = loadBinData(timestep.filename).then(function (ab) {
+                    return new Uint8Array(ab);
+                  });
+                  timestep.valuesPromise.then(function (ui8) {
+                    timestep.byteLength = ui8.byteLength;
+                  });
+                  queue.push(timestep.valuesPromise);
+                }); // Promise.all
+              } else {
+                timestep.valuesPromise = loadBinData(timestep.filename).then(function (ab) {
+                  return new Uint8Array(ab);
+                });
+                timestep.valuesPromise.then(function (ui8) {
+                  timestep.byteLength = ui8.byteLength;
+                });
+                queue.push(timestep.valuesPromise);
+              } // if
+
             } // if
 
           } else {
@@ -1156,7 +1206,7 @@
   } // pausePath
 
 
-  var template$c = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
+  var template$j = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
   // textHeight + textBottomMargin + rectHighlightHeightDelta + rectHeight/2 - H/2
 
   var PlayButton = /*#__PURE__*/function () {
@@ -1167,7 +1217,7 @@
       this.y = 20 * 2 * Math.sqrt(3) / 3 / 2;
       this.width = 20;
       var obj = this;
-      obj.node = svg2element(template$c);
+      obj.node = svg2element(template$j);
     } // constructor
 
 
@@ -1185,7 +1235,7 @@
   }(); // PlayButton
 
   var defaultRectAttributes = "stroke=\"white\" stroke-width=\"2px\"";
-  var template$b = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
+  var template$i = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
 
   var PlayBarAnnotation = /*#__PURE__*/function () {
     // y = textHeight + textBottomMargin + highlightHeightDelta
@@ -1196,7 +1246,7 @@
       this.height = 10;
       this.dh = 4;
       var obj = this;
-      obj.node = svg2element(template$b);
+      obj.node = svg2element(template$i);
       obj.background = obj.node.querySelector("rect.background");
       obj.buffering = obj.node.querySelector("rect.buffering");
       obj.foreground = obj.node.querySelector("rect.foreground");
@@ -1294,7 +1344,7 @@
     r.y.baseVal.value = y;
   } // unhighlightRectangle
 
-  var template$a = "<g style=\"cursor: pointer;\"></g>"; // template
+  var template$h = "<g style=\"cursor: pointer;\"></g>"; // template
 
   var PlayBar = /*#__PURE__*/function () {
     // Coordinates in whole svg frame.
@@ -1310,7 +1360,7 @@
       this.t_buffered = 0;
       this.t_play = 0;
       var obj = this;
-      obj.node = svg2element(template$a);
+      obj.node = svg2element(template$h);
       obj._tscale = new scaleLinear();
     } // constructor
 
@@ -1414,7 +1464,7 @@
     return PlayBar;
   }(); // PlayBar
 
-  var template$9 = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
+  var template$g = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
 
   var PlayControls = /*#__PURE__*/function () {
     function PlayControls() {
@@ -1424,7 +1474,7 @@
       this.textBottomMargin = 2;
       this.highlightHeightDelta = 3;
       var obj = this;
-      obj.node = html2element(template$9);
+      obj.node = html2element(template$g);
       var y = obj.textHeight + obj.textBottomMargin + obj.highlightHeightDelta; // Make a play button.
 
       obj.button = new PlayButton();
@@ -1637,6 +1687,892 @@
     return UnsteadyPlayer2D;
   }(ViewFrame2D); // UnsteadyPlayer2D
 
+  var css$4 = {
+    button: "\n    border: none;\n\tcursor: pointer;\n\tborder-radius: 4px;\n  ",
+    timebutton: "\n    background-color: gainsboro;\n  ",
+    submitbutton: "\n    background-color: black;\n\tcolor: white;\n  "
+  }; // css
+
+  var template$f = "\n<div style=\"300px\">\n  <input type=\"text\" placeholder=\"#tag-name\" style=\"width: 100px;\"></input>\n  \n  <div style=\"display: inline-block; float: right;\">\n  <button class=\"starttime\" style=\"".concat(css$4.button, " ").concat(css$4.timebutton, "\">start</button>\n  <i>-</i>\n  <button class=\"endtime\" style=\"").concat(css$4.button, " ").concat(css$4.timebutton, "\">end</button>\n  <button class=\"submit\" style=\"").concat(css$4.button, " ").concat(css$4.submitbutton, "\">\n    Submit\n  </button>\n  </div>\n  \n  \n</div>\n"); // template
+
+  var ChapterForm = /*#__PURE__*/function () {
+    function ChapterForm() {
+      _classCallCheck(this, ChapterForm);
+
+      var obj = this;
+      obj.node = html2element(template$f);
+      obj.input = obj.node.querySelector("input"); // This value will be overwritten during interactions, and is where the tag manager collects the time for the timestamps.
+
+      obj.clear(); // The button should cycle through black, green, and red. It will need some way of tracking its current state, and a way to load in existing tags! This will allow users to subsequently change the tag if needed? Maybe this is a bit much for now. It will need a submit button.
+      // If the tag is loaded and the button switches to timestamping then any user can add the ned timesteps. Then the users name needs to be checked in addition. Maybe some way of filtering out the tags that are added? How would that work?
+      // For now add 3 buttons. A starttime endtime and submit button. For the submit button only the start and name need to be filled in. The buttons must also show the selected times!
+
+      obj.input.onmousedown = function (e) {
+        e.stopPropagation();
+      }; // onmousedown
+      // Update the form when the text is typed in to activate the submit button.
+
+
+      obj.input.oninput = function () {
+        obj.update();
+      }; // oninput
+      // Maybe it's simpler if the time is assigned from the outside?
+
+
+      obj.node.querySelector("button.starttime").onmousedown = function (e) {
+        e.stopPropagation();
+        obj.starttime = obj.t();
+        obj.update();
+      }; // onmousedown
+
+
+      obj.node.querySelector("button.endtime").onmousedown = function (e) {
+        e.stopPropagation();
+        obj.endtime = obj.t();
+        obj.update();
+      }; // onmousedown
+
+
+      obj.node.querySelector("button.submit").onmousedown = function (e) {
+        e.stopPropagation();
+        var tag = obj.tag;
+
+        if (tag) {
+          obj.submit(tag);
+          obj.clear();
+        } // if
+
+      }; // onmousedown
+
+    } // constructor
+    // Dummy method to facilitate outside supply of the timesteps.
+
+
+    _createClass(ChapterForm, [{
+      key: "t",
+      value: function t() {
+        return undefined;
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        var obj = this; // Ensure that the times are always consistent (end > start);
+
+        if (obj.endtime && obj.starttime) {
+          var t0 = Math.min(obj.starttime, obj.endtime);
+          var t1 = Math.max(obj.starttime, obj.endtime);
+          obj.starttime = t0;
+          obj.endtime = t1;
+        } // if
+        // Update the time tags also.
+
+
+        var it0 = obj.node.querySelector("button.starttime");
+        var it1 = obj.node.querySelector("button.endtime");
+        it0.innerText = obj.starttime != undefined ? obj.starttime.toFixed(3) : "start";
+        it1.innerText = obj.endtime != undefined ? obj.endtime.toFixed(3) : "end"; // The button is black by default, and making it look disabled is a bit more involved.
+
+        var button = obj.node.querySelector("button.submit");
+
+        if (obj.tag) {
+          // Enable.
+          button.style.opacity = 1;
+          button.style.backgroundColor = "black";
+          button.style.color = "white";
+        } else {
+          button.style.opacity = 0.6;
+          button.style.backgroundColor = "gainsboro";
+          button.style.color = "black";
+        } // if
+
+      } // update
+
+    }, {
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.starttime = undefined;
+        obj.endtime = undefined;
+        obj.input.value = "";
+        obj.update();
+      } // clear
+
+    }, {
+      key: "tag",
+      get: function get() {
+        // Chapter tag should belong to the task id so that the observations across multiple slices are available together to the user.
+        var obj = this;
+        var tag = {
+          name: obj.input.value
+        }; // tag
+        // How should the timestamps be handled? CANNOT always store two values, as the chapterform is ot aware of the extent of the timestep. So do I place undefined in one of the slots? And How would that be interpreted by JSON?
+
+        var timestamps = [obj.starttime, obj.endtime];
+        /* Expected behavior:
+        	[undefined, undefined] -> tag
+            [  value  , undefined] -> chapter
+        	[undefined,   value  ] -> chapter
+        	[  value  ,   value  ] -> chapter
+        */
+
+        if (timestamps.some(function (t) {
+          return !isNaN(t);
+        })) {
+          // In this case at least one of the values is defined, and should be included.
+          tag.type = "chapter";
+          tag.timestamps = timestamps;
+        } else {
+          tag.type = "tag";
+        }
+        // This only collects the name and the optional timestamps. The author is supplied outside, in the knowledge manager, to avoid sending the author into this object.
+        // The time should be defined, but it can also be 0, or less than 0!
+        // obj.user && obj.input.value && ( obj.starttime != undefined ) ? tag : false; 
+
+        return obj.input.value ? tag : false;
+      } // tag
+      // Placeholder for communication between classes.
+
+    }, {
+      key: "submit",
+      value: function submit(tag) {} // submit
+
+    }]);
+
+    return ChapterForm;
+  }(); // ChapterForm
+
+  /*
+  Maybe this one should be remade into a manager so it can keep add comments to itself. Otherwise they have to be routed outside.
+  */
+
+  var css$3 = {
+    textarea: "\n    width: 100%;\n    border: none;\n    resize: none;\n    overflow: hidden;\n    max-height: 100px;\n  ",
+    submitbutton: "\n    color: white;\n\tbackground-color: black;\n\tborder-radius: 4px;\n\tcursor: pointer;\n  "
+  }; // css
+
+  var template$e = "\n<div>\n  <textarea class=\"comment\" type=\"text\" rows=\"1\" placeholder=\"What do you think?\" style=\"".concat(css$3.textarea, "\"></textarea>\n  <button class=\"submit\" style=\"").concat(css$3.submitbutton, "\"><b>Submit</b></button>\n</div>\n"); // template
+
+  var AddCommentForm = /*#__PURE__*/function () {
+    function AddCommentForm(id) {
+      _classCallCheck(this, AddCommentForm);
+
+      this._user = "";
+      var obj = this;
+      obj.node = html2element(template$e);
+      obj.viewid = id; // Author input got omitted because the author also needs to be known when voting on a comment, and I didn't want to implement an input there. That's why now there will be an overall login box that will control everything.
+
+      obj.commentinput = obj.node.querySelector("textarea.comment");
+      obj.submitbutton = obj.node.querySelector("button.submit");
+      obj.commentinput.style.display = "block";
+      obj.submitbutton.style.display = "none";
+
+      obj.commentinput.oninput = function () {
+        obj.update();
+      }; // oninput
+
+    } // constructor
+
+
+    _createClass(AddCommentForm, [{
+      key: "update",
+      value: function update() {
+        var obj = this; // Change the height
+
+        obj.commentinput.style.height = "1px";
+        obj.commentinput.style.height = obj.commentinput.scrollHeight + "px"; // Show or hide button.
+
+        obj.submitbutton.style.display = obj.config ? "block" : "none";
+      } // update
+
+    }, {
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.commentinput.value = "";
+        obj.update();
+      } // clear
+
+    }, {
+      key: "user",
+      get: // set user
+      function get() {
+        return this._user;
+      } // get user
+      ,
+      set: function set(name) {
+        this._user = name;
+        this.update();
+      }
+    }, {
+      key: "config",
+      get: function get() {
+        var obj = this;
+        return obj.commentinput.value && obj.user ? {
+          author: obj.user,
+          viewid: obj.viewid,
+          text: obj.commentinput.value
+        } : false;
+      } // config
+
+    }]);
+
+    return AddCommentForm;
+  }(); // AddCommentForm
+
+  var css$2 = {
+    button: "\n    border: none;\n\tbackground-color: white;\n\tcursor: pointer;\n  ",
+    replybutton: "\n    color: gray;\n\tpadding: 0 0 0 0;\n  ",
+    votenumberi: "\n    margin-left: 4px;\n  ",
+    timestampspan: "\n    color: gray;\n\tfont-size: 14px;\n\tmargin-left: 12px;\n  "
+  }; // css
+
+  var template$d = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$2.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$2.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$2.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$2.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$2.button, " ").concat(css$2.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
+
+  var Comment = /*#__PURE__*/function () {
+    function Comment(config) {
+      _classCallCheck(this, Comment);
+
+      this.user = "Default User: Aljaz";
+      var obj = this; // Make a new node.
+
+      obj.node = html2element(template$d); // Fill the template with the options from the config. There must be a comment, and there must be an author.
+
+      obj.config = config; // Upon creation the author is also the user? True when the user makes them, not otherwise... But the user is updated when the login is initiated.
+
+      obj.user = obj.config.author; // Fill some options that may not be defined in config.
+
+      obj.config.time = config.time ? config.time : Date();
+      obj.config.upvotes = config.upvotes ? config.upvotes : [];
+      obj.config.downvotes = config.downvotes ? config.downvotes : [];
+      obj.config.tags = config.tags ? config.tags : []; // Modify the node to reflect the config.
+
+      var header = obj.node.querySelector("div.header");
+      header.querySelector("b.author").innerText = config.author;
+      var body = obj.node.querySelector("div.body");
+      body.innerText = config.text;
+      obj.update(); // Add the upvoting and downvoting. Where will the author name come from?? The upvote/downvote buttons should also be colored depending on whether the current user has upvoted or downvoted the comment already. Maybe the top app should just push the current user to the elements, and then they can figure out how to handle everything. That means that the functionality can be implemented here.
+
+      var footer = obj.node.querySelector("div.footer");
+
+      footer.querySelector("button.upvote").onclick = function () {
+        obj.upvote(obj.user);
+      }; // onclick
+
+
+      footer.querySelector("button.downvote").onclick = function () {
+        obj.downvote(obj.user);
+      }; // onclick
+
+    } // constructor
+
+
+    _createClass(Comment, [{
+      key: "id",
+      get: function get() {
+        var obj = this;
+        return [obj.config.viewid, obj.config.author, obj.config.time].join(" ");
+      } // get id
+
+    }, {
+      key: "update",
+      value: function update() {
+        // Only the time is allowed to be updated (if it will be calculated back), and the up and down votes.
+        var obj = this;
+        obj.updateTimestamp();
+        obj.updateVoteCounter("upvote");
+        obj.updateVoteCounter("downvote");
+      } // update
+
+    }, {
+      key: "updateTimestamp",
+      value: function updateTimestamp() {
+        var obj = this;
+        var timestamp = obj.node.querySelector("div.header").querySelector("span.timestamp"); // Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
+
+        var t = obj.config.time;
+        var now = Date.now();
+        var stamp = Date.parse(t);
+        var dayInMiliseconds = 1000 * 60 * 60 * 24;
+        var todayInMiliseconds = getDayInMiliseconds(now); // Format the time so that it shows everything from today as n minutes/hours ago, everything from yesterday as yesterday at :... and everything else as the date. 
+
+        if (stamp > now - todayInMiliseconds) {
+          // This was today, just report how long ago.
+          timestamp.innerText = getAgoFormattedString(now - stamp);
+        } else if (stamp > now - todayInMiliseconds - dayInMiliseconds) {
+          // Yesterday at HH:MM
+          timestamp.innerText = "Yesterday at ".concat(t.split(" ").splice(4, 1)[0]);
+        } else {
+          // Just keep the first 4 parts which should be day name, month name, day number, year number
+          timestamp.innerText = t.split(" ").splice(0, 4).join(" ");
+        } // if
+
+      } // updateTimestamp
+
+    }, {
+      key: "updateVoteCounter",
+      value: function updateVoteCounter(buttonClassName) {
+        var obj = this;
+        var button = obj.node.querySelector("div.footer").querySelector("button.".concat(buttonClassName));
+        var icon = button.querySelector("i.fa");
+        var counter = button.querySelector("i.vote-number");
+        var n = 0;
+
+        switch (buttonClassName) {
+          case "upvote":
+            n = obj.config.upvotes.length;
+            counter.innerText = n > 0 ? n : "";
+            icon.style.color = obj.config.upvotes.includes(obj.user) ? "green" : "black";
+            break;
+
+          case "downvote":
+            n = obj.config.downvotes.length;
+            counter.innerText = n > 0 ? -n : "";
+            icon.style.color = obj.config.downvotes.includes(obj.user) ? "tomato" : "black";
+            break;
+        } // switch
+
+      } // updateVoteCounter
+      // Maybe these should also allow the neutering of an upvote/downvote?
+
+    }, {
+      key: "upvote",
+      value: function upvote(author) {
+        var obj = this;
+        pushValueToAWhichCompetesWithB(author, obj.config.upvotes, obj.config.downvotes);
+        obj.update();
+      } // upvote
+
+    }, {
+      key: "downvote",
+      value: function downvote(author) {
+        var obj = this;
+        pushValueToAWhichCompetesWithB(author, obj.config.downvotes, obj.config.upvotes);
+        obj.update();
+      } // upvote
+
+    }]);
+
+    return Comment;
+  }(); // Comment
+
+  function pushValueToAWhichCompetesWithB(value, A, B) {
+    if (!A.includes(value)) {
+      A.push(value);
+
+      if (B.includes(value)) {
+        B.splice(B.indexOf(value), 1);
+      } // if
+
+    } // if
+
+  } // pushValueToAWhichCompetesWithB
+
+
+  function getDayInMiliseconds(msdate) {
+    // 'msdate' is a date in miliseconds from 1970. Calculate how many miliseconds have already passed on the day that msdate represents.
+    var d = new Date(msdate);
+    return ((d.getHours() * 60 + d.getMinutes()) * 60 + d.getSeconds()) * 1000 + d.getMilliseconds();
+  } // getDayInMiliseconds
+
+
+  function getAgoFormattedString(delta) {
+    // delta is the number of miliseconds ago for which this should return a human readable string. If delta is more than a day, then the result is returned as days.
+    var seconds = Math.floor(delta / 1000);
+    var minutes = Math.floor(seconds / 60);
+    var hours = Math.floor(minutes / 60);
+    var days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return "".concat(days, " days ago");
+    } // if
+
+
+    if (hours > 0) {
+      return "".concat(hours, " hours ago");
+    } // if
+
+
+    if (minutes > 0) {
+      return "".concat(minutes, " minutes ago");
+    } // if
+
+
+    return "".concat(seconds, " seconds ago");
+  } // getAgoFormattedString
+
+  var ReplyComment = /*#__PURE__*/function (_Comment) {
+    _inherits(ReplyComment, _Comment);
+
+    var _super = _createSuper(ReplyComment);
+
+    function ReplyComment(config) {
+      var _this;
+
+      _classCallCheck(this, ReplyComment);
+
+      _this = _super.call(this, config);
+
+      var obj = _assertThisInitialized(_this); // The secondary comments need to be indented.
+
+
+      obj.node.style.marginLeft = "20px"; // Replies can't be replied to. Maybe allow them too, but just put a hashtagged name in front?
+
+      obj.node.querySelector("button.reply").remove();
+      return _this;
+    } // constructor
+
+
+    return ReplyComment;
+  }(Comment); // ReplyComment
+
+  // Sort the comments before passing them to the comments below. How will replies be updated? Ultimately everything should be coming from the server??
+  // This is just a template for the controls which allow the replies to be expanded or collapsed. These are invisible at first.
+
+  var template$c = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
+
+  var GeneralComment = /*#__PURE__*/function (_Comment) {
+    _inherits(GeneralComment, _Comment);
+
+    var _super = _createSuper(GeneralComment);
+
+    function GeneralComment(config) {
+      var _this;
+
+      _classCallCheck(this, GeneralComment);
+
+      _this = _super.call(this, config);
+      _this.replies = [];
+
+      var obj = _assertThisInitialized(_this); // The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
+
+
+      obj.replynode = html2element(template$c);
+      obj.node.appendChild(obj.replynode); // Add the functionality to the caret.
+
+      obj.repliesExpanded = false;
+
+      obj.replynode.querySelector("div.expand-controls").onclick = function () {
+        obj.repliesExpanded = !obj.repliesExpanded;
+        obj.update();
+      }; // onclick
+      // Replies on the config need to be initialised. But actually, they should be stored as separate entries for ease of updating...
+
+
+      obj.update();
+      return _this;
+    } // constructor
+
+
+    _createClass(GeneralComment, [{
+      key: "reply",
+      value: function reply(replyconfig) {
+        // Replies can also need to be updated if the server pushes an updated version. In that case handle the replacement here.
+        var obj = this; // Make a comment node, and append it to this comment.
+
+        replyconfig.parentid = obj.id;
+        var r = new ReplyComment(replyconfig);
+        var existing = findArrayItemById$1(obj.replies, r.id);
+
+        if (existing) {
+          obj.replaceReply(existing, r);
+        } else {
+          // Add this one at the end.
+          obj.replynode.querySelector("div.replies").appendChild(r.node);
+          obj.replies.push(r);
+        } // if
+        // Update the view.
+
+
+        obj.update();
+      } // reply
+
+    }, {
+      key: "replaceReply",
+      value: function replaceReply(existing, replacement) {
+        // For simplicity handle the replacing of hte comment here.
+        var obj = this; // Update the internal comments store.
+
+        obj.replies.splice(obj.replies.indexOf(existing), 1, replacement); // Update teh DOM.
+
+        var container = obj.node.querySelector("div.replies");
+        container.insertBefore(replacement.node, existing.node);
+      } // replaceReply
+
+    }, {
+      key: "update",
+      value: function update() {
+        // Only the time is allowed to be updated (if it will be calculated back), and the up and down votes.
+        var obj = this; // From superclass
+
+        obj.updateTimestamp();
+        obj.updateVoteCounter("upvote");
+        obj.updateVoteCounter("downvote"); // GeneralComment specific.
+
+        obj.updateReplies();
+      } // update
+
+    }, {
+      key: "updateReplies",
+      value: function updateReplies() {
+        var obj = this; // First update is called when the superclass constructor is called.
+
+        if (obj.replies) {
+          var n = obj.replies.length;
+          obj.replynode.style.display = n > 0 ? "" : "none"; // View replies or hide replies
+
+          var s = n == 1 ? "y" : "ies (".concat(n, ")");
+          obj.replynode.querySelector("div.expand-controls").querySelector("i.control-text").innerText = obj.repliesExpanded ? "Hide repl".concat(s) : "View repl".concat(s);
+          obj.replynode.querySelector("div.expand-controls").querySelector("i.fa").classList.value = obj.repliesExpanded ? "fa fa-caret-up" : "fa fa-caret-down";
+          obj.replynode.querySelector("div.replies").style.display = obj.repliesExpanded ? "" : "none";
+        } // if
+
+      } // updateReplies
+
+    }]);
+
+    return GeneralComment;
+  }(Comment); // GeneralComment
+
+  function findArrayItemById$1(A, id) {
+    var candidates = A.filter(function (a) {
+      return a.id == id;
+    }); // filter
+
+    return candidates.length > 0 ? candidates[0] : false;
+  } // findArrayItemById
+
+  var template$b = "\n<div style=\"margin-bottom: 5px;\"></div>\n"; // template
+  // Maybe make them grey with italis writing?
+
+  var css$1 = "\nborder: none;\nbackground-color: gainsboro;\nmargin-right: 2px;\ncursor: pointer;\n"; // css
+
+  var tagtemplate = "\n<button style=\"".concat(css$1, "\"><i></i></button>\n"); // A general tag should always be present. This tag should then show all comments without tags.
+
+  var DiscussionSelector = /*#__PURE__*/function () {
+    function DiscussionSelector() {
+      _classCallCheck(this, DiscussionSelector);
+
+      this.tags = [];
+      this.selected = [];
+      var obj = this;
+      obj.node = html2element(template$b);
+    } // constructor
+
+
+    _createClass(DiscussionSelector, [{
+      key: "update",
+      value: function update(newtags) {
+        var obj = this;
+
+        if (newtags) {
+          // Replace the tags if necessary. The same tags should be grouped together, but different authors may have differing views on what constitutes features.
+          obj.tags = newtags;
+          obj.selected = obj.selected.filter(function (d) {
+            return newtags.includes(d);
+          });
+          obj.externalAction();
+        } // if
+
+
+        var buttons = joinDataToElements(obj.tags, obj.node.querySelectorAll("button"), function (d) {
+          return d;
+        });
+        buttons.enter.forEach(function (d) {
+          var el = html2element(tagtemplate);
+          obj.node.appendChild(el);
+          el.querySelector("i").innerText = d;
+          el.__data__ = d;
+
+          el.onclick = function () {
+            obj.toggle(el);
+          }; // onclick
+
+        }); // forEach
+
+        buttons.exit.forEach(function (button) {
+          return button.remove();
+        });
+      } // update
+
+    }, {
+      key: "toggle",
+      value: function toggle(el) {
+        var obj = this;
+
+        if (obj.selected.includes(el.__data__)) {
+          obj.selected.splice(obj.selected.indexOf(el.__data__), 1);
+          el.style.fontWeight = "";
+        } else {
+          obj.selected.push(el.__data__);
+          el.style.fontWeight = "bold";
+        } // if
+
+
+        obj.externalAction();
+      } // toggle
+      // Placeholder that will allow the actual comments to be hidden. Maybe just name it that?
+
+    }, {
+      key: "externalAction",
+      value: function externalAction() {} // externalAction
+
+    }]);
+
+    return DiscussionSelector;
+  }(); // DiscussionSelector
+
+  var template$a = "\n<div class=\"commenting\" style=\"width:300px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
+
+  var CommentingManager = /*#__PURE__*/function () {
+    function CommentingManager(id) {
+      _classCallCheck(this, CommentingManager);
+
+      var obj = this;
+      obj.node = html2element(template$a);
+      obj.viewid = id;
+      obj.comments = []; // Make the form;
+
+      obj.form = new AddCommentForm(id);
+      obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Make both replies and general comments to use a single form.
+
+      obj.form.submitbutton.onclick = function () {
+        var config = obj.form.config;
+
+        if (config) {
+          // The form should only be cleared if a comment was successfully added.
+          config.tags = obj.discussion.selected.map(function (d) {
+            return d;
+          });
+          obj.add(config);
+          obj.form.clear();
+        } // if
+
+      }; // onclick
+      // Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
+
+
+      obj.discussion = new DiscussionSelector();
+      obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node); // obj.discussion.update(["#vortex", "#shock"])
+
+      obj.discussion.externalAction = function () {
+        obj.hideNonDiscussionComments();
+      }; // externalAction
+      // At the beginning show only general comments? Better yet, show no comments.
+
+
+      obj.hideNonDiscussionComments(); // Finally add teh controls that completely hide comments.
+
+      var hsdiv = obj.node.querySelector("div.hideShowText");
+      var cdiv = obj.node.querySelector("div.commentingWrapper");
+
+      hsdiv.onclick = function () {
+        var hidden = cdiv.style.display == "none";
+        cdiv.style.display = hidden ? "" : "none"; // It changed from hidden to show, but hidden is past state.
+
+        hsdiv.querySelector("b.text").innerText = hidden ? "Hide comments" : "Show comments";
+        hsdiv.querySelector("i").classList.value = hidden ? "fa fa-caret-up" : "fa fa-caret-down";
+      }; // onclick
+
+    } // constructor
+
+
+    _createClass(CommentingManager, [{
+      key: "hideNonDiscussionComments",
+      value: function hideNonDiscussionComments() {
+        var obj = this;
+        obj.comments.forEach(function (comment) {
+          // This should really be select any!
+          var pertinent = obj.discussion.selected.length == 0 || obj.discussion.selected.some(function (d) {
+            return comment.config.tags.includes(d);
+          });
+          comment.node.style.display = pertinent ? "" : "none";
+        }); // forEach
+      } // hideNonDiscussionComments
+
+    }, {
+      key: "updateCommentCounter",
+      value: function updateCommentCounter() {
+        var obj = this;
+        var n = obj.comments.reduce(function (acc, c) {
+          acc += 1;
+          acc += c.replies.length;
+          return acc;
+        }, 0);
+        var counterNode = obj.node.querySelector("div.hideShowText").querySelector("b.counter");
+        counterNode.innerText = n ? "(".concat(n, ")") : "";
+      } // updateCommentCounter
+
+    }, {
+      key: "submit",
+      value: function submit(config) {
+        // This function is called when the button is pressed. By default it just routes the comment to 'add' so that the comment is added straight away. Alternately it should be passed to the server first. Maybe it's good if both things are done in cases when the connection is not good?
+        this.add(config);
+      } // submit
+
+    }, {
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.comments = [];
+        var commentsToRemove = obj.node.querySelector("div.comments").children;
+
+        for (var i = 0; i < commentsToRemove.length; i++) {
+          commentsToRemove[i].remove();
+        } // for
+
+      } // clear
+
+    }, {
+      key: "add",
+      value: function add(config) {
+        // When the comments are loaded from the server they will be added through this interface. Therefore it must handle both the primary and secondary comments.
+        var obj = this;
+
+        if (config.parentid) {
+          // Comments that have a parent id are replies. Find the right parent comment.
+          obj.addReplyComment(config);
+        } else {
+          // It's a general comment. 
+          obj.addGeneralComment(config);
+        } // if
+        // Update the comments count.
+
+
+        obj.hideNonDiscussionComments();
+        obj.updateCommentCounter();
+      } // add
+
+    }, {
+      key: "addReplyComment",
+      value: function addReplyComment(config) {
+        var obj = this;
+        var parent = findArrayItemById(obj.comments, config.parentid);
+
+        if (parent) {
+          parent.reply(config);
+        } // if
+
+      } // addReplyComment
+
+    }, {
+      key: "addGeneralComment",
+      value: function addGeneralComment(config) {
+        var obj = this; // If there is an existing one, that one should be updated. Whatever is coming from the server is the truth. Maybe it'll be simpler just to replace the comment in that case?? The comment config does not contain hte comment id, which is computed....
+        // Generally new comments should be attached at teh top. Here the attachment point is variable to reuse this method as a way to replace an existing comment with the same id.
+
+        var c = new GeneralComment(config); // Remove the existing one, and replace it with the current one.
+
+        var existing = findArrayItemById(obj.comments, c.id);
+
+        if (existing) {
+          obj.replaceGeneralComment(existing, c);
+        } else {
+          obj.comments.push(c); // Add the functionality to add secondary comments:
+
+          c.node.querySelector("button.reply").onclick = function () {
+            if (obj.form.config) {
+              c.reply(obj.form.config);
+              obj.form.clear();
+            } // if
+
+          }; // onclick
+          // Insert the new comment at teh very top.
+
+
+          var container = obj.node.querySelector("div.comments");
+          container.insertBefore(c.node, container.firstChild);
+        } // if
+
+      } // addGeneralComment
+
+    }, {
+      key: "replaceGeneralComment",
+      value: function replaceGeneralComment(existing, replacement) {
+        // For simplicity handle the replacing of hte comment here.
+        var obj = this; // Update the internal comments store.
+
+        obj.comments.splice(obj.comments.indexOf(existing), 1, replacement); // Update teh DOM.
+
+        var container = obj.node.querySelector("div.comments");
+        container.insertBefore(replacement.node, existing.node);
+      } // replaceGeneralComment
+
+    }, {
+      key: "user",
+      get: function get() {
+        return this.form.user;
+      } // get user
+      ,
+      set: function set(name) {
+        var obj = this; // The form has a change of author.
+
+        obj.form.user = name; // The comment appearance and functionality changes depends on who is checking them.
+
+        obj.comments.forEach(function (comment) {
+          comment.user = name;
+          comment.update();
+        }); // forEach
+      } // set user
+
+    }, {
+      key: "getCommentsForSaving",
+      value: function getCommentsForSaving() {
+        // The obj.comments is an array of GeneralComment instances, and just the configs have to be collected before being passed on. Collect them here.
+        var obj = this; // Note that the general comments hold the reply comments. Extract the secondary comments here and store them in a single layer array for ease of updating the changes on the server.
+
+        return obj.comments.reduce(function (acc, comment) {
+          acc.push(comment.config);
+          acc.push.apply(acc, _toConsumableArray(comment.replies.map(function (reply) {
+            return reply.config;
+          })));
+          return acc;
+        }, []);
+      } // getCommentsForSaving
+
+    }]);
+
+    return CommentingManager;
+  }(); // CommentingManager
+
+  function findArrayItemById(A, id) {
+    var candidates = A.filter(function (a) {
+      return a.id == id;
+    }); // filter
+
+    return candidates.length > 0 ? candidates[0] : false;
+  } // findArrayItemById
+   // arrayIncludesAll
+
+  /* COMMENTING SYSTEM
+
+  A class that handles all of the commenting system. Should be minimisable!!
+
+  */
+
+  var template$9 = "\n<div></div>\n"; // template
+  // Add top caret that hides the whole thing!! And the chapterform should maybe include a draw button.
+
+  var CommentingSystem = function CommentingSystem(taskid) {
+    _classCallCheck(this, CommentingSystem);
+
+    var obj = this;
+    obj.node = html2element(template$9); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
+
+    obj.chapterform = new ChapterForm();
+    obj.node.appendChild(obj.chapterform.node); // Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
+
+    obj.commenting = new CommentingManager(taskid);
+    obj.node.appendChild(obj.commenting.node); // Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
+
+    obj.chapterform.submit = function (tag) {
+      // The KnowledgeManager must push the chapter annotations to:
+      // the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
+      console.log("Send to server", tag);
+    }; // submit
+
+  } // constuctor
+  ; // CommentingSystem
+
   var Individual = /*#__PURE__*/function (_Item) {
     _inherits(Individual, _Item);
 
@@ -1658,7 +2594,17 @@
       // maybe it's more sensible to let hte renderer create the view node etc?
 
       obj.renderer = new UnsteadyPlayer2D(gl, task.entropy2d);
-      obj.viewnode.appendChild(obj.renderer.node);
+      obj.viewnode.appendChild(obj.renderer.node); // Add in a Commenting system also.
+
+      obj.commenting = new CommentingSystem(task.taskId);
+      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // Maybe the chapterform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
+      // The chapterform needs to have access to the playbar current time.
+
+      obj.commenting.chapterform.t = function () {
+        return obj.renderer.ui.t_play;
+      }; // chapterform t.
+
+
       return _this;
     } // constructor
 
@@ -2731,15 +3677,18 @@
 
 
     _createClass(TreeKnowledge, [{
-      key: "data",
-      get: // set data
-      function get() {
-        return this.hierarchy.annotations;
-      } // get data
-      ,
-      set: function set(d) {
-        this.hierarchy.annotations = d;
-      }
+      key: "purge",
+      value: function purge() {
+        // Remove all the server-based annotations.
+        this.hierarchy.annotations = [];
+      } // purge
+
+    }, {
+      key: "addtagannotation",
+      value: function addtagannotation(tag) {
+        this.hierarchy.annotations.push(tag);
+      } // addtagannotation
+
     }, {
       key: "temporary",
       get: // set temporary
@@ -4536,130 +5485,274 @@
     return A;
   } // namedArray
 
-  var testannotations2 = [{
-    id: "0",
-    name: "B",
-    taskId: "task 1",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "1",
-    name: "B",
-    taskId: "task 2",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "2",
-    name: "B",
-    taskId: "task 3",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "3",
-    name: "B",
-    taskId: "task 4",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "4",
-    name: "C",
-    taskId: "task 3",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "5",
-    name: "C",
-    taskId: "task 4",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "6",
-    name: "C",
-    taskId: "task 5",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "7",
-    name: "C",
-    taskId: "task 6",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "8",
-    name: "D",
-    taskId: "task 3",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "9",
-    name: "D",
-    taskId: "task 4",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "10",
-    name: "D",
-    taskId: "task 5",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "11",
-    name: "D",
-    taskId: "task 6",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "12",
-    name: "E",
-    taskId: "task 7",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "13",
-    name: "E",
-    taskId: "task 8",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "14",
-    name: "E",
-    taskId: "task 9",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "15",
-    name: "F",
-    taskId: "task 3",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "16",
-    name: "F",
-    taskId: "task 4",
-    author: "Aljaz",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "17",
-    name: "G",
-    taskId: "task 8",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }, {
-    id: "18",
-    name: "G",
-    taskId: "task 9",
-    author: "Magda",
-    datetime: "Tue Feb 08 2022"
-  }]; // atestannotation2
+  /*
+  This class should connect with the server to get and save the knowledge captured.
 
-  var KnowledgeManager = function KnowledgeManager(nm) {
-    _classCallCheck(this, KnowledgeManager);
-    // For now just push the given annotations to the tree?? Justto see if the tree is working? Where and how are the events attached to the tree?
+  Where should the tree be drawn also? Top left, as before?
 
-    nm.tree.data = testannotations2;
-    nm.tree.update();
-  } // constructor
-  ; // KnowledgeManager
+
+  Where in the code hierarchy should KnowledgeManager sit? Below or above NavigationManager. Maybe above is fine?
+
+  What kind of knowledge is there, and what does it need to interact with, and how:
+
+  - Structured tags: name/value pairs equivalent to ordinal/categorical metadata variables
+  	ordinal name-spatial value pairs: global menu
+  	categorical name-spatial value pairs: global menu
+  - Unstructured tags: keywords saved as a list for each metadata row
+      name: existing chapter form
+  - Annotations: timestamp/line/area data with a keyword attached
+      name-timestep: existing chapter form
+  	name-line: drawing interaction
+  	name-area: drawing interaction
+  - Comments:
+  	text: exiting comment form
+
+
+  All properties	
+  id, taskId, author, datetime, name, value, timestamps, geometry, comment, upvotes, downvotes
+
+
+  Compulsory properties:
+  id, taskId, author, datetime, name
+
+
+  The id should be an annotation specific id!!! What should this be??? Just sequential numbers? Assigned at the server?
+
+  The tree should only track the knowledge, and not all the taskIds.
+  */
+
+  /*
+        Database doesn't exist yet - create Knowledge table. Single table could hold all possible annotations.
+        
+        id - annotation id, created on the fly by SQL table
+        type - annotation type (tag, chapter, name-value pair,...)
+        taskId - the taskId it corresponds to
+        author - who contributed the knowledge
+        datetime - when was it contributed, created server side
+        name - tag name
+        value - tag value
+        timestamps - chapter start and end times saved as stringified array
+        geometry - stringified array of [x,y] arrays
+        comment - text comment
+        upvotes - string of authors that upvoted, with special server-side update method
+        downvotes - string of authros who downvoted, with special server-side update method
+  */
+
+  /*
+
+
+
+  // Task 11 is in two groups!!
+  const testannotations = [
+  {id: "0", name: "green", taskId: "task 2", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "1", name: "green", taskId: "task 7", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "2", name: "green", taskId: "task 11", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "3", name: "blue", taskId: "task 5", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "4", name: "blue", taskId: "task 6", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "5", name: "blue", taskId: "task 11", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "6", name: "brown", taskId: "task 1", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "7", name: "brown", taskId: "task 3", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "8", name: "brown", taskId: "task 4", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "9", name: "brown", taskId: "task 8", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "10", name: "brown", taskId: "task 13", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "11", name: "brown", taskId: "task 15", author: "Aljaz", datetime: "Tue Feb 08 2022"}
+  ]; // testannotations
+
+
+
+  const testannotations2 = [
+  {id: "0", name: "B", taskId: "task 1", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "1", name: "B", taskId: "task 2", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "2", name: "B", taskId: "task 3", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "3", name: "B", taskId: "task 4", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+
+  {id: "4", name: "C", taskId: "task 3", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "5", name: "C", taskId: "task 4", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "6", name: "C", taskId: "task 5", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "7", name: "C", taskId: "task 6", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+
+  {id: "8", name: "D", taskId: "task 3", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "9", name: "D", taskId: "task 4", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "10", name: "D", taskId: "task 5", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "11", name: "D", taskId: "task 6", author: "Magda", datetime: "Tue Feb 08 2022"},
+
+  {id: "12", name: "E", taskId: "task 7", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "13", name: "E", taskId: "task 8", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "14", name: "E", taskId: "task 9", author: "Magda", datetime: "Tue Feb 08 2022"},
+
+  {id: "15", name: "F", taskId: "task 3", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+  {id: "16", name: "F", taskId: "task 4", author: "Aljaz", datetime: "Tue Feb 08 2022"},
+
+  {id: "17", name: "G", taskId: "task 8", author: "Magda", datetime: "Tue Feb 08 2022"},
+  {id: "18", name: "G", taskId: "task 9", author: "Magda", datetime: "Tue Feb 08 2022"},
+  ]; // atestannotation2
+
+
+  */
+
+  var KnowledgeManager = /*#__PURE__*/function () {
+    function KnowledgeManager(nm) {
+      _classCallCheck(this, KnowledgeManager);
+
+      var obj = this; // `nm' is a NavigationManager object.
+      // Keep a reference to the navigation manager, because the tree navigation must have it's data updated with the knowledge, and the items can be accessed through it.
+
+      obj.nm = nm;
+      /* WEBSOCKET INITIALISATION
+      So - send over a list of taskIds, and then get back the initial set of comments.
+      Everytime the connection is remade the comments will reload.
+      */
+
+      var serverAddress = "wss://continuous-brief-nylon.glitch.me";
+      setupWebSocket();
+
+      function setupWebSocket() {
+        /*
+        The websocket connection can be closed if there is a connection problem between
+        the client and server, or if the connection is inactive for too long. In case
+        there is an error when opening the connection the client tries to reconnect after
+        1s. It also tries to reconnect if the connection is closed for some reason. To
+        minimise the reconnections due to inactivity the client pings the server every t<300s
+        to maintain the connection. The server pongs it back to keep the connection on its side.
+        */
+        obj.ws = new WebSocket(serverAddress, "json");
+
+        obj.ws.onerror = function () {
+          setTimeout(setupWebSocket, 1000);
+        }; // onerror
+
+
+        obj.ws.onopen = function () {
+          // When the connection is initialised the server should send all pertinent comments.
+          obj.ws.send(JSON.stringify({
+            type: "query"
+          }));
+
+          function ping() {
+            // This should recursively call itself.
+            console.log("ping");
+            obj.ws.send(JSON.stringify({
+              type: "ping"
+            }));
+            setTimeout(ping, 100 * 1000); // 299*1000   
+          } // ping
+
+
+          ping();
+        }; // onopen
+        // This will have to be reworked to differentiate between message and upvotes. Ultimately also annotations.
+
+
+        obj.ws.onmessage = function (msg) {
+          // Should differentiate between receiving a 'pong', receiving a single item, and receiving an array.
+          // A single item is just added, while an array requires a purge of existing comments first.
+          var action = JSON.parse(msg.data);
+          console.log(action);
+
+          switch (action.type) {
+            case "pong":
+              break;
+
+            case "query":
+              // Purge the existing comments
+              obj.purge();
+
+            case "relay":
+              // But relays can be new comments, or they can be upvotes/downvotes/...
+              obj.process(action.data);
+              break;
+          }
+        }; // onmessage
+
+
+        obj.ws.onclose = function () {
+          setTimeout(setupWebSocket, 1000);
+        }; // onclose
+
+      } // setupWebSocket
+
+      /* IMPLEMENT THE POSTING DIRECTLY FROM THE FORMS
+      The forms have dummy `submit' methods added to them, which receive the collected information as an input. The rest of the information should be fed into this object here.
+      
+      */
+
+      /* Configure the items to send things to the server
+      WebSockets support sending and receiving: strings, typed arrays (ArrayBuffer) 
+      and Blobs. Javascript objects must be serialized to one of the above types 
+      before sending.
+      
+      type: comment allows the server to handle different packages differently.
+      */
+
+
+      nm.items.forEach(function (item) {
+        item.commenting.chapterform.submit = function (tag) {
+          /* The author and taskId are obligatory
+          Author is required to fom groups for the treenavigation, and the taskId allows the annotations to be piped to the corresponding data.
+          */
+          if (obj.username) {
+            tag.taskId = item.task.taskId;
+            tag.author = obj.username;
+            obj.ws.send(JSON.stringify(tag));
+          } else {
+            console.log("You need to log in", tag);
+          } // if			
+
+        }; // onclick
+
+      }); // forEach
+      // Loop to keep updating the comments every 10 seconds - this is just so that the time labels are getting updated.
+
+      /*
+      function update(){
+        comments.forEach(c=>{
+      	c.update()
+        }) // forEach
+        setTimeout(update, 10*1000)
+      } // update
+      update();
+      */
+    } // constructor
+
+
+    _createClass(KnowledgeManager, [{
+      key: "username",
+      get: function get() {
+        return document.getElementById("username").value;
+      }
+    }, {
+      key: "purge",
+      value: function purge() {
+        var obj = this; // What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
+        // Purge the navigation tree of obsolete knowledge.
+
+        obj.nm.tree.purge();
+        console.log("Purging");
+      } // purge
+
+    }, {
+      key: "process",
+      value: function process(d) {
+        var obj = this; // How will this processing work? First filter by taskId, and then filter by type?
+        // I'm expecting to see tags, chapters, comments for now.
+        // All the tags can be pushed to the tree. But this is really pushed, not replaced!!
+
+        var tags = d.filter(function (a) {
+          return a.type === "tag";
+        });
+        tags.forEach(function (tag) {
+          obj.nm.tree.addtagannotation(tag);
+        }); // forEach
+
+        obj.nm.tree.update(); // The chapters need to be distributed to hte appropriate items.
+
+        console.log("Process", d);
+      } // process
+
+    }]);
+
+    return KnowledgeManager;
+  }(); // KnowledgeManager
 
   /* @license twgl.js 4.19.2 Copyright (c) 2015, Gregg Tavares All Rights Reserved.
   Available via the MIT license.
@@ -6031,9 +7124,9 @@
         */
         // cmin/cmax give the global (for all small multiples) colorbar range.
 
-        gl.uniform1f(locations.cmin, obj.globalColormapRange[0]); // 0   880
+        gl.uniform1f(locations.cmin, obj.colormapRange[0]); // 0   880
 
-        gl.uniform1f(locations.cmax, obj.globalColormapRange[1]); // 255   920
+        gl.uniform1f(locations.cmax, obj.colormapRange[1]); // 255   920
         // uint_cmin/uint_cmax give the local (particular small multiple) colorbar range,
 
         gl.uniform1f(locations.uint_cmin, geometry.currentUintRange[0]); // 0   880
@@ -6077,6 +7170,13 @@
 
         return item.renderer.isOnScreen && !isCovered;
       } // isItemVisible
+
+    }, {
+      key: "colormapRange",
+      get: function get() {
+        var obj = this;
+        return obj.customColormapRange ? obj.customColormapRange : obj.globalColormapRange;
+      } // get colormapRange
 
     }, {
       key: "globalColormapRange",
@@ -6158,105 +7258,105 @@
     sepal_width: 3,
     color: "sandybrown",
     cat: "brown",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0001/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 2",
     sepal_length: 4.7,
     sepal_width: 3.2,
     color: "seagreen",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0002/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 3",
     sepal_length: 4.6,
     sepal_width: 3.1,
     color: "seashell",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0003/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 4",
     sepal_length: 5,
     sepal_width: 3.6,
     color: "sienna",
     cat: "brown",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0004/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 5",
     sepal_length: 5.4,
     sepal_width: 3.9,
     color: "skyblue",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0005/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 6",
     sepal_length: 4.6,
     sepal_width: 3.4,
     color: "slateblue",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0006/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 7",
     sepal_length: 5,
     sepal_width: 3.4,
     color: "springgreen",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0007/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 8",
     sepal_length: 4.4,
     sepal_width: 2.9,
     color: "tan",
     cat: "brown",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0008/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 9",
     sepal_length: 4.9,
     sepal_width: 3.1,
     color: "thistle",
     cat: "red",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0009/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 10",
     sepal_length: 5.4,
     sepal_width: 3.7,
     color: "tomato",
     cat: "red",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0010/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 11",
     sepal_length: 4.8,
     sepal_width: 3.4,
     color: "turquoise",
     cat: "sea",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0011/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 12",
     sepal_length: 4.8,
     sepal_width: 3,
     color: "violet",
     cat: "red",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0012/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 13",
     sepal_length: 4.3,
     sepal_width: 3,
     color: "wheat",
     cat: "brown",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0013/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 14",
     sepal_length: 5.8,
     sepal_width: 4,
     color: "lightpink",
     cat: "red",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0014/unsteady_contour2d_meta.json"
   }, {
     taskId: "task 15",
     sepal_length: 5.7,
     sepal_width: 4.4,
     color: "antiquewhite",
     cat: "brown",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
+    entropy2d: "./data/0015/unsteady_contour2d_meta.json"
   }]; // data
 
   /*
@@ -6299,10 +7399,11 @@
   }); // forEach
   // The knowledge manager object.
 
-  new KnowledgeManager(workspace); // Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
+  var knowledge = new KnowledgeManager(workspace); // Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
   // How should the renderer recognise that it needs to change the set of groups to iterate over?
 
-  renderer.draw();
+  renderer.draw(); // To change the colormap values a custom range can be specified:
+  // renderer.customColormapRange = [1140, 1150]
 
   workspace.updateRenderingItems = function (items) {
     renderer.items = items;
@@ -6310,7 +7411,7 @@
   // How to do the memory handling. And how to make it appear in the navigation bar!
 
 
-  console.log(workspace, renderer);
+  console.log(workspace, renderer, knowledge);
 
 }());
 //# sourceMappingURL=spatialknowledge.js.map
