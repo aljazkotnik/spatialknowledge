@@ -228,7 +228,20 @@ export default class KnowledgeManager{
 			} else {
 				console.log("You need to log in", tag)
 			} // if			
-		} // onclick
+		} // submit
+		
+		
+		// Ah, with the commenting I want to have general comments and replies. And for the replies it's still the commentform that is used. So maybe that can be configured here actually. Ah, but it can't, because it depends on the dynamically generated comment DOM elements.
+		item.commenting.commenting.form.submit = function(comment){
+			if(obj.username){
+				comment.taskId = item.task.taskId;
+				comment.author = obj.username;
+				
+				obj.ws.send( JSON.stringify( comment ) );
+			} else {
+				console.log("You need to log in", comment)
+			} // if
+		} // submit 
 	}) // forEach
 
 
@@ -284,28 +297,35 @@ export default class KnowledgeManager{
 	
 	// CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
 	// The chapters need to be distributed to hte appropriate items.
-	let chapters = d.filter(a=>a.type==="chapter");
-	console.log("Chapters", chapters)
-	
-	let distribution = chapters.reduce((acc,c)=>{
-		
-		// Chpters should have their timestamps parsed back into JSON objects.
-		c.timestamps = JSON.parse(c.timestamps);
-		
-		if(acc[c.taskId]){
-			acc[c.taskId].push(c);
-		} else {
-			acc[c.taskId] = [c];
+	let chapters = d.filter(a=>{
+		if(a.type==="chapter"){
+			// Chpters should have their timestamps parsed back into JSON objects.
+			a.timestamps = JSON.parse(a.timestamps);
+			return true
 		} // if
-		return acc
-	},{})
+		return false
+	}); // filter
 	
-	
+	let chapterdistribution = distribution(chapters);
 	obj.nm.items.forEach(item=>{
-		if(distribution[item.task.taskId]){
+		if(chapterdistribution[item.task.taskId]){
 			// The chapters are routed to the playbar.
-			item.renderer.ui.bar.addchapters(distribution[item.task.taskId]);
-			console.log(`Chapters of ${ item.task.taskId }:`, distribution[item.task.taskId])
+			item.renderer.ui.bar.addchapters(chapterdistribution[item.task.taskId]);
+		} // if
+	}) // forEach
+	
+	
+	
+	// COMMENTING ON GROUPS IS IMPOSSIBLE, ONLY ACTUAL INDIVIDUALS CAN BE DISCUSSED
+	// Could be relaxed by just toring all the user ids for comments submitted through groups? Would have to implement a group specific way to return a stringified array of taskIds.
+	let comments = d.filter(a=>{return a.type==="comment"}); // filter
+	console.log("Comments", comments)
+	
+	let commentsdistribution = distribution(comments);
+	obj.nm.items.forEach(item=>{
+		if(commentsdistribution[item.task.taskId]){
+			// The comments are routed to the commenting manager.
+			item.commenting.commenting.add(commentsdistribution[item.task.taskId]);
 		} // if
 	}) // forEach
 	
@@ -314,6 +334,20 @@ export default class KnowledgeManager{
 
 
 
+
+function distribution(A){
+	// Create a distribution map for items in array A, by their taskId.
+	let d = A.reduce((acc,a)=>{
+		
+		if(acc[a.taskId]){
+			acc[a.taskId].push(a);
+		} else {
+			acc[a.taskId] = [a];
+		} // if
+		return acc
+	},{})
+	return d
+} // distribution
 
 
 

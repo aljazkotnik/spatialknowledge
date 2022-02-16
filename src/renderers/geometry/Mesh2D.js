@@ -121,7 +121,7 @@ export default class Mesh2D{
 			  gl.bufferData(gl.ARRAY_BUFFER, d[2], gl.STATIC_DRAW);
 			
 			
-			  console.log("time to draw: ",  performance.now() - t0, "[ms]");
+			  // console.log("time to draw: ",  performance.now() - t0, "[ms]");
 			}) // then
 			
 			

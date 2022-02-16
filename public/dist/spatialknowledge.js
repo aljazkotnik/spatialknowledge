@@ -262,41 +262,9 @@
     });
     return f.length == 0 ? true : false;
   } // arrayIncludesAll
+   // joinDataToElements
 
-  function joinDataToElements(data, elements, idAccessor) {
-    // Find data that has no elements, find the elements that have data, and the leftover.
-    var elementsArray = _toConsumableArray(elements);
-
-    var elementsDataIds = elementsArray.map(function (el) {
-      return idAccessor(el.__data__);
-    });
-    var g = elementsArray.reduce(function (acc, el) {
-      var d = data.filter(function (d_) {
-        return idAccessor(el.__data__) == idAccessor(d_);
-      }); // filter
-
-      if (d.length > 0) {
-        el.__data__ = d[0];
-        acc.update.push(el);
-      } else {
-        acc.exit.push(el);
-      } // if
-
-
-      return acc;
-    }, {
-      update: [],
-      exit: []
-    }); // filter
-
-    g.enter = data.filter(function (d) {
-      return !elementsDataIds.includes(idAccessor(d));
-    }); // filter
-
-    return g;
-  } // joinDataToElements
-
-  var template$l = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$k = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -311,7 +279,7 @@
       this.width = 300;
       this.height = 200;
       var obj = this;
-      obj.node = html2element(template$l);
+      obj.node = html2element(template$k);
       obj.node.style.position = "absolute";
       obj.viewnode = obj.node.querySelector("div.viewcontainer"); // obj.viewnode.style.height = obj.height + "px";
       // obj.viewnode.style.width = obj.width + "px";
@@ -668,7 +636,7 @@
     return Math.max(Math.min(v, b), a);
   } // constrainValue
 
-  var template$k = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
+  var template$j = "\n<div>\n  <div class=\"view\" style=\"width:300px; height:200px; opacity:0.001;\"></div>\n  <div class=\"controls\"></div>\n</div>\n"; // Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
 
   var ViewFrame2D = /*#__PURE__*/function () {
     function ViewFrame2D(gl) {
@@ -677,7 +645,7 @@
       var obj = this;
       obj.gl = gl; // Okay, create the whole player here, and then just append it in hte item. The Item should then adjust the size to the player!!
 
-      obj.node = html2element(template$k); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
+      obj.node = html2element(template$j); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 
       obj.view = obj.node.querySelector("div.view"); // Some initial dummy geometry to allow initialisation.
 
@@ -930,7 +898,7 @@
       // Imagine that some metadata was loaded in.
       // "./data/testmetadata.json"
 
-      var t0 = performance.now(); // The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
+      performance.now(); // The if wrapper allows the Mesh2D to be initialised errorless  without a valid unsteadyMetadataFilename.
 
       if (unsteadyMetadataFilename) {
         obj.metadatapromise = fetch(unsteadyMetadataFilename).then(function (res) {
@@ -963,8 +931,7 @@
             gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, d[1], gl.STATIC_DRAW);
             gl.bindBuffer(gl.ARRAY_BUFFER, valuesBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, d[2], gl.STATIC_DRAW);
-            console.log("time to draw: ", performance.now() - t0, "[ms]");
+            gl.bufferData(gl.ARRAY_BUFFER, d[2], gl.STATIC_DRAW); // console.log("time to draw: ",  performance.now() - t0, "[ms]");
           }); // then
         }); // fetch
       } // if
@@ -1207,7 +1174,7 @@
   } // pausePath
 
 
-  var template$j = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
+  var template$i = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
   // textHeight + textBottomMargin + rectHighlightHeightDelta + rectHeight/2 - H/2
 
   var PlayButton = /*#__PURE__*/function () {
@@ -1218,7 +1185,7 @@
       this.y = 20 * 2 * Math.sqrt(3) / 3 / 2;
       this.width = 20;
       var obj = this;
-      obj.node = svg2element(template$j);
+      obj.node = svg2element(template$i);
     } // constructor
 
 
@@ -1236,7 +1203,7 @@
   }(); // PlayButton
 
   var defaultRectAttributes = "stroke=\"white\" stroke-width=\"2px\"";
-  var template$i = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
+  var template$h = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
 
   var PlayBarAnnotation = /*#__PURE__*/function () {
     // y = textHeight + textBottomMargin + highlightHeightDelta
@@ -1247,7 +1214,7 @@
       this.height = 10;
       this.dh = 4;
       var obj = this;
-      obj.node = svg2element(template$i);
+      obj.node = svg2element(template$h);
       obj.background = obj.node.querySelector("rect.background");
       obj.buffering = obj.node.querySelector("rect.buffering");
       obj.foreground = obj.node.querySelector("rect.foreground");
@@ -1345,7 +1312,7 @@
     r.y.baseVal.value = y;
   } // unhighlightRectangle
 
-  var template$h = "<g style=\"cursor: pointer;\"></g>"; // template
+  var template$g = "<g style=\"cursor: pointer;\"></g>"; // template
 
   var PlayBar = /*#__PURE__*/function () {
     // Coordinates in whole svg frame.
@@ -1361,7 +1328,7 @@
       this.t_buffered = 0;
       this.t_play = 0;
       var obj = this;
-      obj.node = svg2element(template$h);
+      obj.node = svg2element(template$g);
       obj._tscale = new scaleLinear();
     } // constructor
 
@@ -1470,7 +1437,7 @@
     return PlayBar;
   }(); // PlayBar
 
-  var template$g = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
+  var template$f = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
 
   var PlayControls = /*#__PURE__*/function () {
     function PlayControls() {
@@ -1480,7 +1447,7 @@
       this.textBottomMargin = 2;
       this.highlightHeightDelta = 3;
       var obj = this;
-      obj.node = html2element(template$g);
+      obj.node = html2element(template$f);
       var y = obj.textHeight + obj.textBottomMargin + obj.highlightHeightDelta; // Make a play button.
 
       obj.button = new PlayButton();
@@ -1610,6 +1577,7 @@
       obj.fps = 24;
       obj.dt = 1000 / obj.fps;
       obj.timelastdraw = 0; // Actual geometry to be drawn. The time domain will change after the geometry loads in its data.
+      // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
 
       obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename);
       obj.geometry.metadatapromise.then(function (content) {
@@ -1648,18 +1616,8 @@
 
 
         if (obj.ui.t_buffered != obj.geometry.t_buffered) {
-          console.log("Changing t_buffered");
           obj.ui.t_buffered = obj.geometry.t_buffered;
         } // if
-        // The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
-        // This should be moved to the constructor, as it only needs to be executed once!!
-
-        /*
-        if(obj.ui.t_domain != obj.geometry.domain.t){
-        	console.log("Changing t_domain")
-        	obj.ui.t_domain = obj.geometry.domain.t;
-        } // if
-        */
 
       } // update
 
@@ -1708,20 +1666,20 @@
     return UnsteadyPlayer2D;
   }(ViewFrame2D); // UnsteadyPlayer2D
 
-  var css$4 = {
+  var css$3 = {
     button: "\n    border: none;\n\tcursor: pointer;\n\tborder-radius: 4px;\n  ",
     timebutton: "\n    background-color: gainsboro;\n  ",
     submitbutton: "\n    background-color: black;\n\tcolor: white;\n  "
   }; // css
 
-  var template$f = "\n<div style=\"300px\">\n  <input type=\"text\" placeholder=\"#tag-name\" style=\"width: 100px;\"></input>\n  \n  <div style=\"display: inline-block; float: right;\">\n  <button class=\"starttime\" style=\"".concat(css$4.button, " ").concat(css$4.timebutton, "\">start</button>\n  <i>-</i>\n  <button class=\"endtime\" style=\"").concat(css$4.button, " ").concat(css$4.timebutton, "\">end</button>\n  <button class=\"submit\" style=\"").concat(css$4.button, " ").concat(css$4.submitbutton, "\">\n    Submit\n  </button>\n  </div>\n  \n  \n</div>\n"); // template
+  var template$e = "\n<div style=\"300px\">\n  <input type=\"text\" placeholder=\"#tag-name\" style=\"width: 100px;\"></input>\n  \n  <div style=\"display: inline-block; float: right;\">\n  <button class=\"starttime\" style=\"".concat(css$3.button, " ").concat(css$3.timebutton, "\">start</button>\n  <i>-</i>\n  <button class=\"endtime\" style=\"").concat(css$3.button, " ").concat(css$3.timebutton, "\">end</button>\n  <button class=\"submit\" style=\"").concat(css$3.button, " ").concat(css$3.submitbutton, "\">\n    Submit\n  </button>\n  </div>\n  \n  \n</div>\n"); // template
 
   var ChapterForm = /*#__PURE__*/function () {
     function ChapterForm() {
       _classCallCheck(this, ChapterForm);
 
       var obj = this;
-      obj.node = html2element(template$f);
+      obj.node = html2element(template$e);
       obj.input = obj.node.querySelector("input"); // This value will be overwritten during interactions, and is where the tag manager collects the time for the timestamps.
 
       obj.clear(); // The button should cycle through black, green, and red. It will need some way of tracking its current state, and a way to load in existing tags! This will allow users to subsequently change the tag if needed? Maybe this is a bit much for now. It will need a submit button.
@@ -1866,21 +1824,20 @@
   Maybe this one should be remade into a manager so it can keep add comments to itself. Otherwise they have to be routed outside.
   */
 
-  var css$3 = {
+  var css$2 = {
     textarea: "\n    width: 100%;\n    border: none;\n    resize: none;\n    overflow: hidden;\n    max-height: 100px;\n  ",
     submitbutton: "\n    color: white;\n\tbackground-color: black;\n\tborder-radius: 4px;\n\tcursor: pointer;\n  "
   }; // css
 
-  var template$e = "\n<div>\n  <textarea class=\"comment\" type=\"text\" rows=\"1\" placeholder=\"What do you think?\" style=\"".concat(css$3.textarea, "\"></textarea>\n  <button class=\"submit\" style=\"").concat(css$3.submitbutton, "\"><b>Submit</b></button>\n</div>\n"); // template
+  var template$d = "\n<div>\n  <textarea class=\"comment\" type=\"text\" rows=\"1\" placeholder=\"What do you think?\" style=\"".concat(css$2.textarea, "\"></textarea>\n  <button class=\"submit\" style=\"").concat(css$2.submitbutton, "\"><b>Submit</b></button>\n</div>\n"); // template
 
   var AddCommentForm = /*#__PURE__*/function () {
-    function AddCommentForm(id) {
+    function AddCommentForm() {
       _classCallCheck(this, AddCommentForm);
 
       this._user = "";
       var obj = this;
-      obj.node = html2element(template$e);
-      obj.viewid = id; // Author input got omitted because the author also needs to be known when voting on a comment, and I didn't want to implement an input there. That's why now there will be an overall login box that will control everything.
+      obj.node = html2element(template$d); // Author input got omitted because the author also needs to be known when voting on a comment, and I didn't want to implement an input there. That's why now there will be an overall login box that will control everything.
 
       obj.commentinput = obj.node.querySelector("textarea.comment");
       obj.submitbutton = obj.node.querySelector("button.submit");
@@ -1890,6 +1847,14 @@
       obj.commentinput.oninput = function () {
         obj.update();
       }; // oninput
+      // Make both replies and general comments to use a single form.
+
+
+      obj.submitbutton.onmousedown = function (e) {
+        e.stopPropagation();
+        obj.submit(obj.config);
+        obj.clear();
+      }; // onmousedown
 
     } // constructor
 
@@ -1914,55 +1879,45 @@
       } // clear
 
     }, {
-      key: "user",
-      get: // set user
-      function get() {
-        return this._user;
-      } // get user
-      ,
-      set: function set(name) {
-        this._user = name;
-        this.update();
-      }
-    }, {
       key: "config",
       get: function get() {
         var obj = this;
-        return obj.commentinput.value && obj.user ? {
-          author: obj.user,
-          viewid: obj.viewid,
-          text: obj.commentinput.value
+        return obj.commentinput.value ? {
+          comment: obj.commentinput.value,
+          type: "comment"
         } : false;
       } // config
+      // Dummy method that takes in hte config.
 
+    }, {
+      key: "submit",
+      value: function submit(comment) {}
     }]);
 
     return AddCommentForm;
   }(); // AddCommentForm
 
-  var css$2 = {
+  var css$1 = {
     button: "\n    border: none;\n\tbackground-color: white;\n\tcursor: pointer;\n  ",
     replybutton: "\n    color: gray;\n\tpadding: 0 0 0 0;\n  ",
     votenumberi: "\n    margin-left: 4px;\n  ",
     timestampspan: "\n    color: gray;\n\tfont-size: 14px;\n\tmargin-left: 12px;\n  "
   }; // css
 
-  var template$d = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$2.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$2.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$2.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$2.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$2.button, " ").concat(css$2.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
+  var template$c = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$1.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$1.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$1.button, " ").concat(css$1.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
 
   var Comment = /*#__PURE__*/function () {
     function Comment(config) {
       _classCallCheck(this, Comment);
 
-      this.user = "Default User: Aljaz";
+      this.user = "Default";
       var obj = this; // Make a new node.
 
-      obj.node = html2element(template$d); // Fill the template with the options from the config. There must be a comment, and there must be an author.
+      obj.node = html2element(template$c); // Fill the template with the options from the config. There must be a comment, and there must be an author.
 
-      obj.config = config; // Upon creation the author is also the user? True when the user makes them, not otherwise... But the user is updated when the login is initiated.
+      obj.config = config; // Fill some options that may not be defined in config.
 
-      obj.user = obj.config.author; // Fill some options that may not be defined in config.
-
-      obj.config.time = config.time ? config.time : Date();
+      obj.config.datetime = config.datetime ? config.datetime : new Date().toISOString();
       obj.config.upvotes = config.upvotes ? config.upvotes : [];
       obj.config.downvotes = config.downvotes ? config.downvotes : [];
       obj.config.tags = config.tags ? config.tags : []; // Modify the node to reflect the config.
@@ -1970,7 +1925,7 @@
       var header = obj.node.querySelector("div.header");
       header.querySelector("b.author").innerText = config.author;
       var body = obj.node.querySelector("div.body");
-      body.innerText = config.text;
+      body.innerText = config.comment;
       obj.update(); // Add the upvoting and downvoting. Where will the author name come from?? The upvote/downvote buttons should also be colored depending on whether the current user has upvoted or downvoted the comment already. Maybe the top app should just push the current user to the elements, and then they can figure out how to handle everything. That means that the functionality can be implemented here.
 
       var footer = obj.node.querySelector("div.footer");
@@ -1990,8 +1945,9 @@
     _createClass(Comment, [{
       key: "id",
       get: function get() {
+        // Could just use obj.config.id, but in that case the relay has to be the actual SQL entry when a comment is added to the server.
         var obj = this;
-        return [obj.config.viewid, obj.config.author, obj.config.time].join(" ");
+        return [obj.config.viewid, obj.config.author, obj.config.datetime].join(" ");
       } // get id
 
     }, {
@@ -2010,7 +1966,7 @@
         var obj = this;
         var timestamp = obj.node.querySelector("div.header").querySelector("span.timestamp"); // Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
 
-        var t = obj.config.time;
+        var t = obj.config.datetime;
         var now = Date.now();
         var stamp = Date.parse(t);
         var dayInMiliseconds = 1000 * 60 * 60 * 24;
@@ -2149,7 +2105,7 @@
   // Sort the comments before passing them to the comments below. How will replies be updated? Ultimately everything should be coming from the server??
   // This is just a template for the controls which allow the replies to be expanded or collapsed. These are invisible at first.
 
-  var template$c = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
+  var template$b = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
 
   var GeneralComment = /*#__PURE__*/function (_Comment) {
     _inherits(GeneralComment, _Comment);
@@ -2167,7 +2123,7 @@
       var obj = _assertThisInitialized(_this); // The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
 
 
-      obj.replynode = html2element(template$c);
+      obj.replynode = html2element(template$b);
       obj.node.appendChild(obj.replynode); // Add the functionality to the caret.
 
       obj.repliesExpanded = false;
@@ -2192,7 +2148,7 @@
 
         replyconfig.parentid = obj.id;
         var r = new ReplyComment(replyconfig);
-        var existing = findArrayItemById$1(obj.replies, r.id);
+        var existing = findArrayItemById(obj.replies, r.id);
 
         if (existing) {
           obj.replaceReply(existing, r);
@@ -2254,7 +2210,7 @@
     return GeneralComment;
   }(Comment); // GeneralComment
 
-  function findArrayItemById$1(A, id) {
+  function findArrayItemById(A, id) {
     var candidates = A.filter(function (a) {
       return a.id == id;
     }); // filter
@@ -2262,155 +2218,61 @@
     return candidates.length > 0 ? candidates[0] : false;
   } // findArrayItemById
 
-  var template$b = "\n<div style=\"margin-bottom: 5px;\"></div>\n"; // template
-  // Maybe make them grey with italis writing?
-
-  var css$1 = "\nborder: none;\nbackground-color: gainsboro;\nmargin-right: 2px;\ncursor: pointer;\n"; // css
-
-  var tagtemplate = "\n<button style=\"".concat(css$1, "\"><i></i></button>\n"); // A general tag should always be present. This tag should then show all comments without tags.
-
-  var DiscussionSelector = /*#__PURE__*/function () {
-    function DiscussionSelector() {
-      _classCallCheck(this, DiscussionSelector);
-
-      this.tags = [];
-      this.selected = [];
-      var obj = this;
-      obj.node = html2element(template$b);
-    } // constructor
-
-
-    _createClass(DiscussionSelector, [{
-      key: "update",
-      value: function update(newtags) {
-        var obj = this;
-
-        if (newtags) {
-          // Replace the tags if necessary. The same tags should be grouped together, but different authors may have differing views on what constitutes features.
-          obj.tags = newtags;
-          obj.selected = obj.selected.filter(function (d) {
-            return newtags.includes(d);
-          });
-          obj.externalAction();
-        } // if
-
-
-        var buttons = joinDataToElements(obj.tags, obj.node.querySelectorAll("button"), function (d) {
-          return d;
-        });
-        buttons.enter.forEach(function (d) {
-          var el = html2element(tagtemplate);
-          obj.node.appendChild(el);
-          el.querySelector("i").innerText = d;
-          el.__data__ = d;
-
-          el.onclick = function () {
-            obj.toggle(el);
-          }; // onclick
-
-        }); // forEach
-
-        buttons.exit.forEach(function (button) {
-          return button.remove();
-        });
-      } // update
-
-    }, {
-      key: "toggle",
-      value: function toggle(el) {
-        var obj = this;
-
-        if (obj.selected.includes(el.__data__)) {
-          obj.selected.splice(obj.selected.indexOf(el.__data__), 1);
-          el.style.fontWeight = "";
-        } else {
-          obj.selected.push(el.__data__);
-          el.style.fontWeight = "bold";
-        } // if
-
-
-        obj.externalAction();
-      } // toggle
-      // Placeholder that will allow the actual comments to be hidden. Maybe just name it that?
-
-    }, {
-      key: "externalAction",
-      value: function externalAction() {} // externalAction
-
-    }]);
-
-    return DiscussionSelector;
-  }(); // DiscussionSelector
-
-  var template$a = "\n<div class=\"commenting\" style=\"width:300px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
+  var template$a = "\n<div class=\"commenting\" style=\"width:300px; margin-top: 10px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
 
   var CommentingManager = /*#__PURE__*/function () {
-    function CommentingManager(id) {
+    function CommentingManager() {
       _classCallCheck(this, CommentingManager);
 
+      this.comments = [];
       var obj = this;
-      obj.node = html2element(template$a);
-      obj.viewid = id;
-      obj.comments = []; // Make the form;
+      obj.node = html2element(template$a); // Make the form;
 
-      obj.form = new AddCommentForm(id);
-      obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Make both replies and general comments to use a single form.
+      obj.form = new AddCommentForm();
+      obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
 
-      obj.form.submitbutton.onclick = function () {
-        var config = obj.form.config;
-
-        if (config) {
-          // The form should only be cleared if a comment was successfully added.
-          config.tags = obj.discussion.selected.map(function (d) {
-            return d;
-          });
-          obj.add(config);
-          obj.form.clear();
-        } // if
-
-      }; // onclick
-      // Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
-
-
+      /*
       obj.discussion = new DiscussionSelector();
-      obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node); // obj.discussion.update(["#vortex", "#shock"])
-
-      obj.discussion.externalAction = function () {
-        obj.hideNonDiscussionComments();
-      }; // externalAction
+         obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node);
+         // obj.discussion.update(["#vortex", "#shock"])
+      obj.discussion.externalAction = function(){
+      	obj.hideNonDiscussionComments();
+      } // externalAction
+      
+      
       // At the beginning show only general comments? Better yet, show no comments.
-
-
-      obj.hideNonDiscussionComments(); // Finally add teh controls that completely hide comments.
+      obj.hideNonDiscussionComments();
+      */
+      // Finally add teh controls that completely hide comments.
 
       var hsdiv = obj.node.querySelector("div.hideShowText");
       var cdiv = obj.node.querySelector("div.commentingWrapper");
 
-      hsdiv.onclick = function () {
+      hsdiv.onmousedown = function (e) {
+        e.stopPropagation();
         var hidden = cdiv.style.display == "none";
         cdiv.style.display = hidden ? "" : "none"; // It changed from hidden to show, but hidden is past state.
 
         hsdiv.querySelector("b.text").innerText = hidden ? "Hide comments" : "Show comments";
         hsdiv.querySelector("i").classList.value = hidden ? "fa fa-caret-up" : "fa fa-caret-down";
-      }; // onclick
+      }; // onmousedown
 
     } // constructor
 
+    /*
+    hideNonDiscussionComments(){
+    let obj = this;
+    obj.comments.forEach(comment=>{
+        // This should really be select any!
+     let pertinent = (obj.discussion.selected.length == 0) 
+                  || (obj.discussion.selected.some(d=>comment.config.tags.includes(d)));
+     comment.node.style.display = pertinent ? "" : "none";
+    }) // forEach
+    } // hideNonDiscussionComments
+    */
+
 
     _createClass(CommentingManager, [{
-      key: "hideNonDiscussionComments",
-      value: function hideNonDiscussionComments() {
-        var obj = this;
-        obj.comments.forEach(function (comment) {
-          // This should really be select any!
-          var pertinent = obj.discussion.selected.length == 0 || obj.discussion.selected.some(function (d) {
-            return comment.config.tags.includes(d);
-          });
-          comment.node.style.display = pertinent ? "" : "none";
-        }); // forEach
-      } // hideNonDiscussionComments
-
-    }, {
       key: "updateCommentCounter",
       value: function updateCommentCounter() {
         var obj = this;
@@ -2422,13 +2284,6 @@
         var counterNode = obj.node.querySelector("div.hideShowText").querySelector("b.counter");
         counterNode.innerText = n ? "(".concat(n, ")") : "";
       } // updateCommentCounter
-
-    }, {
-      key: "submit",
-      value: function submit(config) {
-        // This function is called when the button is pressed. By default it just routes the comment to 'add' so that the comment is added straight away. Alternately it should be passed to the server first. Maybe it's good if both things are done in cases when the connection is not good?
-        this.add(config);
-      } // submit
 
     }, {
       key: "clear",
@@ -2445,78 +2300,21 @@
 
     }, {
       key: "add",
-      value: function add(config) {
-        // When the comments are loaded from the server they will be added through this interface. Therefore it must handle both the primary and secondary comments.
-        var obj = this;
+      value: function add(comments) {
+        // The comments come solely from the server. They are not updated, and can just be created once. 
+        var obj = this; // Store all of them as a record.
 
-        if (config.parentid) {
-          // Comments that have a parent id are replies. Find the right parent comment.
-          obj.addReplyComment(config);
-        } else {
-          // It's a general comment. 
-          obj.addGeneralComment(config);
-        } // if
-        // Update the comments count.
+        obj.comments = obj.comments.concat(comments); // Just add the new ones in.
 
-
-        obj.hideNonDiscussionComments();
-        obj.updateCommentCounter();
-      } // add
-
-    }, {
-      key: "addReplyComment",
-      value: function addReplyComment(config) {
-        var obj = this;
-        var parent = findArrayItemById(obj.comments, config.parentid);
-
-        if (parent) {
-          parent.reply(config);
-        } // if
-
-      } // addReplyComment
-
-    }, {
-      key: "addGeneralComment",
-      value: function addGeneralComment(config) {
-        var obj = this; // If there is an existing one, that one should be updated. Whatever is coming from the server is the truth. Maybe it'll be simpler just to replace the comment in that case?? The comment config does not contain hte comment id, which is computed....
-        // Generally new comments should be attached at teh top. Here the attachment point is variable to reuse this method as a way to replace an existing comment with the same id.
-
-        var c = new GeneralComment(config); // Remove the existing one, and replace it with the current one.
-
-        var existing = findArrayItemById(obj.comments, c.id);
-
-        if (existing) {
-          obj.replaceGeneralComment(existing, c);
-        } else {
-          obj.comments.push(c); // Add the functionality to add secondary comments:
-
-          c.node.querySelector("button.reply").onclick = function () {
-            if (obj.form.config) {
-              c.reply(obj.form.config);
-              obj.form.clear();
-            } // if
-
-          }; // onclick
-          // Insert the new comment at teh very top.
-
+        comments.forEach(function (comment) {
+          // No replying for now.
+          var c = new GeneralComment(comment); // Insert the new comment at teh very top.
 
           var container = obj.node.querySelector("div.comments");
           container.insertBefore(c.node, container.firstChild);
-        } // if
-
-      } // addGeneralComment
-
-    }, {
-      key: "replaceGeneralComment",
-      value: function replaceGeneralComment(existing, replacement) {
-        // For simplicity handle the replacing of hte comment here.
-        var obj = this; // Update the internal comments store.
-
-        obj.comments.splice(obj.comments.indexOf(existing), 1, replacement); // Update teh DOM.
-
-        var container = obj.node.querySelector("div.comments");
-        container.insertBefore(replacement.node, existing.node);
-      } // replaceGeneralComment
+        }); // forEach	
+      } // add
+      // The user may be needed here as the upvotes/downvotes need to be colored.
 
     }, {
       key: "user",
@@ -2535,33 +2333,10 @@
         }); // forEach
       } // set user
 
-    }, {
-      key: "getCommentsForSaving",
-      value: function getCommentsForSaving() {
-        // The obj.comments is an array of GeneralComment instances, and just the configs have to be collected before being passed on. Collect them here.
-        var obj = this; // Note that the general comments hold the reply comments. Extract the secondary comments here and store them in a single layer array for ease of updating the changes on the server.
-
-        return obj.comments.reduce(function (acc, comment) {
-          acc.push(comment.config);
-          acc.push.apply(acc, _toConsumableArray(comment.replies.map(function (reply) {
-            return reply.config;
-          })));
-          return acc;
-        }, []);
-      } // getCommentsForSaving
-
     }]);
 
     return CommentingManager;
   }(); // CommentingManager
-
-  function findArrayItemById(A, id) {
-    var candidates = A.filter(function (a) {
-      return a.id == id;
-    }); // filter
-
-    return candidates.length > 0 ? candidates[0] : false;
-  } // findArrayItemById
    // arrayIncludesAll
 
   /* COMMENTING SYSTEM
@@ -5719,7 +5494,20 @@
             console.log("You need to log in", tag);
           } // if			
 
-        }; // onclick
+        }; // submit
+        // Ah, with the commenting I want to have general comments and replies. And for the replies it's still the commentform that is used. So maybe that can be configured here actually. Ah, but it can't, because it depends on the dynamically generated comment DOM elements.
+
+
+        item.commenting.commenting.form.submit = function (comment) {
+          if (obj.username) {
+            comment.taskId = item.task.taskId;
+            comment.author = obj.username;
+            obj.ws.send(JSON.stringify(comment));
+          } else {
+            console.log("You need to log in", comment);
+          } // if
+
+        }; // submit 
 
       }); // forEach
       // Loop to keep updating the comments every 10 seconds - this is just so that the time labels are getting updated.
@@ -5771,27 +5559,37 @@
         // The chapters need to be distributed to hte appropriate items.
 
         var chapters = d.filter(function (a) {
-          return a.type === "chapter";
-        });
-        console.log("Chapters", chapters);
-        var distribution = chapters.reduce(function (acc, c) {
-          // Chpters should have their timestamps parsed back into JSON objects.
-          c.timestamps = JSON.parse(c.timestamps);
-
-          if (acc[c.taskId]) {
-            acc[c.taskId].push(c);
-          } else {
-            acc[c.taskId] = [c];
+          if (a.type === "chapter") {
+            // Chpters should have their timestamps parsed back into JSON objects.
+            a.timestamps = JSON.parse(a.timestamps);
+            return true;
           } // if
 
 
-          return acc;
-        }, {});
+          return false;
+        }); // filter
+
+        var chapterdistribution = distribution(chapters);
         obj.nm.items.forEach(function (item) {
-          if (distribution[item.task.taskId]) {
+          if (chapterdistribution[item.task.taskId]) {
             // The chapters are routed to the playbar.
-            item.renderer.ui.bar.addchapters(distribution[item.task.taskId]);
-            console.log("Chapters of ".concat(item.task.taskId, ":"), distribution[item.task.taskId]);
+            item.renderer.ui.bar.addchapters(chapterdistribution[item.task.taskId]);
+          } // if
+
+        }); // forEach
+        // COMMENTING ON GROUPS IS IMPOSSIBLE, ONLY ACTUAL INDIVIDUALS CAN BE DISCUSSED
+        // Could be relaxed by just toring all the user ids for comments submitted through groups? Would have to implement a group specific way to return a stringified array of taskIds.
+
+        var comments = d.filter(function (a) {
+          return a.type === "comment";
+        }); // filter
+
+        console.log("Comments", comments);
+        var commentsdistribution = distribution(comments);
+        obj.nm.items.forEach(function (item) {
+          if (commentsdistribution[item.task.taskId]) {
+            // The comments are routed to the commenting manager.
+            item.commenting.commenting.add(commentsdistribution[item.task.taskId]);
           } // if
 
         }); // forEach
@@ -5801,6 +5599,21 @@
 
     return KnowledgeManager;
   }(); // KnowledgeManager
+
+  function distribution(A) {
+    // Create a distribution map for items in array A, by their taskId.
+    var d = A.reduce(function (acc, a) {
+      if (acc[a.taskId]) {
+        acc[a.taskId].push(a);
+      } else {
+        acc[a.taskId] = [a];
+      } // if
+
+
+      return acc;
+    }, {});
+    return d;
+  } // distribution
 
   /* @license twgl.js 4.19.2 Copyright (c) 2015, Gregg Tavares All Rights Reserved.
   Available via the MIT license.

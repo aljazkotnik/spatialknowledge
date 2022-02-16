@@ -5,7 +5,7 @@ import DiscussionSelector from "./DiscussionSelector.js";
 
 // Needs a way to minimise the commenting completely.
 let template = `
-<div class="commenting" style="width:300px;">
+<div class="commenting" style="width:300px; margin-top: 10px;">
   <div class="hideShowText" style="cursor: pointer; margin-bottom: 5px; color: gray;">
     <b class="text">Show comments</b>
 	<b class="counter"></b>
@@ -22,35 +22,26 @@ let template = `
 
 
 export default class CommentingManager{
-  constructor(id){
+	
+  comments = [];
+	
+  constructor(){
     let obj = this;
 	obj.node = html2element( template );
-	obj.viewid = id;
-	obj.comments = [];
+	
 	
 	// Make the form;
-    obj.form = new AddCommentForm(id);
-    obj.node
-	  .querySelector("div.comment-form")
-	  .appendChild(obj.form.node);
+    obj.form = new AddCommentForm();
+    obj.node.querySelector("div.comment-form").appendChild(obj.form.node);
   
-    // Make both replies and general comments to use a single form.
-    obj.form.submitbutton.onclick = function(){
-	  let config = obj.form.config;
-	  if(config){
-	    // The form should only be cleared if a comment was successfully added.
-	    config.tags = obj.discussion.selected.map(d=>d);
-		obj.add(config);
-	    obj.form.clear();
-	  } // if
-    } // onclick
+  
+    
 	
 	
 	// Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
+	/*
 	obj.discussion = new DiscussionSelector();
-    obj.node
-	  .querySelector("div.comment-tags")
-	  .appendChild(obj.discussion.node);
+    obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node);
     // obj.discussion.update(["#vortex", "#shock"])
 	obj.discussion.externalAction = function(){
 		obj.hideNonDiscussionComments();
@@ -59,22 +50,24 @@ export default class CommentingManager{
 	
 	// At the beginning show only general comments? Better yet, show no comments.
 	obj.hideNonDiscussionComments();
-	
+	*/
 	
 	// Finally add teh controls that completely hide comments.
 	let hsdiv = obj.node.querySelector("div.hideShowText");
 	let cdiv = obj.node.querySelector("div.commentingWrapper");
-	hsdiv.onclick = function(){
+	hsdiv.onmousedown = function(e){
+	  e.stopPropagation();
 	  let hidden = cdiv.style.display == "none";
 	  cdiv.style.display = hidden ? "" : "none";
 	  
 	  // It changed from hidden to show, but hidden is past state.
 	  hsdiv.querySelector("b.text").innerText = hidden ? "Hide comments" : "Show comments";
 	  hsdiv.querySelector("i").classList.value = hidden ? "fa fa-caret-up" : "fa fa-caret-down";
-	} // onclick
+	} // onmousedown
 	
   } // constructor
   
+  /*
   hideNonDiscussionComments(){
 	let obj = this;
 	obj.comments.forEach(comment=>{
@@ -84,7 +77,7 @@ export default class CommentingManager{
 	  comment.node.style.display = pertinent ? "" : "none";
 	}) // forEach
   } // hideNonDiscussionComments
-  
+  */
   
   updateCommentCounter(){
 	let obj = this;
@@ -102,11 +95,6 @@ export default class CommentingManager{
   } // updateCommentCounter
   
   
-  submit(config){
-	// This function is called when the button is pressed. By default it just routes the comment to 'add' so that the comment is added straight away. Alternately it should be passed to the server first. Maybe it's good if both things are done in cases when the connection is not good?
-	this.add(config);
-  } // submit
-  
   clear(){
 	let obj = this;
 	obj.comments = [];
@@ -117,78 +105,31 @@ export default class CommentingManager{
   } // clear
   
   
-  add(config){
-	// When the comments are loaded from the server they will be added through this interface. Therefore it must handle both the primary and secondary comments.
+
+  
+  add(comments){
+	// The comments come solely from the server. They are not updated, and can just be created once. 
 	let obj = this;
+	  
+	// Store all of them as a record.
+	obj.comments = obj.comments.concat(comments);
 	
-	if(config.parentid){
-	  // Comments that have a parent id are replies. Find the right parent comment.
-	  obj.addReplyComment(config);
-	} else {
-	  // It's a general comment. 
-	  obj.addGeneralComment(config);
-	} // if
+	// Just add the new ones in.
+	comments.forEach(comment=>{
+		// No replying for now.
+		let c = new GeneralComment(comment);
+
+		// Insert the new comment at teh very top.
+		let container = obj.node.querySelector("div.comments");
+		container.insertBefore(c.node, container.firstChild);
+			
+	}) // forEach	
 	
-	// Update the comments count.
-	obj.hideNonDiscussionComments();
-	obj.updateCommentCounter();
   } // add
   
-  addReplyComment(config){
-	let obj = this;
-	
-	let parent = findArrayItemById(obj.comments, config.parentid);
-	if(parent){
-	  parent.reply(config);
-	} // if
-  } // addReplyComment
-  
-  addGeneralComment(config){
-	let obj = this;
-	  
-	// If there is an existing one, that one should be updated. Whatever is coming from the server is the truth. Maybe it'll be simpler just to replace the comment in that case?? The comment config does not contain hte comment id, which is computed....
-	
-	
-	// Generally new comments should be attached at teh top. Here the attachment point is variable to reuse this method as a way to replace an existing comment with the same id.
-	
-	
-	let c = new GeneralComment(config);
-	
-	// Remove the existing one, and replace it with the current one.
-	let existing = findArrayItemById(obj.comments, c.id)
-	if(existing){
-	  obj.replaceGeneralComment(existing, c);
-	} else {
-		
-	  obj.comments.push(c);
-	  
-	  // Add the functionality to add secondary comments:
-	  c.node.querySelector("button.reply").onclick = function(){
-	    if(obj.form.config){
-		  c.reply(obj.form.config);
-		  obj.form.clear();
-	    } // if
-	  } // onclick
-	
-	  // Insert the new comment at teh very top.
-	  let container = obj.node.querySelector("div.comments");
-	  container.insertBefore(c.node, container.firstChild);
-	} // if
-  } // addGeneralComment
   
   
-  replaceGeneralComment(existing, replacement){
-	// For simplicity handle the replacing of hte comment here.
-	let obj = this;
-	
-	// Update the internal comments store.
-	obj.comments.splice(obj.comments.indexOf(existing), 1, replacement);
-	
-	// Update teh DOM.
-	let container = obj.node.querySelector("div.comments");
-	container.insertBefore(replacement.node, existing.node);
-  } // replaceGeneralComment
-  
+  // The user may be needed here as the upvotes/downvotes need to be colored.
   get user(){
 	return this.form.user;
   } // get user
@@ -205,17 +146,6 @@ export default class CommentingManager{
 	  comment.update();
 	}) // forEach
   } // set user
-  
-  getCommentsForSaving(){
-	// The obj.comments is an array of GeneralComment instances, and just the configs have to be collected before being passed on. Collect them here.
-	let obj = this;
-	// Note that the general comments hold the reply comments. Extract the secondary comments here and store them in a single layer array for ease of updating the changes on the server.
-	return obj.comments.reduce((acc,comment)=>{
-		acc.push(comment.config)
-		acc.push(...comment.replies.map(reply=>reply.config))
-		return acc
-	},[])
-  } // getCommentsForSaving
   
 } // CommentingManager
 

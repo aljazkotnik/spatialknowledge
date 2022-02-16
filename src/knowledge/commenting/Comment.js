@@ -49,7 +49,7 @@ let template = `
 
 export default class Comment{
   
-  user = "Default User: Aljaz"
+  user = "Default"
 	
   constructor(config){
 	let obj = this;
@@ -60,11 +60,10 @@ export default class Comment{
 	// Fill the template with the options from the config. There must be a comment, and there must be an author.
 	obj.config = config;
 	
-	// Upon creation the author is also the user? True when the user makes them, not otherwise... But the user is updated when the login is initiated.
-	obj.user = obj.config.author;
+	
 	
 	// Fill some options that may not be defined in config.
-	obj.config.time      = config.time ? config.time : Date();
+	obj.config.datetime  = config.datetime ? config.datetime : new Date().toISOString();
 	obj.config.upvotes   = config.upvotes ? config.upvotes : [];
 	obj.config.downvotes = config.downvotes ? config.downvotes : [];
 	obj.config.tags      = config.tags ? config.tags : [];
@@ -74,7 +73,7 @@ export default class Comment{
 	header.querySelector("b.author").innerText = config.author;
 	
 	let body = obj.node.querySelector("div.body");
-	body.innerText = config.text;
+	body.innerText = config.comment;
 	
 	obj.update();
 	
@@ -93,8 +92,9 @@ export default class Comment{
   } // constructor
   
   get id(){
+	// Could just use obj.config.id, but in that case the relay has to be the actual SQL entry when a comment is added to the server.
 	let obj = this;
-	return [obj.config.viewid, obj.config.author, obj.config.time].join(" ");
+	return [obj.config.viewid, obj.config.author, obj.config.datetime].join(" ");
   } // get id
   
   update(){
@@ -116,7 +116,7 @@ export default class Comment{
 	  .querySelector("span.timestamp");
 	
 	// Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
-	let t = obj.config.time;
+	let t = obj.config.datetime;
 	let now = Date.now();
 	let stamp = Date.parse(t);
 	
