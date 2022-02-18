@@ -1672,7 +1672,7 @@
     submitbutton: "\n    background-color: black;\n\tcolor: white;\n  "
   }; // css
 
-  var template$e = "\n<div style=\"300px\">\n  <input type=\"text\" placeholder=\"#tag-name\" style=\"width: 100px;\"></input>\n  \n  <div style=\"display: inline-block; float: right;\">\n  <button class=\"starttime\" style=\"".concat(css$3.button, " ").concat(css$3.timebutton, "\">start</button>\n  <i>-</i>\n  <button class=\"endtime\" style=\"").concat(css$3.button, " ").concat(css$3.timebutton, "\">end</button>\n  <button class=\"submit\" style=\"").concat(css$3.button, " ").concat(css$3.submitbutton, "\">\n    Submit\n  </button>\n  </div>\n  \n  \n</div>\n"); // template
+  var template$e = "\n<div style=\"width: 300px\">\n  <input type=\"text\" placeholder=\"#tag-name\" style=\"width: 100px;\"></input>\n  \n  <div style=\"display: inline-block; float: right;\">\n    \n      <button class=\"starttime\" style=\"".concat(css$3.button, " ").concat(css$3.timebutton, "\">start</button>\n      <i>-</i>\n      <button class=\"endtime\" style=\"").concat(css$3.button, " ").concat(css$3.timebutton, "\">end</button>\n    \n      <button class=\"submit\" style=\"").concat(css$3.button, " ").concat(css$3.submitbutton, "\">Submit</button>\n  </div>\n  \n  \n</div>\n"); // template
 
   var ChapterForm = /*#__PURE__*/function () {
     function ChapterForm() {
@@ -2276,11 +2276,15 @@
       key: "updateCommentCounter",
       value: function updateCommentCounter() {
         var obj = this;
-        var n = obj.comments.reduce(function (acc, c) {
-          acc += 1;
-          acc += c.replies.length;
-          return acc;
-        }, 0);
+        /*
+        let n = obj.comments.reduce((acc,c)=>{
+        	acc += 1
+        	acc += c.replies.length;
+        	return acc
+        },0)
+        */
+
+        var n = obj.comments.length;
         var counterNode = obj.node.querySelector("div.hideShowText").querySelector("b.counter");
         counterNode.innerText = n ? "(".concat(n, ")") : "";
       } // updateCommentCounter
@@ -2313,6 +2317,9 @@
           var container = obj.node.querySelector("div.comments");
           container.insertBefore(c.node, container.firstChild);
         }); // forEach	
+        // Update the comment section header:
+
+        obj.updateCommentCounter();
       } // add
       // The user may be needed here as the upvotes/downvotes need to be colored.
 
@@ -2412,13 +2419,7 @@
 
         var rect = obj.node.getBoundingClientRect();
 
-        if (rect.width < 200) {
-          // Signal that the drawing should no longer occur.
-          obj.viewnode.style.border = "5px solid ".concat(obj.task.color);
-        } else {
-          // Turn it back to default values.
-          obj.viewnode.style.border = "";
-        } // if
+        if (rect.width < 200) ; // if
 
       } // checksize
 
@@ -2461,43 +2462,51 @@
         var dyc = obj.ci * obj.line_width + obj.childnode.markerEmptyIn;
         var dyp = obj.pi * obj.line_width + obj.parentnode.markerEmptyOut; // The target x should be > `xHorizontal + r1 + r2'
 
-        var xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi * obj.bundle_width; // Origin and target MUST be at least `[node_label_width + 2*r, 2*r]' apart otherwise the graphic logic doesn't follow.
+        var xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi * obj.bundle_width; // Origin and target MUST be at least `[node_label_width + 2*r, 0]' apart otherwise the graphic logic doesn't follow.
 
         var origin = {
           x: obj.parentnode.x,
           y: obj.parentnode.yMarkerStart + dyp
-        };
+        }; // origin
+
         var target = {
           x: obj.childnode.x,
           y: obj.childnode.yMarkerStart + dyc
-        };
-        var arc1start = {
-          x: xHorizontal - obj.r1,
-          y: origin.y
-        };
-        var arc1end = {
-          x: xHorizontal,
-          y: origin.y + obj.r1
-        };
-        var arc2start = {
-          x: xHorizontal,
-          y: target.y - obj.r2
-        };
-        var arc2end = {
-          x: xHorizontal + obj.r2,
-          y: target.y
-        };
-        /*
-        How the path is made up.
-        start point                   : M0 0
-        horizontal line               : L40 0
-        first bend to vertical        : A16 16 90 0 1 46 16
-        vertical line                 : L46 34
-        second bend to horizontal     : A16 16 90 0 0 62 50
-        horizontal connection to node : L62 50
-        */
+        }; // target
 
-        var p = "M".concat(origin.x, " ").concat(origin.y, " L").concat(arc1start.x, " ").concat(arc1start.y, " A").concat(obj.r1, " ").concat(obj.r1, " 90 0 1 ").concat(arc1end.x, " ").concat(arc1end.y, " L").concat(arc2start.x, " ").concat(arc2start.y, " A").concat(obj.r2, " ").concat(obj.r2, " 90 0 0 ").concat(arc2end.x, " ").concat(arc2end.y, " L").concat(target.x, " ").concat(target.y);
+        var p = "M".concat(origin.x, " ").concat(origin.y, " L").concat(target.x, " ").concat(target.y);
+
+        if (origin.y != target.y) {
+          var arc1start = {
+            x: xHorizontal - obj.r1,
+            y: origin.y
+          };
+          var arc1end = {
+            x: xHorizontal,
+            y: origin.y + obj.r1
+          };
+          var arc2start = {
+            x: xHorizontal,
+            y: target.y - obj.r2
+          };
+          var arc2end = {
+            x: xHorizontal + obj.r2,
+            y: target.y
+          };
+          /*
+          How the path is made up.
+          start point                   : M0 0
+          horizontal line               : L40 0
+          first bend to vertical        : A16 16 90 0 1 46 16
+          vertical line                 : L46 34
+          second bend to horizontal     : A16 16 90 0 0 62 50
+          horizontal connection to node : L62 50
+          */
+
+          p = "M".concat(origin.x, " ").concat(origin.y, " L").concat(arc1start.x, " ").concat(arc1start.y, " A").concat(obj.r1, " ").concat(obj.r1, " 90 0 1 ").concat(arc1end.x, " ").concat(arc1end.y, " L").concat(arc2start.x, " ").concat(arc2start.y, " A").concat(obj.r2, " ").concat(obj.r2, " 90 0 0 ").concat(arc2end.x, " ").concat(arc2end.y, " L").concat(target.x, " ").concat(target.y);
+        } // if
+
+
         return p;
       } // path
 
@@ -2646,7 +2655,7 @@
           return acc > p.y ? acc : p.y;
         }, 0);
         obj.nodeChildren.forEach(function (child) {
-          child.miny = y_lowest_parent + 2 * r$1;
+          child.miny = y_lowest_parent + 2 * r$1 * 0;
         }); // forEach
       } // y_min
 
@@ -3111,7 +3120,7 @@
   */
   // FROM AN ARRAY OF TASKS WITH TAGS TO A TREE
 
-  function array2tree(array) {
+  function array2tree(array, alltasks) {
     /*
     1.) Find groups.
     2.) Merge them.
@@ -3119,7 +3128,8 @@
     */
     // Find all created groups, and merge the ones with identical members.
     var groups = findAllTagBasedGroups(array);
-    var mergedgroups = mergeIdenticalGroups(groups); // Convert the groups into a higher level object to avoid circular references when figuring out ancestry.
+    var root = makeRootGroup(alltasks);
+    var mergedgroups = mergeIdenticalGroups(groups.concat(root)); // Convert the groups into a higher level object to avoid circular references when figuring out ancestry.
 
     var hierarchicalnodes = findParentalRelationships(mergedgroups);
     return hierarchicalnodes;
@@ -3204,10 +3214,8 @@
       dict[groupid].addtask(tag.taskId);
       dict[groupid].addtag(tag);
     }); // forEach
-    // A root group should be present. It will be merged with other existing groups if possible in hte next tep.
 
-    var root = makeRootGroup(array);
-    return groups.concat(root);
+    return groups;
   } // findAllTagBasedGroups
 
 
@@ -3367,6 +3375,7 @@
 
       var obj = this; // How should the temporary groups be differentiated from the actual ones? Inside the groups are differentiated by "<tag.name>-<tag.author>". So maybe check if the author is undefined, and if so mark it as a temporary group?
 
+      obj.alltasks = [];
       obj.temporary = [];
       obj.annotations = [];
       obj.collapsednodes = [];
@@ -3382,20 +3391,21 @@
         var obj = this; // obj.temporary are actual 'Group' objects which are converted into temporary annotations on-the-go.
 
         var i = -1;
-        var temporaryAnnotations = obj.temporary.reduce(function (acc, g) {
+        var temporaryAnnotations = obj.temporary.reduce(function (acc, g, j) {
+          // Why does the id need to be unique?
           // The dummy annotation needs to have a unique id, name, author, and task ids.
           return acc.concat(g.members.map(function (item) {
             i += 1;
             return {
               id: "temp".concat(i),
-              name: "Unsaved",
+              name: "Unsaved ".concat(j),
               author: undefined,
               taskId: item.task.taskId
             };
           })); // concat
         }, []); // reduce
 
-        obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations)).map(function (group) {
+        obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations), obj.alltasks).map(function (group) {
           return new TreeNode(group);
         }); // map
       } // update
@@ -3889,7 +3899,7 @@
 
   var SpatialCorrelations = /*#__PURE__*/function () {
     // offset from axes origin point
-    function SpatialCorrelations(variables) {
+    function SpatialCorrelations() {
       _classCallCheck(this, SpatialCorrelations);
 
       this.xoffset = 300;
@@ -4543,7 +4553,26 @@
         obj.addmember(item);
       }); // map
 
-      obj.temporary = temporary;
+      obj.temporary = temporary; // Add in a Commenting system also.
+
+      var commentingnode = obj.node.querySelector("div.commenting");
+      commentingnode.style.clear = "both";
+      commentingnode.style.paddingTop = "5px"; // The group should also have a chapter form so that tags for several items can be submitted at once. But no chapters!!!
+
+      obj.tagform = new ChapterForm();
+      commentingnode.appendChild(obj.tagform.node); // Hide the time buttons.
+
+      obj.tagform.node.querySelector("button.starttime").style.display = "none";
+      obj.tagform.node.querySelector("i").style.display = "none";
+      obj.tagform.node.querySelector("button.endtime").style.display = "none"; // And now, when the button is clicked loop through the members and call their submit methods.
+
+      obj.tagform.submit = function (tag) {
+        obj.members.forEach(function (member) {
+          member.commenting.chapterform.submit(tag);
+        });
+      }; // submit
+
+
       return _this;
     } // constructor
 
@@ -4679,17 +4708,28 @@
     }, {
       key: "ondissolve",
       value: function ondissolve() {} // ondissolve
+      // Custom hide & show methods.
 
     }, {
-      key: "reinstate",
-      value: function reinstate() {
-        // Reinstate the group by showing it, and hiding all the constituent items.
+      key: "show",
+      value: function show() {
         var obj = this;
         obj.members.forEach(function (item) {
           return item.hide();
         });
-        obj.show();
-      } // reinstate
+        obj.current = obj._current;
+        obj.node.style.display = "";
+      } // show
+
+    }, {
+      key: "hide",
+      value: function hide() {
+        var obj = this;
+
+        obj._current.viewnode.appendChild(obj._current.renderer.node);
+
+        obj.node.style.display = "none";
+      } // hide
 
     }]);
 
@@ -4950,7 +4990,7 @@
               })) {
                 g.hide();
               } else {
-                g.reinstate();
+                g.show();
               } // if
               // A.all is written as !A.some(v=>!B.includes(v))
 
@@ -4963,7 +5003,7 @@
           }); // forEach
 
           if (clickedgroup) {
-            clickedgroup.reinstate();
+            clickedgroup.show();
             obj.hudrefresh();
           } else {
             obj.makegroup(clickedgroupitems, false);
@@ -4986,7 +5026,6 @@
       }; // obj.tree.crossreference
 
     } // constructor
-    // Getter and setter for groups to allow inactive groups to be filtered out.
 
 
     _createClass(NavigationManager, [{
@@ -5022,6 +5061,7 @@
 
 
         obj.items.push(item);
+        obj.tree.hierarchy.alltasks.push(item.task); // Make the tree aware of this taskId also. Otherwise it'll hide it when navigating to root.
       } // additem
       // TABLETOP NAVIGATION
 
@@ -5091,23 +5131,19 @@
         // The METADATA COULD BE FILTERED INITIALLY TO REMOVE ANY NONINFORMATIVE VALUES?
         // Or just prevent non-informative values to be used for correlations - probably better.
 
-        var ordinals = ["sepal_length", "sepal_width"].map(function (variable) {
-          return makeNamedArray(d.map(function (d_) {
-            return d_.metadata[variable];
-          }), variable);
-        }); // map
-        // ANY CATEGORICALS WITH ALL DIFFERENT VALUES SHOULD BE REMOVED!!
-
-        var categoricals = ["color", "cat"].map(function (variable) {
-          return makeNamedArray(d.map(function (d_) {
-            return d_.metadata[variable];
-          }), variable);
-        }); // map
-
         return {
           spatial: spatial,
-          ordinals: ordinals,
-          categoricals: categoricals
+          ordinals: obj.ordinals.map(function (variable) {
+            return makeNamedArray(d.map(function (d_) {
+              return d_.metadata[variable];
+            }), variable);
+          }),
+          categoricals: obj.categoricals.map(function (variable) {
+            return makeNamedArray(d.map(function (d_) {
+              return d_.metadata[variable];
+            }), variable);
+          }) // map
+
         };
       } // collectSpatialCorrelationData
 
@@ -5205,7 +5241,10 @@
           obj.items.forEach(function (item) {
             g.members.includes(item) ? item.show() : item.hide();
           }); // forEach
-          // Just hide all groups.
+          // Return the viewnode to the current!
+
+          g._current.viewnode.appendChild(g._current.renderer.node); // Just hide all groups.
+
 
           obj.groups.forEach(function (g_) {
             return g_.hide();
@@ -5545,7 +5584,14 @@
         var obj = this; // console.log("Process", d)
         // How will this processing work? First filter by taskId, and then filter by type?
         // I'm expecting to see tags, chapters, comments for now.
-        // CHAPTERS SHOULD BE ADDED HERE TOO!!!
+        // First a nice KLUDGE to get us going - it should only display knowledge relevant to this demo, and so filter out anything with an inappropriate taskId.
+
+        var currenttasks = obj.nm.items.map(function (item) {
+          return item.task.taskId;
+        });
+        d = d.filter(function (a) {
+          return currenttasks.includes(a.taskId);
+        }); // CHAPTERS SHOULD BE ADDED HERE TOO!!!
         // All the tags can be pushed to the tree. But this is really pushed, not replaced!!
 
         var tags = d.filter(function (a) {
@@ -5555,6 +5601,7 @@
           obj.nm.tree.addtagannotation(tag);
         }); // forEach
 
+        console.log("tags", d, tags);
         obj.nm.tree.update(); // CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
         // The chapters need to be distributed to hte appropriate items.
 
@@ -7106,173 +7153,73 @@
   // author, datetime, tag, taskId, line, area, t
   // Maybe separate annotations for starttime and endtime? And then let the system figure out a close chapter.
 
-  var data = [{
-    taskId: "task 0",
-    sepal_length: 5.1,
-    sepal_width: 3.5,
-    color: "salmon",
-    cat: "red",
-    entropy2d: "./data/0000/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 1",
-    sepal_length: 4.9,
-    sepal_width: 3,
-    color: "sandybrown",
-    cat: "brown",
-    entropy2d: "./data/0001/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 2",
-    sepal_length: 4.7,
-    sepal_width: 3.2,
-    color: "seagreen",
-    cat: "sea",
-    entropy2d: "./data/0002/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 3",
-    sepal_length: 4.6,
-    sepal_width: 3.1,
-    color: "seashell",
-    cat: "sea",
-    entropy2d: "./data/0003/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 4",
-    sepal_length: 5,
-    sepal_width: 3.6,
-    color: "sienna",
-    cat: "brown",
-    entropy2d: "./data/0004/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 5",
-    sepal_length: 5.4,
-    sepal_width: 3.9,
-    color: "skyblue",
-    cat: "sea",
-    entropy2d: "./data/0005/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 6",
-    sepal_length: 4.6,
-    sepal_width: 3.4,
-    color: "slateblue",
-    cat: "sea",
-    entropy2d: "./data/0006/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 7",
-    sepal_length: 5,
-    sepal_width: 3.4,
-    color: "springgreen",
-    cat: "sea",
-    entropy2d: "./data/0007/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 8",
-    sepal_length: 4.4,
-    sepal_width: 2.9,
-    color: "tan",
-    cat: "brown",
-    entropy2d: "./data/0008/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 9",
-    sepal_length: 4.9,
-    sepal_width: 3.1,
-    color: "thistle",
-    cat: "red",
-    entropy2d: "./data/0009/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 10",
-    sepal_length: 5.4,
-    sepal_width: 3.7,
-    color: "tomato",
-    cat: "red",
-    entropy2d: "./data/0010/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 11",
-    sepal_length: 4.8,
-    sepal_width: 3.4,
-    color: "turquoise",
-    cat: "sea",
-    entropy2d: "./data/0011/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 12",
-    sepal_length: 4.8,
-    sepal_width: 3,
-    color: "violet",
-    cat: "red",
-    entropy2d: "./data/0012/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 13",
-    sepal_length: 4.3,
-    sepal_width: 3,
-    color: "wheat",
-    cat: "brown",
-    entropy2d: "./data/0013/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 14",
-    sepal_length: 5.8,
-    sepal_width: 4,
-    color: "lightpink",
-    cat: "red",
-    entropy2d: "./data/0014/unsteady_contour2d_meta.json"
-  }, {
-    taskId: "task 15",
-    sepal_length: 5.7,
-    sepal_width: 4.4,
-    color: "antiquewhite",
-    cat: "brown",
-    entropy2d: "./data/0015/unsteady_contour2d_meta.json"
-  }]; // data
+  var ids = ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012", "0013", "0014", "0015"];
+  var mtdtprmss = ids.map(function (id) {
+    return fetch("./data/".concat(id, "/casemetadata.json")).then(function (res) {
+      return res.json();
+    }).then(function (json) {
+      var a = json;
+      a.entropy2d = "./data/".concat(id, "/unsteady_contour2d_meta.json");
+      delete a.unsteady_line;
+      delete a.unsteady_scatterplot;
+      delete a.unsteady_entropy_contour;
+      return a;
+    });
+  }); // map
 
-  /*
-  const data = [
-  {taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
-  ]; // data
-  */
-  // Items
+  var ordinals = ["stage_loading", "flow_coefficient", "eff_isen", "eff_poly", "alpha_rel_stator_in", "alpha_rel_stator_out", "alpha_rel_rotor_in", "alpha_rel_rotor_out", "alpha_stator_in", "alpha_stator_out", "alpha_rotor_in", "alpha_rotor_out", "eff_isen_lost_stator_in", "eff_isen_lost_stator_out", "eff_isen_lost_rotor_in", "eff_isen_lost_rotor_out"];
+  var categoricals = [];
+  Promise.all(mtdtprmss).then(function (data) {
+    // The NavigationManager needs to know the variable types because it needs to collect the spatial correlation data to send to the SpatialCorrelations housed by the MiniMap.
+    var workspace = new NavigationManager();
+    workspace.ordinals = ordinals;
+    workspace.categoricals = categoricals;
+    var renderer = new MeshRenderer2D(document.getElementById("canvas"));
+    var items = [];
 
-  var workspace = new NavigationManager();
-  var renderer = new MeshRenderer2D(document.getElementById("canvas"));
-  var items = [];
+    for (var i = 0; i < data.length; i++) {
+      var item = new Individual(data[i], renderer.gl);
+      items.push(item); // Temporarilyturn the position: absolute off so we get an initial arrangement.
 
-  for (var i = 0; i < data.length; i++) {
-    var item = new Individual(data[i], renderer.gl);
-    items.push(item); // Temporarilyturn the position: absolute off so we get an initial arrangement.
+      item.node.style.position = ""; // Make navigation manager keep track of the item.
 
-    item.node.style.position = ""; // Make navigation manager keep track of the item.
+      workspace.container.appendChild(item.node);
+      workspace.track(item); // Make the MeshRenderer draw it. The mesh renderer provides the gl object, which must be given to the items to initialise the players.
+      // Trackbatch? And connect it to the workspace hidden attribute??
 
-    workspace.container.appendChild(item.node);
-    workspace.track(item); // Make the MeshRenderer draw it. The mesh renderer provides the gl object, which must be given to the items to initialise the players.
-    // Trackbatch? And connect it to the workspace hidden attribute??
-
-    renderer.track(item);
-  } // for
-  // Update the minimap with all the items. This could be implemented in a nicer way it feels.
+      renderer.track(item);
+    } // for
+    // Update the minimap with all the items. This could be implemented in a nicer way it feels.
 
 
-  workspace.minimap.update(items); // The initial positioning is done based on "position: relative;"
+    workspace.minimap.update(items); // The initial positioning is done based on "position: relative;"
 
-  var headeroffset = 80;
-  var positions = items.reduce(function (acc, item) {
-    acc.push([item.node.offsetLeft, item.node.offsetTop + headeroffset]);
-    return acc;
-  }, []); // Now positionthem absolutely, and add the dragging.
+    var headeroffset = 80;
+    var positions = items.reduce(function (acc, item) {
+      acc.push([item.node.offsetLeft, item.node.offsetTop + headeroffset]);
+      return acc;
+    }, []); // Now positionthem absolutely, and add the dragging.
 
-  items.forEach(function (item, i) {
-    item.node.style.position = "absolute";
-    item.position = positions[i];
-  }); // forEach
-  // The knowledge manager object.
+    items.forEach(function (item, i) {
+      item.node.style.position = "absolute";
+      item.position = positions[i];
+    }); // forEach
+    // The knowledge manager object.
 
-  var knowledge = new KnowledgeManager(workspace); // Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
-  // How should the renderer recognise that it needs to change the set of groups to iterate over?
+    var knowledge = new KnowledgeManager(workspace); // Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
+    // How should the renderer recognise that it needs to change the set of groups to iterate over?
 
-  renderer.draw(); // To change the colormap values a custom range can be specified:
-  // renderer.customColormapRange = [1140, 1150]
+    renderer.draw(); // renderer.customColormapRange = [1140, 1160];
+    // Allow NavigationManager to control which items are rendered.
 
-  workspace.updateRenderingItems = function (items) {
-    renderer.items = items;
-  }; // updateRenderingItems
-  // How to do the memory handling. And how to make it appear in the navigation bar!
+    workspace.updateRenderingItems = function (subsetitems) {
+      renderer.items = subsetitems;
+    }; // updateRenderingItems
+    // How to do the memory handling. And how to make it appear in the navigation bar!
 
 
-  console.log(workspace, renderer, knowledge);
+    console.log(workspace, renderer, knowledge);
+  });
 
 }());
 //# sourceMappingURL=spatialknowledge.js.map

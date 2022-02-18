@@ -257,7 +257,7 @@ export default class NavigationManager{
 					if( clickedgroupitems.some(item=>g.members.includes(item)) ){
 						g.hide();
 					} else {
-						g.reinstate();
+						g.show();
 					} // if
 					
 					
@@ -270,7 +270,7 @@ export default class NavigationManager{
 			
 			
 			if(clickedgroup){
-				clickedgroup.reinstate();
+				clickedgroup.show();
 				obj.hudrefresh();
 			} else {
 				obj.makegroup(clickedgroupitems, false);
@@ -295,17 +295,8 @@ export default class NavigationManager{
 	} // obj.tree.crossreference
 	
   } // constructor
-  
-  
-  
-
-  
-  
-  
-  // Getter and setter for groups to allow inactive groups to be filtered out.
-  
-  
-  
+ 
+   
   track(item){
 	let obj = this;
 	
@@ -340,6 +331,10 @@ export default class NavigationManager{
 	}; // onmove
 	
 	obj.items.push(item);
+	
+	obj.tree.hierarchy.alltasks.push(item.task);
+	
+	// Make the tree aware of this taskId also. Otherwise it'll hide it when navigating to root.
   } // additem
   
   
@@ -401,22 +396,16 @@ export default class NavigationManager{
 	
 	// The METADATA COULD BE FILTERED INITIALLY TO REMOVE ANY NONINFORMATIVE VALUES?
 	// Or just prevent non-informative values to be used for correlations - probably better.
-	let ordinals = ["sepal_length", "sepal_width"].map(variable=>{
-		return makeNamedArray( d.map(d_=>d_.metadata[variable]), variable );
-	}) // map
-	
-	
-	// ANY CATEGORICALS WITH ALL DIFFERENT VALUES SHOULD BE REMOVED!!
-
-	let categoricals = ["color", "cat"].map(variable=>{
-		return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
-	}) // map
 	
 	
 	return {
 		spatial: spatial,
-		ordinals: ordinals,
-		categoricals : categoricals
+		ordinals: obj.ordinals.map(variable=>{
+				return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
+			}),
+		categoricals : obj.categoricals.map(variable=>{
+				return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
+			}) // map
 	};
   } // collectSpatialCorrelationData
   
@@ -527,8 +516,13 @@ export default class NavigationManager{
 			g.members.includes(item) ? item.show() : item.hide();
 		}) // forEach
 		
+		
+		// Return the viewnode to the current!
+		g._current.viewnode.appendChild(g._current.renderer.node);
+		
 		// Just hide all groups.
 		obj.groups.forEach(g_=>g_.hide()) // forEach;
+		
 		
 		// Update the tree current status.
 		obj.tree.currenttasks = g.members.map(m=>m.task.taskId);
@@ -539,13 +533,6 @@ export default class NavigationManager{
 	// Add the group to the session.
 	obj.groups.push(g);
 	obj.container.appendChild(g.node);
-	
-	
-	
-	
-	
-	
-	
 	
 	
 	// Update the minimap and the tree data.

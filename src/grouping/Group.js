@@ -1,9 +1,8 @@
 import { html2element } from "../helpers.js";
 import Item from "./Item.js";
 
-// Rendering modules
-import UnsteadyPlayer2D from "../renderers/UnsteadyPlayer2D.js";
 
+import ChapterForm from "../knowledge/commenting/ChapterForm.js";
 
 /*
 GROUPING: 
@@ -129,6 +128,35 @@ export default class Group extends Item {
 	}) // map
 	
 	obj.temporary = temporary;
+	
+	
+	
+	
+	
+	
+	
+	// Add in a Commenting system also.
+	let commentingnode = obj.node.querySelector("div.commenting");
+	commentingnode.style.clear = "both";
+	commentingnode.style.paddingTop = "5px";
+	
+	// The group should also have a chapter form so that tags for several items can be submitted at once. But no chapters!!!
+	obj.tagform = new ChapterForm();	
+	commentingnode.appendChild(obj.tagform.node);
+	
+	// Hide the time buttons.
+	obj.tagform.node.querySelector("button.starttime").style.display = "none";
+	obj.tagform.node.querySelector("i").style.display = "none";
+	obj.tagform.node.querySelector("button.endtime").style.display = "none";
+	
+	
+	// And now, when the button is clicked loop through the members and call their submit methods.
+	obj.tagform.submit = function(tag){
+		obj.members.forEach(member=>{
+			member.commenting.chapterform.submit(tag);
+		})
+	} // submit
+	
 	
   } // constructor
   
@@ -288,12 +316,20 @@ export default class Group extends Item {
   ondissolve(){} // ondissolve
   
   
-  reinstate(){
-	  // Reinstate the group by showing it, and hiding all the constituent items.
-	  let obj = this;
-	  
-	  obj.members.forEach(item=>item.hide());
-	  obj.show();
-  } // reinstate
+  
+  // Custom hide & show methods.
+  show(){
+	let obj = this;
+	obj.members.forEach(item=>item.hide());
+	obj.current = obj._current;
+	obj.node.style.display = "";
+  } // show
+  
+  
+  hide(){
+	let obj = this;
+	obj._current.viewnode.appendChild(obj._current.renderer.node);
+	obj.node.style.display = "none";
+  } // hide
   
 } // Group

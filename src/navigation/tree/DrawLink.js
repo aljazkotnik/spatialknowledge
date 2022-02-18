@@ -42,51 +42,57 @@ export default class DrawLink{
 		let xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi*obj.bundle_width;
 		
 		
-		// Origin and target MUST be at least `[node_label_width + 2*r, 2*r]' apart otherwise the graphic logic doesn't follow.
+		
+		// Origin and target MUST be at least `[node_label_width + 2*r, 0]' apart otherwise the graphic logic doesn't follow.
 		let origin = {
 			x: obj.parentnode.x,
 			y: obj.parentnode.yMarkerStart + dyp
-		}
+		} // origin
 		
 		let target = {
 			x: obj.childnode.x,
 			y: obj.childnode.yMarkerStart + dyc
-		}
+		} // target
+	
 		
-		
-		
-		let arc1start = {
-			x: xHorizontal - obj.r1,
-			y: origin.y
-		}
-		
-		let arc1end = {
-			x: xHorizontal,
-			y: origin.y + obj.r1
-		}
+		let p = `M${ origin.x } ${ origin.y } L${ target.x } ${ target.y }`;
+		if( origin.y != target.y ){		
+			
+			let arc1start = {
+				x: xHorizontal - obj.r1,
+				y: origin.y
+			}
+			
+			let arc1end = {
+				x: xHorizontal,
+				y: origin.y + obj.r1
+			}
 
-		let arc2start = {
-			x: xHorizontal,
-			y: target.y - obj.r2
-		}
+			let arc2start = {
+				x: xHorizontal,
+				y: target.y - obj.r2
+			}
+			
+			let arc2end = {
+				x: xHorizontal + obj.r2,
+				y: target.y
+			}
+			
+			
+			
+			/*
+			How the path is made up.
+			start point                   : M0 0
+			horizontal line               : L40 0
+			first bend to vertical        : A16 16 90 0 1 46 16
+			vertical line                 : L46 34
+			second bend to horizontal     : A16 16 90 0 0 62 50
+			horizontal connection to node : L62 50
+			*/
+			p = `M${ origin.x } ${ origin.y } L${ arc1start.x } ${ arc1start.y } A${ obj.r1 } ${ obj.r1 } 90 0 1 ${ arc1end.x } ${ arc1end.y } L${ arc2start.x } ${ arc2start.y } A${ obj.r2 } ${ obj.r2 } 90 0 0 ${ arc2end.x } ${ arc2end.y } L${ target.x } ${ target.y }`; 
+			
+		} // if
 		
-		let arc2end = {
-			x: xHorizontal + obj.r2,
-			y: target.y
-		}
-		
-		
-		
-		/*
-		How the path is made up.
-		start point                   : M0 0
-		horizontal line               : L40 0
-		first bend to vertical        : A16 16 90 0 1 46 16
-		vertical line                 : L46 34
-		second bend to horizontal     : A16 16 90 0 0 62 50
-		horizontal connection to node : L62 50
-		*/
-		let p = `M${ origin.x } ${ origin.y } L${ arc1start.x } ${ arc1start.y } A${ obj.r1 } ${ obj.r1 } 90 0 1 ${ arc1end.x } ${ arc1end.y } L${ arc2start.x } ${ arc2start.y } A${ obj.r2 } ${ obj.r2 } 90 0 0 ${ arc2end.x } ${ arc2end.y } L${ target.x } ${ target.y }`; 
 		return p
 	} // path
 	

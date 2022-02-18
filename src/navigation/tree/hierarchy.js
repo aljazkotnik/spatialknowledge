@@ -14,7 +14,7 @@ Won't be able to remove the initial dialogue in the small multiples visualisatio
 // FROM AN ARRAY OF TASKS WITH TAGS TO A TREE
 
 
-export function array2tree(array){
+export function array2tree(array, alltasks){
 	/*
 	1.) Find groups.
 	2.) Merge them.
@@ -23,7 +23,8 @@ export function array2tree(array){
 	
 	// Find all created groups, and merge the ones with identical members.
 	let groups = findAllTagBasedGroups(array);
-	let mergedgroups = mergeIdenticalGroups(groups);
+	let root = makeRootGroup(alltasks);
+	let mergedgroups = mergeIdenticalGroups(groups.concat(root));
 	
 	// Convert the groups into a higher level object to avoid circular references when figuring out ancestry.
 	let hierarchicalnodes = findParentalRelationships(mergedgroups);
@@ -94,14 +95,8 @@ function findAllTagBasedGroups(array){
 		dict[groupid].addtask(tag.taskId);
 		dict[groupid].addtag(tag);
 	}) // forEach
-	
-	
-	
-	// A root group should be present. It will be merged with other existing groups if possible in hte next tep.
-	let root = makeRootGroup(array);
-	
 
-	return groups.concat(root);
+	return groups;
 	
 } // findAllTagBasedGroups
 

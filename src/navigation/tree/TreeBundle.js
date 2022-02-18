@@ -134,7 +134,7 @@ export default class treebundle{
 		}, 0)
 		
 		obj.nodeChildren.forEach(child=>{
-			child.miny = y_lowest_parent + 2*r;
+			child.miny = y_lowest_parent + 2*r*0;
 		}) // forEach
 		
 	} // y_min

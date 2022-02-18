@@ -13,101 +13,106 @@ import MeshRenderer2D from "./renderers/MeshRenderer2D.js";
 // Maybe separate annotations for starttime and endtime? And then let the system figure out a close chapter.
 
 
+const ids = ["0000" ,"0001" ,"0002" ,"0003" ,"0004" ,"0005" ,"0006" ,"0007" ,"0008" ,"0009" ,"0010" ,"0011" ,"0012" ,"0013" ,"0014" ,"0015"];
+
+let mtdtprmss = ids.map(id=>{
+	return fetch(`./data/${id}/casemetadata.json`).then(res=>res.json()).then(json=>{
+		var a = json;
+		
+		a.entropy2d = `./data/${id}/unsteady_contour2d_meta.json`;
+		
+		delete a.unsteady_line;
+		delete a.unsteady_scatterplot;
+		delete a.unsteady_entropy_contour;
+		
+		return a
+	})
+}); // map
 
 
-const data = [
-{taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"},
-{taskId: "task 1", sepal_length: 4.9, sepal_width: 3, color: "sandybrown", cat: "brown", entropy2d: "./data/0001/unsteady_contour2d_meta.json"},
-{taskId: "task 2", sepal_length: 4.7, sepal_width: 3.2, color: "seagreen", cat: "sea", entropy2d: "./data/0002/unsteady_contour2d_meta.json"},
-{taskId: "task 3", sepal_length: 4.6, sepal_width: 3.1, color: "seashell", cat: "sea", entropy2d: "./data/0003/unsteady_contour2d_meta.json"},
-{taskId: "task 4", sepal_length: 5, sepal_width: 3.6, color: "sienna", cat: "brown", entropy2d: "./data/0004/unsteady_contour2d_meta.json"},
-{taskId: "task 5", sepal_length: 5.4, sepal_width: 3.9, color: "skyblue", cat: "sea", entropy2d: "./data/0005/unsteady_contour2d_meta.json"},
-{taskId: "task 6", sepal_length: 4.6, sepal_width: 3.4, color: "slateblue", cat: "sea", entropy2d: "./data/0006/unsteady_contour2d_meta.json"},
-{taskId: "task 7", sepal_length: 5, sepal_width: 3.4, color: "springgreen", cat: "sea", entropy2d: "./data/0007/unsteady_contour2d_meta.json"},
-{taskId: "task 8", sepal_length: 4.4, sepal_width: 2.9, color: "tan", cat: "brown", entropy2d: "./data/0008/unsteady_contour2d_meta.json"},
-{taskId: "task 9", sepal_length: 4.9, sepal_width: 3.1, color: "thistle", cat: "red", entropy2d: "./data/0009/unsteady_contour2d_meta.json"},
-{taskId: "task 10", sepal_length: 5.4, sepal_width: 3.7, color: "tomato", cat: "red", entropy2d: "./data/0010/unsteady_contour2d_meta.json"},
-{taskId: "task 11", sepal_length: 4.8, sepal_width: 3.4, color: "turquoise", cat: "sea", entropy2d: "./data/0011/unsteady_contour2d_meta.json"},
-{taskId: "task 12", sepal_length: 4.8, sepal_width: 3, color: "violet", cat: "red", entropy2d: "./data/0012/unsteady_contour2d_meta.json"},
-{taskId: "task 13", sepal_length: 4.3, sepal_width: 3, color: "wheat", cat: "brown", entropy2d: "./data/0013/unsteady_contour2d_meta.json"},
-{taskId: "task 14", sepal_length: 5.8, sepal_width: 4, color: "lightpink", cat: "red", entropy2d: "./data/0014/unsteady_contour2d_meta.json"},
-{taskId: "task 15", sepal_length: 5.7, sepal_width: 4.4, color: "antiquewhite", cat: "brown", entropy2d: "./data/0015/unsteady_contour2d_meta.json"}
-]; // data
 
-/*
-const data = [
-{taskId: "task 0", sepal_length: 5.1, sepal_width: 3.5, color: "salmon", cat: "red", entropy2d: "./data/0000/unsteady_contour2d_meta.json"}
-]; // data
-*/
+ let ordinals = ["stage_loading", "flow_coefficient", "eff_isen", "eff_poly", "alpha_rel_stator_in", "alpha_rel_stator_out", "alpha_rel_rotor_in", "alpha_rel_rotor_out", "alpha_stator_in", "alpha_stator_out", "alpha_rotor_in", "alpha_rotor_out", "eff_isen_lost_stator_in", "eff_isen_lost_stator_out", "eff_isen_lost_rotor_in", "eff_isen_lost_rotor_out"];
+
+ let categoricals = [];
 
 
-// Items
-var workspace = new NavigationManager();
-var renderer = new MeshRenderer2D( document.getElementById("canvas") );
-
-var items = [] 
-
-for(let i=0; i<data.length; i++){
-	let item = new Individual(data[i], renderer.gl)
-	items.push(item);
+Promise.all(mtdtprmss).then(data=>{
 	
-	// Temporarilyturn the position: absolute off so we get an initial arrangement.
-	item.node.style.position = "";
 	
-	// Make navigation manager keep track of the item.
-	workspace.container.appendChild(item.node);
-	workspace.track(item);
 	
-	// Make the MeshRenderer draw it. The mesh renderer provides the gl object, which must be given to the items to initialise the players.
-	// Trackbatch? And connect it to the workspace hidden attribute??
-	renderer.track(item);
-} // for
+	
+	
+
+	// The NavigationManager needs to know the variable types because it needs to collect the spatial correlation data to send to the SpatialCorrelations housed by the MiniMap.
+	var workspace = new NavigationManager();
+	workspace.ordinals = ordinals;
+	workspace.categoricals = categoricals;
+	
+	var renderer = new MeshRenderer2D( document.getElementById("canvas") );
 
 
-// Update the minimap with all the items. This could be implemented in a nicer way it feels.
-workspace.minimap.update(items);
+	var items = [] 
+	for(let i=0; i<data.length; i++){
+		let item = new Individual(data[i], renderer.gl)
+		items.push(item);
+		
+		// Temporarilyturn the position: absolute off so we get an initial arrangement.
+		item.node.style.position = "";
+		
+		// Make navigation manager keep track of the item.
+		workspace.container.appendChild(item.node);
+		workspace.track(item);
+		
+		// Make the MeshRenderer draw it. The mesh renderer provides the gl object, which must be given to the items to initialise the players.
+		// Trackbatch? And connect it to the workspace hidden attribute??
+		renderer.track(item);
+	} // for
 
 
-// The initial positioning is done based on "position: relative;"
-let headeroffset = 80;
-let positions = items.reduce((acc,item)=>{
-	acc.push([item.node.offsetLeft, item.node.offsetTop + headeroffset])
-	return acc
-},[])
-
-// Now positionthem absolutely, and add the dragging.
-items.forEach((item,i)=>{
-	item.node.style.position = "absolute";
-	item.position = positions[i];
-}) // forEach
+	// Update the minimap with all the items. This could be implemented in a nicer way it feels.
+	workspace.minimap.update(items);
 
 
+	// The initial positioning is done based on "position: relative;"
+	let headeroffset = 80;
+	let positions = items.reduce((acc,item)=>{
+		acc.push([item.node.offsetLeft, item.node.offsetTop + headeroffset])
+		return acc
+	},[])
 
-// The knowledge manager object.
-var knowledge = new KnowledgeManager(workspace);
-
-
-
-// Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
-
-// How should the renderer recognise that it needs to change the set of groups to iterate over?
-renderer.draw();
-
-// To change the colormap values a custom range can be specified:
-// renderer.customColormapRange = [1140, 1150]
-
-
-workspace.updateRenderingItems = function(items){
-	renderer.items = items;
-} // updateRenderingItems
-
-
-
-// How to do the memory handling. And how to make it appear in the navigation bar!
-console.log(workspace, renderer, knowledge)
+	// Now positionthem absolutely, and add the dragging.
+	items.forEach((item,i)=>{
+		item.node.style.position = "absolute";
+		item.position = positions[i];
+	}) // forEach
 
 
 
+	// The knowledge manager object.
+	var knowledge = new KnowledgeManager(workspace);
+
+
+
+	// Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
+
+	// How should the renderer recognise that it needs to change the set of groups to iterate over?
+	renderer.draw();
+	// renderer.customColormapRange = [1140, 1160];
+
+
+	// Allow NavigationManager to control which items are rendered.
+	workspace.updateRenderingItems = function(subsetitems){
+		renderer.items = subsetitems;
+	} // updateRenderingItems
+
+
+
+	// How to do the memory handling. And how to make it appear in the navigation bar!
+	console.log(workspace, renderer, knowledge)
+
+
+
+})
 
 
 

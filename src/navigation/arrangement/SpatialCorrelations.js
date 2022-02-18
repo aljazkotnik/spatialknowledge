@@ -67,7 +67,7 @@ export default class SpatialCorrelations{
   xoffset = 300
   yoffset = 300
 	
-  constructor(variables){
+  constructor(){
 	let obj = this;
 	
 	

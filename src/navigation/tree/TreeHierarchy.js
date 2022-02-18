@@ -6,6 +6,7 @@ export default class TreeHierarchy{
 	  let obj = this;
 	  
 	  // How should the temporary groups be differentiated from the actual ones? Inside the groups are differentiated by "<tag.name>-<tag.author>". So maybe check if the author is undefined, and if so mark it as a temporary group?
+	  obj.alltasks = [];
 	  obj.temporary = [];
 	  obj.annotations = [];
 	  
@@ -21,16 +22,17 @@ export default class TreeHierarchy{
 	
 	// obj.temporary are actual 'Group' objects which are converted into temporary annotations on-the-go.
 	let i = -1;
-	let temporaryAnnotations = obj.temporary.reduce((acc, g)=>{
+	let temporaryAnnotations = obj.temporary.reduce((acc, g, j)=>{
+		// Why does the id need to be unique?
 		// The dummy annotation needs to have a unique id, name, author, and task ids.
 		return acc.concat(g.members.map(item=>{
 			i += 1;
-			return {id: `temp${i}`, name: "Unsaved", author: undefined, taskId: item.task.taskId}
+			return {id: `temp${i}`, name: `Unsaved ${j}`, author: undefined, taskId: item.task.taskId}
 		})) // concat
 	}, []); // reduce
 	
 	
-	obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations)).map(group=>{
+	obj.nodes = array2tree(obj.annotations.concat(temporaryAnnotations), obj.alltasks).map(group=>{
 		return new TreeNode(group);
 	}); // map
   } // update

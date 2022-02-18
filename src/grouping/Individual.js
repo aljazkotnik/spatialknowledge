@@ -65,10 +65,10 @@ export default class Individual extends Item {
 	let rect = obj.node.getBoundingClientRect();
 	if(rect.width < 200){
 		// Signal that the drawing should no longer occur.
-		obj.viewnode.style.border = `5px solid ${obj.task.color}`;
+		// obj.viewnode.style.border = `5px solid ${obj.task.color}`;
 	} else {
 		// Turn it back to default values.
-		obj.viewnode.style.border = "";
+		// obj.viewnode.style.border = "";
 	} // if
   } // checksize
   

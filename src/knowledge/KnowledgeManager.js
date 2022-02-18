@@ -285,12 +285,20 @@ export default class KnowledgeManager{
 	// How will this processing work? First filter by taskId, and then filter by type?
 	// I'm expecting to see tags, chapters, comments for now.
 	
+	
+	// First a nice KLUDGE to get us going - it should only display knowledge relevant to this demo, and so filter out anything with an inappropriate taskId.
+	let currenttasks = obj.nm.items.map(item=>item.task.taskId);
+	d = d.filter(a=>currenttasks.includes(a.taskId));
+	
+	
+	
 	// CHAPTERS SHOULD BE ADDED HERE TOO!!!
 	// All the tags can be pushed to the tree. But this is really pushed, not replaced!!
 	let tags = d.filter(a=>a.type==="tag");
 	tags.forEach(tag=>{
 		obj.nm.tree.addtagannotation(tag);
 	}) // forEach
+	console.log("tags", d, tags)
 	obj.nm.tree.update();
 	
 	

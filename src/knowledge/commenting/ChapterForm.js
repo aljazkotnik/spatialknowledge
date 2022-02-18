@@ -19,16 +19,16 @@ let css = {
 
 
 let template = `
-<div style="300px">
+<div style="width: 300px">
   <input type="text" placeholder="#tag-name" style="width: 100px;"></input>
   
   <div style="display: inline-block; float: right;">
-  <button class="starttime" style="${ css.button } ${css.timebutton}">start</button>
-  <i>-</i>
-  <button class="endtime" style="${ css.button } ${css.timebutton}">end</button>
-  <button class="submit" style="${ css.button } ${css.submitbutton}">
-    Submit
-  </button>
+    
+      <button class="starttime" style="${ css.button } ${css.timebutton}">start</button>
+      <i>-</i>
+      <button class="endtime" style="${ css.button } ${css.timebutton}">end</button>
+    
+      <button class="submit" style="${ css.button } ${css.submitbutton}">Submit</button>
   </div>
   
   

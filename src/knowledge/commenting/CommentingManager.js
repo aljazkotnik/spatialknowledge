@@ -82,11 +82,14 @@ export default class CommentingManager{
   updateCommentCounter(){
 	let obj = this;
 	
+	/*
 	let n = obj.comments.reduce((acc,c)=>{
 		acc += 1
 		acc += c.replies.length;
 		return acc
 	},0)
+	*/
+	let n = obj.comments.length;
 	let counterNode = obj.node
 	  .querySelector("div.hideShowText")
 	  .querySelector("b.counter");
@@ -124,6 +127,10 @@ export default class CommentingManager{
 		container.insertBefore(c.node, container.firstChild);
 			
 	}) // forEach	
+	
+	
+	// Update the comment section header:
+	obj.updateCommentCounter();
 	
   } // add
   
