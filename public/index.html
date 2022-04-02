@@ -1,89 +1,121 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html>
 
-<head lang='en'>
-  <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width'>
-  <title>Seminar day demo</title>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Capturing Knowledge</title>
+  
+  <link rel="icon" type="image/x-icon" href="./assets/favicon.ico"/>
+  
+  <link rel="stylesheet" href="./style/ieee_webpage.css">
   
   
-  <link rel="shortcut icon" href="/assets/favicon.png"/>
-	
-  <!-- STYLING -->  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <link rel="stylesheet" href="/style.css">
-	
+
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&family=Roboto:wght@300&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./style/font-awesome_4.7.0.min.css">
+  
 </head>
 
 <body>
 
-  <div class="header">
-    <h1 style="display: inline-block;">dbslice</h1>
+
+<h1>CAPTURING KNOWLEDGE DURING EXPLORATION OF DATASETS OF SMALL MULTIPLES</h1>
+
+  <div>
+  
+    <div>
+	  <figure>
+	    <a href="" style="text-decoration: none;">
+	      <img src="./assets/teaser_1.svg" alt="alt1" style="max-width:100%;">
+	    </a>
+	  </figure>
+	</div>
+
+	<p>Exploratory visual analysis is a key initial step in the derivation of transferable learning from a dataset. In many cases, the data being studied is best represented by images, or small multiples, that can be manipulated and analysed interactively. During this process, the experienced domain practitioner (a scientist or engineer, for example) is alert to the possibilities that may be uncovered and makes many decisions and hypothesis tests as part of an exploration session. The majority of these ideas are never captured and are lost; they cannot be considered, either by the same individual or a wider team, during future exploration. Where knowledge is captured, it is often recorded in documents that are detached from the data that supports the conclusions drawn. To accelerate exploration and enable knowledge capture, we propose a Visual Analytics environment for analysing image-based ensemble datasets, with image spatial arrangement and piling as the fundamental interactions. The testing of the ideas and hypotheses made by the user is supported using correlations between the spatial arrangement of small multiples and their associated metadata. The environment is capable of capturing observations (such as tags, value estimates, tagged image segments, and time delimited events) and text descriptions, and allows for real-time collaboration of multiple users. A tree visualisation is used to synthesise different types of annotations, support several points of view, and allow navigation between different groups of images created by the user. The utility of this framework for small multiple exploration and knowledge capture is illustrated with example datasets from chess game analysis and engineering simulation.</p>
+
   </div>
 
 
-  <!-- the canvas and table-top must both be 'position: absolute' otherwise the events on svgs appended to the tabletop later on don't work.
- 
-  Another svg is positioned between the tabletop and the canvas. It supports drawing the lasso selection, and hosts the navigation tree! It can also host zooming in and out to reduce the size of hte small multiples.
-  
-  This svg must be behind the canvas if the players should draw over the tree. However, for the tree to be interactive, it has to be on top of the canvas.
-  
-  
-  I need a place to draw the tree: this can be in the foreground only, as the tree can be minimised anyway.
-  How should I handle the title? It should be on initially, and then it should disappear right? Or just have a checkbox to toggle it off! Inline with all the other checkboxes to serve as the presentation slides!!
-  
-  
-  -->
-  
-  <!-- Drawing element in hte background -->
-  <canvas id="canvas" class="fullscreen" style="outline: black 3px solid;"></canvas>
-  
-  <!-- Tree visualisation and lasso support 
-  The svg is in front of the item divs to allow lasso to be applied to it.
-  
-  <svg id="sketchpad" class="fullscreen">
-	<g class="tree" transform="translate(0,60)"></g>
-  </svg>
-  -->
-  
-  
-  <!-- Place for small multiple frames -->
-  <div id="tabletop" class="fullscreen">
-    <!-- The svg for the clickable spatial correlation menu, and the knowledge tree -->
-	<svg id="sketchpad" class="fullscreen">
-	  <g class="tree" transform="translate(0,60)"></g>
-    </svg>
-    <div class="scalingwrapper"></div>
+<h2><span>Example Cases</span></h2>
+
+  <div>
+
+	<p>Under Construction!</p>
+	
   </div>
-	
-  
-  <!-- Head up display -->
-  <div class="hud unselectable">
-	
-	
-	
-	<!-- Right toolbar -->
-	<div class="hudright">
-	
-	  <!-- Minimap at the top: maybe svg with aggregated scatterplot? -->
-	  <div id="minimap"></div>
-	
-	  <form style="float: right; margin-top: 10px;">
-	    <label for="login">Login as:</label>
-        <input type="text" id="username" name="login" placeholder="alias"><br><br></input>  
-	  </form>
+
+
+
+
+<h2><span>Draft Publication</span></h2>
+
+  <div>
+
+	<article>
 	  
-    </div>
-	
-	
-	<div id="menucontainer"></div>
-	
+	  <h4>
+		<a href="./Capturing_Knowledge_During_Exploration_of_Datasts_of_Small_Multiples.pdf" target="_blank" slot="title"><b>Capturing Knowledge During Exploration of Datasts of Small Multiples</b></a>
+	  </h4>
+	  <p>Aljaz Kotnik and Graham Pullan</p>
+	  <p>Submitted to IEEE VIS 2022</p>
+	</article>
+
   </div>
-  
-  
-  
-  <script src='/dist/spatialknowledge.js'></script>  
-  
+
+<h2><span>Authors</span></h2>
+
+  <div>
+
+	<ol class="no-list-style">
+	  <li>
+		<div>
+		  <h4 class="author-name">
+			<span slot="name">Aljaz Kotnik</span>
+		  </h4>
+		  <div>
+			<span slot="affiliation">University of Cambridge<br>Whittle Laboratory</span>
+		  </div>
+		  <div>
+			<span>
+			  <i class="fa fa-github"></i>
+			  <a href="https://github.com/aljazkotnik" target="_blank" slot="github">aljazkotnik</a>
+			</span>
+		  </div>
+		</div>
+	  </li>
+	  
+	  <li>
+		<div>
+		  <h4 class="author-name">
+			<span slot="name">Graham Pullan</span>
+		  </h4>
+		  <div>
+			<span slot="affiliation">University of Cambridge<br>Whittle Laboratory</span>
+		  </div>
+		  <div>
+			<span>
+			  <i class="fa fa-globe"></i>
+			  <a href="https://whittle.eng.cam.ac.uk/lab/team/graham-pullan/" target="_blank" slot="website">Graham @ Whittle Laboratory</a>
+			</span>
+			<span>
+			  <i class="fa fa-twitter"></i>
+			  <a href="https://twitter.com/grahampullan" target="_blank" slot="twitter">grahampullan</a>
+			</span>
+			<span>
+			  <i class="fa fa-github"></i>
+			  <a href="https://github.com/grahampullan" target="_blank" slot="github">grahampullan</a>
+			</span>
+		  </div>
+		</div>
+	  </li>
+	</ol>
+
+  </div>
+
 </body>
 
 </html>

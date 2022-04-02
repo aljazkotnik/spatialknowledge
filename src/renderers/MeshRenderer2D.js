@@ -186,7 +186,7 @@ export default class MeshRenderer2D{
 	// Update the transformations.
 	gl.uniformMatrix4fv( locations.model, false, new Float32Array(transforms.model));
 	gl.uniformMatrix4fv( locations.projection, false, new Float32Array(transforms.projection));
-	gl.uniformMatrix4fv(locations.view, false, new Float32Array(transforms.view));
+	gl.uniformMatrix4fv( locations.view, false, new Float32Array(transforms.view));
 
 	// Set the vertices attribute
 	gl.enableVertexAttribArray( locations.position );
