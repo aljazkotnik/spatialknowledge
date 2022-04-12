@@ -1,4 +1,4 @@
-import {html2element} from "../../helpers.js";
+import {html2element} from "../helpers.js";
 
 let css = {
   button: `
@@ -38,7 +38,7 @@ let template = `
 
 
 // This is more than the chapterform, it is the entirety of the forms.
-export default class ChapterForm{
+export default class TagForm{
   
   constructor(){
     let obj = this;
@@ -78,7 +78,8 @@ export default class ChapterForm{
 		obj.update();
 	} // onmousedown
 	
-	obj.node.querySelector("button.submit").onmousedown = function(e){
+	obj.submitButton = obj.node.querySelector("button.submit");
+	obj.submitButton.onmousedown = function(e){
 		e.stopPropagation();
 		let tag = obj.tag;
 		if(tag){
@@ -171,4 +172,4 @@ export default class ChapterForm{
   // Is this necessary?? Or should we just use an outside method?
   // Placeholder for communication between classes.
   submit(tag){} // submit
-} // ChapterForm
+} // TagForm

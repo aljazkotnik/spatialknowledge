@@ -1,6 +1,7 @@
 import { html2element } from "../helpers.js";
 
-import ChapterForm from "./commenting/ChapterForm.js";
+import TagForm from "./TagForm.js";
+import TagOverview from "./TagOverview.js";
 import CommentingManager from "./commenting/CommentingManager.js";
 
 /* COMMENTING SYSTEM
@@ -25,8 +26,12 @@ export default class CommentingSystem{
 	
 	
 	// How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
-	obj.chapterform = new ChapterForm();
-	obj.node.appendChild( obj.chapterform.node )
+	obj.tagform = new TagForm();
+	obj.node.appendChild( obj.tagform.node )
+	
+	
+	obj.tagoverview = new TagOverview();
+	obj.node.appendChild( obj.tagoverview.node );
 	
 	
 	// Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
@@ -36,7 +41,7 @@ export default class CommentingSystem{
 	
 	// Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
 	// This is just a local assignment. The actual submit function is attached in the knowledge manager.
-	obj.chapterform.submit = function(tag){
+	obj.tagform.submit = function(tag){
 		// The KnowledgeManager must push the chapter annotations to:
 		// the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
 		console.log("Send to server", tag)

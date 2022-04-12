@@ -21,7 +21,6 @@ export default class PolygonAnnotation{
 	obj.node = svg2element(template);
 	obj.togglebutton = html2element(toggle);
 	
-	console.log(obj);
 	
 	// Mousedown is used, as mousedown implements the camera movements because onclick is for general dragging.
 	obj.node.onmousedown = function(e){
@@ -232,6 +231,14 @@ export default class PolygonAnnotation{
 	obj.node.style.display = "none";
 	obj.shown = false;
   }; // hide
+  
+  
+  submit(){
+	let obj = this;
+    obj.hide();
+    obj.clear();	
+	return obj.points;
+  } // submit
   
   
 }; // PolygonAnnotation

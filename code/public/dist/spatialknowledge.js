@@ -264,7 +264,7 @@
   } // arrayIncludesAll
    // joinDataToElements
 
-  var template$l = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$n = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -279,7 +279,7 @@
       this.width = 300;
       this.height = 200;
       var obj = this;
-      obj.node = html2element(template$l);
+      obj.node = html2element(template$n);
       obj.node.style.position = "absolute";
       obj.viewnode = obj.node.querySelector("div.viewcontainer"); // obj.viewnode.style.height = obj.height + "px";
       // obj.viewnode.style.width = obj.width + "px";
@@ -387,6 +387,17 @@
     }, {
       key: "onend",
       value: function onend() {} // onend
+
+    }, {
+      key: "isonscreen",
+      value: function isonscreen() {
+        var obj = this; // Check if any part of the item is on-screen. Or should there be a tolerance of a few pixels?
+
+        var rect = obj.node.getBoundingClientRect(); // East, West, North, South
+
+        var outside = rect.x > window.innerWidth || rect.x + rect.width < 0 || rect.y + rect.height < 0 || rect.y > window.innerHeight;
+        return !outside;
+      } // isonscreen
 
     }]);
 
@@ -662,7 +673,7 @@
 
   // The geom annotation view cannot be above the view or it will obstruct interactions!!
 
-  var template$k = "\n<div style=\"position: relative;\">\n  <div class=\"view\" style=\"width:300px; height:200px;\"></div>\n  <div class=\"controls\"></div>\n</div>\n";
+  var template$m = "\n<div style=\"position: relative;\">\n  <div class=\"view\" style=\"width:300px; height:200px;\"></div>\n  <div class=\"controls\"></div>\n</div>\n";
 
   var ViewFrame2D = /*#__PURE__*/function () {
     function ViewFrame2D(gl) {
@@ -671,7 +682,7 @@
       var obj = this;
       obj.gl = gl; // Okay, create the whole player here, and then just append it in hte item. The Item should then adjust the size to the player!!
 
-      obj.node = html2element(template$k); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
+      obj.node = html2element(template$m); // obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 
       obj.view = obj.node.querySelector("div.view"); // Some initial dummy geometry to allow initialisation.
 
@@ -1200,7 +1211,7 @@
   } // pausePath
 
 
-  var template$j = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
+  var template$l = "\n<g style=\"cursor: pointer;\">\n  <path fill=\"tomato\" d=\"\"></path>\n</g>\n"; // Maybe the y should just be set outside? And the same for the chapter?? Maybe give it the y it should center itself about?
   // textHeight + textBottomMargin + rectHighlightHeightDelta + rectHeight/2 - H/2
 
   var PlayButton = /*#__PURE__*/function () {
@@ -1211,7 +1222,7 @@
       this.y = 20 * 2 * Math.sqrt(3) / 3 / 2;
       this.width = 20;
       var obj = this;
-      obj.node = svg2element(template$j);
+      obj.node = svg2element(template$l);
     } // constructor
 
 
@@ -1229,7 +1240,7 @@
   }(); // PlayButton
 
   var defaultRectAttributes = "stroke=\"white\" stroke-width=\"2px\"";
-  var template$i = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
+  var template$k = "<g class=\"chapter\">\n  <rect class=\"background\" fill=\"gainsboro\" ".concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"buffering\" fill=\"gray\" ").concat(defaultRectAttributes, "\"></rect>\n  <rect class=\"foreground\" fill=\"tomato\" ").concat(defaultRectAttributes, "\"></rect>\n  <text style=\"display: none;\"></text>\n</g>");
 
   var PlayBarAnnotation = /*#__PURE__*/function () {
     // y = textHeight + textBottomMargin + highlightHeightDelta
@@ -1240,7 +1251,7 @@
       this.height = 10;
       this.dh = 4;
       var obj = this;
-      obj.node = svg2element(template$i);
+      obj.node = svg2element(template$k);
       obj.background = obj.node.querySelector("rect.background");
       obj.buffering = obj.node.querySelector("rect.buffering");
       obj.foreground = obj.node.querySelector("rect.foreground");
@@ -1338,7 +1349,7 @@
     r.y.baseVal.value = y;
   } // unhighlightRectangle
 
-  var template$h = "<g style=\"cursor: pointer;\"></g>"; // template
+  var template$j = "<g style=\"cursor: pointer;\"></g>"; // template
 
   var PlayBar = /*#__PURE__*/function () {
     // Coordinates in whole svg frame.
@@ -1354,7 +1365,7 @@
       this.t_buffered = 0;
       this.t_play = 0;
       var obj = this;
-      obj.node = svg2element(template$h);
+      obj.node = svg2element(template$j);
       obj._tscale = new scaleLinear();
     } // constructor
 
@@ -1463,7 +1474,7 @@
     return PlayBar;
   }(); // PlayBar
 
-  var template$g = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
+  var template$i = "\n<div class=\"player-controls\">\n  <svg id=\"playbar\" width=\"100%\" height=\"32px\">\n    <g class=\"playbutton\"></g>\n    <g class=\"playbar\"></g>\n  </svg>\n</div>\n"; // template
 
   var PlayControls = /*#__PURE__*/function () {
     function PlayControls() {
@@ -1473,7 +1484,7 @@
       this.textBottomMargin = 2;
       this.highlightHeightDelta = 3;
       var obj = this;
-      obj.node = html2element(template$g);
+      obj.node = html2element(template$i);
       var y = obj.textHeight + obj.textBottomMargin + obj.highlightHeightDelta; // Make a play button.
 
       obj.button = new PlayButton();
@@ -1581,7 +1592,7 @@
     return PlayControls;
   }(); // PlayControls
 
-  var template$f = "<svg class=\"gman\" width=300 height=200 style=\"display: none; position: absolute; top: 0px;\">\n  <g class=\"annotations\"></g>\n</svg>";
+  var template$h = "<svg class=\"gman\" width=300 height=200 style=\"display: none; position: absolute; top: 0px;\">\n  <g class=\"annotations\"></g>\n</svg>";
   var toggle = "<button class=\"geometrytoggle\" style=\"border: none; cursor: pointer; border-radius: 4px; background-color: gainsboro;\">\uD83D\uDCD0</button>";
 
   var PolygonAnnotation = /*#__PURE__*/function () {
@@ -1593,9 +1604,8 @@
       this.points = [];
       this.pointradius = 10;
       var obj = this;
-      obj.node = svg2element(template$f);
-      obj.togglebutton = html2element(toggle);
-      console.log(obj); // Mousedown is used, as mousedown implements the camera movements because onclick is for general dragging.
+      obj.node = svg2element(template$h);
+      obj.togglebutton = html2element(toggle); // Mousedown is used, as mousedown implements the camera movements because onclick is for general dragging.
 
       obj.node.onmousedown = function (e) {
         e.stopPropagation(); // Allow only one geometry at a time?
@@ -1795,6 +1805,16 @@
         obj.node.style.display = "none";
         obj.shown = false;
       }
+    }, {
+      key: "submit",
+      value: // hide
+      function submit() {
+        var obj = this;
+        obj.hide();
+        obj.clear();
+        return obj.points;
+      } // submit
+
     }]);
 
     return PolygonAnnotation;
@@ -1938,15 +1958,15 @@
     submitbutton: "\n    background-color: black;\n\tcolor: white;\n  "
   }; // css
 
-  var template$e = "\n<div style=\"width: 300px\">\n  <input class=\"tagname\" type=\"text\" placeholder=\"#tag-name\" style=\"width: 65px;\"></input>\n  \n  <input class=\"tagvalue\" type=\"text\" placeholder=\"value\" style=\"width: 35px;\"></input>\n  \n  <div class=\"buttons\" style=\"display: inline-block; float: right;\">\n      <button class=\"starttime\" style=\"".concat(css$3.button, " ").concat(css$3.timebutton, "\">start</button>\n      <i>-</i>\n      <button class=\"endtime\" style=\"").concat(css$3.button, " ").concat(css$3.timebutton, "\">end</button>\n    \n      <button class=\"submit\" style=\"").concat(css$3.button, " ").concat(css$3.submitbutton, "\">Submit</button>\n  </div>\n  \n  \n</div>\n"); // template
+  var template$g = "\n<div style=\"width: 300px\">\n  <input class=\"tagname\" type=\"text\" placeholder=\"#tag-name\" style=\"width: 65px;\"></input>\n  \n  <input class=\"tagvalue\" type=\"text\" placeholder=\"value\" style=\"width: 35px;\"></input>\n  \n  <div class=\"buttons\" style=\"display: inline-block; float: right;\">\n      <button class=\"starttime\" style=\"".concat(css$3.button, " ").concat(css$3.timebutton, "\">start</button>\n      <i>-</i>\n      <button class=\"endtime\" style=\"").concat(css$3.button, " ").concat(css$3.timebutton, "\">end</button>\n    \n      <button class=\"submit\" style=\"").concat(css$3.button, " ").concat(css$3.submitbutton, "\">Submit</button>\n  </div>\n  \n  \n</div>\n"); // template
   // This is more than the chapterform, it is the entirety of the forms.
 
-  var ChapterForm = /*#__PURE__*/function () {
-    function ChapterForm() {
-      _classCallCheck(this, ChapterForm);
+  var TagForm = /*#__PURE__*/function () {
+    function TagForm() {
+      _classCallCheck(this, TagForm);
 
       var obj = this;
-      obj.node = html2element(template$e);
+      obj.node = html2element(template$g);
       obj.nameinput = obj.node.querySelector("input.tagname");
       obj.valueinput = obj.node.querySelector("input.tagvalue");
       obj.buttons = obj.node.querySelector("div.buttons"); // This value will be overwritten during interactions, and is where the tag manager collects the time for the timestamps.
@@ -1981,7 +2001,9 @@
       }; // onmousedown
 
 
-      obj.node.querySelector("button.submit").onmousedown = function (e) {
+      obj.submitButton = obj.node.querySelector("button.submit");
+
+      obj.submitButton.onmousedown = function (e) {
         e.stopPropagation();
         var tag = obj.tag;
 
@@ -1996,7 +2018,7 @@
     // Dummy method to facilitate outside supply of the timesteps.
 
 
-    _createClass(ChapterForm, [{
+    _createClass(TagForm, [{
       key: "t",
       value: function t() {
         return undefined;
@@ -2086,8 +2108,44 @@
 
     }]);
 
-    return ChapterForm;
-  }(); // ChapterForm
+    return TagForm;
+  }(); // TagForm
+
+  var template$f = "<div></div>";
+
+  var TagOverview = /*#__PURE__*/function () {
+    function TagOverview() {
+      _classCallCheck(this, TagOverview);
+
+      this.tags = [];
+      var obj = this;
+      obj.node = html2element(template$f); // The tag visualisation should happen here also.
+    } // constructor
+
+
+    _createClass(TagOverview, [{
+      key: "add",
+      value: function add(newtags) {
+        var obj = this;
+        newtags.forEach(function (t) {
+          return obj.tags.push(t);
+        });
+      } // add
+
+    }, {
+      key: "namevalid",
+      value: function namevalid(name) {
+        // If any existing tag has this name the name is not valid.
+        var obj = this;
+        return !obj.tags.some(function (tag) {
+          return tag.name == name;
+        });
+      } // namevalid
+
+    }]);
+
+    return TagOverview;
+  }(); // TagOverview
 
   /*
   Maybe this one should be remade into a manager so it can keep add comments to itself. Otherwise they have to be routed outside.
@@ -2098,7 +2156,7 @@
     submitbutton: "\n    color: white;\n\tbackground-color: black;\n\tborder-radius: 4px;\n\tcursor: pointer;\n  "
   }; // css
 
-  var template$d = "\n<div>\n  <textarea class=\"comment\" type=\"text\" rows=\"1\" placeholder=\"What do you think?\" style=\"".concat(css$2.textarea, "\"></textarea>\n  <button class=\"submit\" style=\"").concat(css$2.submitbutton, "\"><b>Submit</b></button>\n</div>\n"); // template
+  var template$e = "\n<div>\n  <textarea class=\"comment\" type=\"text\" rows=\"1\" placeholder=\"What do you think?\" style=\"".concat(css$2.textarea, "\"></textarea>\n  <button class=\"submit\" style=\"").concat(css$2.submitbutton, "\"><b>Submit</b></button>\n</div>\n"); // template
 
   var AddCommentForm = /*#__PURE__*/function () {
     function AddCommentForm() {
@@ -2106,7 +2164,7 @@
 
       this._user = "";
       var obj = this;
-      obj.node = html2element(template$d); // Author input got omitted because the author also needs to be known when voting on a comment, and I didn't want to implement an input there. That's why now there will be an overall login box that will control everything.
+      obj.node = html2element(template$e); // Author input got omitted because the author also needs to be known when voting on a comment, and I didn't want to implement an input there. That's why now there will be an overall login box that will control everything.
 
       obj.commentinput = obj.node.querySelector("textarea.comment");
       obj.submitbutton = obj.node.querySelector("button.submit");
@@ -2172,7 +2230,7 @@
     timestampspan: "\n    color: gray;\n\tfont-size: 14px;\n\tmargin-left: 12px;\n  "
   }; // css
 
-  var template$c = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$1.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$1.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$1.button, " ").concat(css$1.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
+  var template$d = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$1.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$1.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$1.button, " ").concat(css$1.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
 
   var Comment = /*#__PURE__*/function () {
     function Comment(config) {
@@ -2181,7 +2239,7 @@
       this.user = "Default";
       var obj = this; // Make a new node.
 
-      obj.node = html2element(template$c); // Fill the template with the options from the config. There must be a comment, and there must be an author.
+      obj.node = html2element(template$d); // Fill the template with the options from the config. There must be a comment, and there must be an author.
 
       obj.config = config; // Fill some options that may not be defined in config.
 
@@ -2373,7 +2431,7 @@
   // Sort the comments before passing them to the comments below. How will replies be updated? Ultimately everything should be coming from the server??
   // This is just a template for the controls which allow the replies to be expanded or collapsed. These are invisible at first.
 
-  var template$b = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
+  var template$c = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
 
   var GeneralComment = /*#__PURE__*/function (_Comment) {
     _inherits(GeneralComment, _Comment);
@@ -2391,7 +2449,7 @@
       var obj = _assertThisInitialized(_this); // The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
 
 
-      obj.replynode = html2element(template$b);
+      obj.replynode = html2element(template$c);
       obj.node.appendChild(obj.replynode); // Add the functionality to the caret.
 
       obj.repliesExpanded = false;
@@ -2486,7 +2544,7 @@
     return candidates.length > 0 ? candidates[0] : false;
   } // findArrayItemById
 
-  var template$a = "\n<div class=\"commenting\" style=\"width:300px; margin-top: 10px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
+  var template$b = "\n<div class=\"commenting\" style=\"width:300px; margin-top: 10px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
 
   var CommentingManager = /*#__PURE__*/function () {
     function CommentingManager() {
@@ -2494,7 +2552,7 @@
 
       this.comments = [];
       var obj = this;
-      obj.node = html2element(template$a); // Make the form;
+      obj.node = html2element(template$b); // Make the form;
 
       obj.form = new AddCommentForm();
       obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
@@ -2620,23 +2678,25 @@
 
   */
 
-  var template$9 = "\n<div></div>\n"; // template
+  var template$a = "\n<div></div>\n"; // template
   // Add top caret that hides the whole thing!! And the chapterform should maybe include a draw button.
 
   var CommentingSystem = function CommentingSystem(taskid) {
     _classCallCheck(this, CommentingSystem);
 
     var obj = this;
-    obj.node = html2element(template$9); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
+    obj.node = html2element(template$a); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
 
-    obj.chapterform = new ChapterForm();
-    obj.node.appendChild(obj.chapterform.node); // Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
+    obj.tagform = new TagForm();
+    obj.node.appendChild(obj.tagform.node);
+    obj.tagoverview = new TagOverview();
+    obj.node.appendChild(obj.tagoverview.node); // Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
 
     obj.commenting = new CommentingManager(taskid);
     obj.node.appendChild(obj.commenting.node); // Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
     // This is just a local assignment. The actual submit function is attached in the knowledge manager.
 
-    obj.chapterform.submit = function (tag) {
+    obj.tagform.submit = function (tag) {
       // The KnowledgeManager must push the chapter annotations to:
       // the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
       console.log("Send to server", tag);
@@ -2669,14 +2729,14 @@
       obj.viewnode.appendChild(obj.renderer.node); // Add in a Commenting system also.
 
       obj.commenting = new CommentingSystem(task.taskId);
-      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // Maybe the chapterform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
-      // The chapterform needs to have access to the playbar current time.
+      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
+      // The tagform needs to have access to the playbar current time.
 
-      var c = obj.commenting.chapterform;
+      var c = obj.commenting.tagform;
 
       c.t = function () {
         return obj.renderer.ui.t_play;
-      }; // chapterform t.
+      }; // tagform t.
       // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
       // Onclick is captured and stopped somewhere else, so mousedown is looked for.
 
@@ -2789,7 +2849,7 @@
     return DrawLink;
   }(); // DrawLink
 
-  var template$8 = "\n<g class=\"bundle\">\n  <path stroke=\"white\" stroke-width=\"5\" fill=\"none\"></path>\n  <path stroke=\"black\" stroke-width=\"2\" fill=\"none\"></path>\n</g>\n"; // tempalte
+  var template$9 = "\n<g class=\"bundle\">\n  <path stroke=\"white\" stroke-width=\"5\" fill=\"none\"></path>\n  <path stroke=\"black\" stroke-width=\"2\" fill=\"none\"></path>\n</g>\n"; // tempalte
   // These should just be exposed at the link level... The tree level also has them, and it's non hygienic.
 
   var node_label_width$1 = 70;
@@ -2806,7 +2866,7 @@
       // NOTE: seednode is a `treenode' instance, but parents and children are `taskgroup' instances. The level is only defined for the node because it can change when the user interacts with the tree.
 
       var obj = this;
-      obj.node = svg2element(template$8);
+      obj.node = svg2element(template$9);
       obj.author = author, obj.level = seednode.level;
       obj.parents = seednode.connections.parents;
       obj.children = [seednode.connections.group];
@@ -3174,7 +3234,7 @@
 
   // text -> 	"x", node => node.labelx, "y", node => node.labely, label node=>node.label
 
-  var template$7 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
+  var template$8 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
   // A treenode object is a higher level wrapper that contains all the dimensioning information. The `connections' attribute is supposed to hold the `treegroup' object, which contains a reference the an individual group, all it's ancestors, it's direct parents, and all its descendants.
 
   var TreeNode = /*#__PURE__*/function () {
@@ -3191,7 +3251,7 @@
       this.nbundlesout = 0;
       this.hidden = false;
       var obj = this;
-      obj.node = svg2element(template$7); // The treegroup holds all the connections of a particular group.
+      obj.node = svg2element(template$8); // The treegroup holds all the connections of a particular group.
 
       obj.connections = treegroup;
       var label = obj.node.querySelector("g.label");
@@ -3736,7 +3796,7 @@
   - Fix node mouseover css - css affects specific child of mover g.
   */
 
-  var template$6 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"bundles\"></g>\n  <g class=\"nodes\"></g>\n  <g class=\"nodetooltip\"></g>\n  <g class=\"linktooltip\"></g>\n</g>\n";
+  var template$7 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"bundles\"></g>\n  <g class=\"nodes\"></g>\n  <g class=\"nodetooltip\"></g>\n  <g class=\"linktooltip\"></g>\n</g>\n";
 
   var TreeKnowledge = /*#__PURE__*/function () {
     function TreeKnowledge() {
@@ -3746,7 +3806,7 @@
 
       obj.hierarchy = new TreeHierarchy(); // Drawing
 
-      obj.node = svg2element(template$6);
+      obj.node = svg2element(template$7);
       obj.gnodes = obj.node.querySelector("g.nodes");
       obj.gbundles = obj.node.querySelector("g.bundles");
       obj.color = new scaleCategorical(); // The tree is redrawn on every interaction. To allow the user to ee where on the tree they currently are just highlight the group that contains all the relevant items.
@@ -3881,7 +3941,7 @@
     return TreeKnowledge;
   }(); // TreeKnowledge
 
-  var template$5 = "<circle r=\"5\" fill=\"cornflowerblue\"></circle>"; // template
+  var template$6 = "<circle r=\"5\" fill=\"cornflowerblue\"></circle>"; // template
 
   var MiniMapIcon = /*#__PURE__*/function () {
     function MiniMapIcon(item) {
@@ -3889,7 +3949,7 @@
 
       var obj = this;
       obj.item = item;
-      obj.node = svg2element(template$5);
+      obj.node = svg2element(template$6);
     } // constructor
 
 
@@ -3933,14 +3993,14 @@
     return MiniMapIcon;
   }(); // MiniMapIcon
 
-  var template$4 = "<rect class=\"current\" x=\"50\" y=\"10\" width=\"150\" height=\"50\" fill=\"black\" opacity=\"0.2\"></rect>";
+  var template$5 = "<rect class=\"current\" x=\"50\" y=\"10\" width=\"150\" height=\"50\" fill=\"black\" opacity=\"0.2\"></rect>";
 
   var MiniMapViewRect = /*#__PURE__*/function () {
     function MiniMapViewRect() {
       _classCallCheck(this, MiniMapViewRect);
 
       var obj = this;
-      obj.node = svg2element(template$4); // Make it draggable.
+      obj.node = svg2element(template$5); // Make it draggable.
 
       var active, clickedItemOffset;
 
@@ -4022,14 +4082,14 @@
     ul: "\n\t  list-style-type: none;\n\t  font-size: 10px;\n\t  font-weight: bold;\n\t  padding-left: 4px;\n\t  padding-right: 4px;\n\t"
   }; // css
 
-  var template$3 = "\n<div class=\"variable-select-menu\" style=\"".concat(css.menu, "\">\n  <ul style=\"").concat(css.ul, "\">\n  </ul>\n</div>\n"); // Differentite between an x and a y one.
+  var template$4 = "\n<div class=\"variable-select-menu\" style=\"".concat(css.menu, "\">\n  <ul style=\"").concat(css.ul, "\">\n  </ul>\n</div>\n"); // Differentite between an x and a y one.
 
   var CorrelationsMenu = /*#__PURE__*/function () {
     function CorrelationsMenu(axis) {
       _classCallCheck(this, CorrelationsMenu);
 
       var obj = this;
-      obj.node = html2element(template$3); // axis = 0/1 for x/y
+      obj.node = html2element(template$4); // axis = 0/1 for x/y
 
       obj.axis = axis;
     } // constructor
@@ -4159,7 +4219,7 @@
 
   */
 
-  var template$2 = "\n<g transform=\"translate(10,390)\">\n  <path class=\"horizontal\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label horizontal\"></text>\n  \n  <path class=\"vertical\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label vertical\" transform=\"rotate(-90)\"></text>\n</g>\n"; // The paths only depend on how close together the arrows should be.
+  var template$3 = "\n<g transform=\"translate(10,390)\">\n  <path class=\"horizontal\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label horizontal\"></text>\n  \n  <path class=\"vertical\" stroke=\"grey\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"></path>\n  <text class=\"correlation-label vertical\" transform=\"rotate(-90)\"></text>\n</g>\n"; // The paths only depend on how close together the arrows should be.
 
   var arrowheadwidth = 15; // arrowheadwidth
 
@@ -4178,7 +4238,7 @@
       this.xoffset = 300;
       this.yoffset = 300;
       var obj = this;
-      obj.node = svg2element(template$2);
+      obj.node = svg2element(template$3);
       obj.th = obj.node.querySelector("text.horizontal");
       obj.tv = obj.node.querySelector("text.vertical");
 
@@ -4374,7 +4434,7 @@
   The panning/zooming should be made available on hte background also.
   */
 
-  var template$1 = "<svg style=\"border: 2px solid gainsboro; display: block;\">\n  <g class=\"icons\"></g>\n</svg>"; // template
+  var template$2 = "<svg style=\"border: 2px solid gainsboro; display: block;\">\n  <g class=\"icons\"></g>\n</svg>"; // template
   // All the data should be on the minimap at all times, including any rearranged items. That means that the scale domain may have to be redone every time there is a rearrangement event.
 
   var MiniMap = /*#__PURE__*/function () {
@@ -4385,7 +4445,7 @@
       this.height = 200;
       this._icons = [];
       var obj = this;
-      obj.node = svg2element(template$1);
+      obj.node = svg2element(template$2);
       obj.node.setAttribute("width", obj.width);
       obj.node.setAttribute("height", obj.height); // The rectangle should have the proportions of the screen.
       // Abstract the viewrect out??
@@ -4577,7 +4637,7 @@
     }); // reduce
   } // calculateInitialMinimapDomain
 
-  var template = "\n<polygon class=\"lasso\" points=\"\" style=\"fill: cornflowerblue; stroke: dodgerblue; stroke-width: 2; opacity: 0.4;\"></polygon>\n"; // template
+  var template$1 = "\n<polygon class=\"lasso\" points=\"\" style=\"fill: cornflowerblue; stroke: dodgerblue; stroke-width: 2; opacity: 0.4;\"></polygon>\n"; // template
 
   var Lasso = /*#__PURE__*/function () {
     /* 
@@ -4591,7 +4651,7 @@
 
       var obj = this;
       obj.svg = svg;
-      obj.polygon = svg.appendChild(svg2element(template)); // An internal boundary is used for all the drawing, and an external boundary is presented to other interested modules. Only the exposed boundary is observable. The exposed boundary is used to determine the lasso selection.
+      obj.polygon = svg.appendChild(svg2element(template$1)); // An internal boundary is used for all the drawing, and an external boundary is presented to other interested modules. Only the exposed boundary is observable. The exposed boundary is used to determine the lasso selection.
 
       obj._boundary = [];
       obj.boundary = []; // Should the boundary be stored at all??
@@ -4705,6 +4765,125 @@
     } // if
 
   } // checkIntersect
+
+  var template = "<div class=\"hudright-menu\">\n        <div style=\"float: right;\">\n          <div>\n\t\t    <input class=\"value\" type=\"text\" placeholder=\"#tag-value\"></input>\n\t\t    <button class=\"btn-small v\">\uD83D\uDCDD</button>\n\t\t    <button class=\"btn-small x-pos\">\uD83D\uDCCC-x</button>\n\t\t    <button class=\"btn-small y-pos\">\uD83D\uDCCC-y</button>\n          </div>\n        \n          <div>\n            <input class=\"name\" type=\"text\" placeholder=\"#tag-name\"></input>\n\t\t    <button class=\"btn-small submit\">Submit</button>\n\t      </div>\n        </div>\n      </div>";
+  /* 
+  The batch form needs to only be able to submit when all on-screen items have the same tag-name in their forms.
+
+  The tag-name must not be the same as any available tags given to the annotations previously.
+  */
+
+  var TagValueBatchForm = /*#__PURE__*/function () {
+    function TagValueBatchForm() {
+      _classCallCheck(this, TagValueBatchForm);
+
+      this.items = [];
+      var obj = this;
+      obj.node = html2element(template); // name input needs to update the button anytime a char is added or removed. It should alert the user if the name is already assigned to any item.
+
+      obj.nameInput = obj.node.querySelector("input.name");
+
+      obj.nameInput.oninput = function () {
+        // Name validty is the only condition for the submit to become active. This allows the batch mode to submit simple tags also.
+        obj.toggleSubmitButton(obj.namevalid(obj.nameInput.value));
+      }; // oninput
+      // This one can capture anything.
+
+
+      obj.valueInput = obj.node.querySelector("input.value"); // The submit button hould only work when all the items in view have a valid name and value. When will the submit button be updated? It'll have to be updated during the navigation etc. Maybe instead of updating it it can always be on, and it can alert the user with the appropriate message?
+
+      obj.submitButton = obj.node.querySelector("button.submit");
+      obj.toggleSubmitButton(false);
+
+      obj.submitButton.onclick = function () {
+        console.log("Check if anything can be submitted");
+        obj.onscreenitems.forEach(function (item) {// item.commenting.tagform.submitButton.onmousedown();
+        }); // forEach
+
+        obj.clear();
+      }; // onclick
+      // The buttons need to paste the values to the appropriate
+
+
+      obj.valueButton = obj.node.querySelector("button.v");
+
+      obj.valueButton.onclick = function () {
+        var value = obj.valueInput.value;
+        obj.onscreenitems.forEach(function (item) {
+          item.commenting.tagform.valueinput.value = value;
+        }); // forEach
+      }; // onclick
+
+
+      obj.xPositionButton = obj.node.querySelector("button.x-pos");
+
+      obj.xPositionButton.onclick = function () {
+        obj.onscreenitems.forEach(function (item) {
+          var itemrect = item.node.getBoundingClientRect();
+          item.commenting.tagform.valueinput.value = itemrect.x / window.innerWidth;
+        }); // forEach
+      }; // onclick
+
+
+      obj.yPositionButton = obj.node.querySelector("button.y-pos");
+
+      obj.yPositionButton.onclick = function () {
+        obj.onscreenitems.forEach(function (item) {
+          var itemrect = item.node.getBoundingClientRect();
+          item.commenting.tagform.valueinput.value = 1 - itemrect.y / window.innerHeight;
+        }); // forEach
+      }; // onclick
+
+    } // constructor
+
+
+    _createClass(TagValueBatchForm, [{
+      key: "onscreenitems",
+      get: function get() {
+        var obj = this; // Automatically clear the tag forms of off-screen items.
+
+        return obj.items.filter(function (item) {
+          if (!item.isonscreen()) {
+            item.commenting.tagform.clear();
+          } // if
+
+
+          return item.isonscreen();
+        });
+      } // onscreenitems
+
+    }, {
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.nameInput = "";
+        obj.valueInput = "";
+        obj.toggleSubmitButton(false);
+      } // clear
+
+    }, {
+      key: "toggleSubmitButton",
+      value: function toggleSubmitButton(on) {
+        // if on == true then turn the button on, otherwise turn it off.
+        var obj = this;
+        obj.submitButton.style.background = on ? "black" : "gainsboro";
+        obj.submitButton.style.color = on ? "white" : "black";
+        obj.submitButton.disabled = !on;
+      } // toggleSubmitButton
+
+    }, {
+      key: "namevalid",
+      value: function namevalid(name) {
+        var obj = this;
+        return !obj.onscreenitems.some(function (item) {
+          return !item.commenting.tagoverview.namevalid(name);
+        });
+      } // namevalid
+
+    }]);
+
+    return TagValueBatchForm;
+  }(); // TagValueBatchForm
 
   /*
   GROUPING: 
@@ -4832,7 +5011,7 @@
       commentingnode.style.clear = "both";
       commentingnode.style.paddingTop = "5px"; // The group should also have a chapter form so that tags for several items can be submitted at once. But no chapters!!!
 
-      obj.tagform = new ChapterForm();
+      obj.tagform = new TagForm();
       commentingnode.appendChild(obj.tagform.node); // Hide the time buttons.
 
       obj.tagform.node.querySelector("button.starttime").style.display = "none";
@@ -4841,7 +5020,7 @@
 
       obj.tagform.submit = function (tag) {
         obj.members.forEach(function (member) {
-          member.commenting.chapterform.submit(tag);
+          member.commenting.TagForm.submit(tag);
         });
       }; // submit
 
@@ -5099,7 +5278,11 @@
         c.xmenu.hide();
         c.ymenu.hide();
       }); // addEventListener
-      // LASSO 
+      // BATCH MODE
+
+      obj.batchform = new TagValueBatchForm();
+      document.getElementById("batchform").appendChild(obj.batchform.node);
+      obj.batchform.items = obj.items; // LASSO 
       // Originally the lasso produced a tooltip, with the options: group, tag, close. Some of the tagging is now done through the commenting system. The lasso can still highlight the selection, and the interface based option for spatial value tags can be used for the tagging. Should that just be a menu on the right?
 
       obj.lasso = new Lasso(obj.sketchpad);
@@ -5794,9 +5977,9 @@
 
 
       nm.items.forEach(function (item) {
-        // Chapterform holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
-        item.commenting.chapterform.submit = function (tag) {
-          // Tag comes with at least the tag name from chapterform.
+        // `tagform' holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
+        item.commenting.tagform.submit = function (tag) {
+          // Tag comes with at least the tag name from tagform.
 
           /* The author and taskId are obligatory
           Author is required to fom groups for the treenavigation, and the taskId allows the annotations to be piped to the corresponding data.
@@ -5878,8 +6061,17 @@
           obj.nm.tree.addtagannotation(tag);
         }); // forEach
 
-        console.log("tags", d, tags);
-        obj.nm.tree.update(); // CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
+        console.log("Tags", d, tags);
+        obj.nm.tree.update(); // tags need to be distributed to the individual items also - there the available tags will be displayed to the user. The individual items also need them to see if the name of the new annotation is unique or not.
+
+        var tagdistribution = distribution(tags);
+        obj.nm.items.forEach(function (item) {
+          if (tagdistribution[item.task.taskId]) {
+            item.commenting.tagoverview.add(tagdistribution[item.task.taskId]);
+          } // if
+
+        }); // forEach
+        // CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
         // The chapters need to be distributed to hte appropriate items.
 
         var chapters = d.filter(function (a) {

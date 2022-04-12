@@ -52,12 +52,12 @@ export default class Individual extends Item {
 	obj.commenting = new CommentingSystem(task.taskId);
 	obj.node.querySelector("div.commenting").appendChild(obj.commenting.node);
 	
-	// Maybe the chapterform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
-	// The chapterform needs to have access to the playbar current time.
-	let c = obj.commenting.chapterform;
+	// Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
+	// The tagform needs to have access to the playbar current time.
+	let c = obj.commenting.tagform;
 	c.t = function(){
 		return obj.renderer.ui.t_play;
-	} // chapterform t.
+	} // tagform t.
 	
 	
 	

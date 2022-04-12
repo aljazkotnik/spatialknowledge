@@ -126,4 +126,19 @@ export default class Item{
   // Dummy method. Superset in Navigationmanager.track to allow adding to groups.
   onend(){} // onend
   
+  
+  isonscreen(){
+	let obj = this;
+	// Check if any part of the item is on-screen. Or should there be a tolerance of a few pixels?
+	let rect = obj.node.getBoundingClientRect();
+	
+	// East, West, North, South
+	let outside = (rect.x > window.innerWidth) || 
+	              (rect.x + rect.width < 0) || 
+				  (rect.y + rect.height < 0) || 
+				  (rect.y > window.innerHeight);
+	
+	return !outside
+  } // isonscreen
+  
 } // Item

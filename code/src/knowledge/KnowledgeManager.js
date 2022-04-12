@@ -213,9 +213,9 @@ export default class KnowledgeManager{
 	type: comment allows the server to handle different packages differently.
 	*/
 	nm.items.forEach(item=>{
-		// Chapterform holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
-		item.commenting.chapterform.submit = function(tag){
-			// Tag comes with at least the tag name from chapterform.
+		// `tagform' holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
+		item.commenting.tagform.submit = function(tag){
+			// Tag comes with at least the tag name from tagform.
 			
 			/* The author and taskId are obligatory
 			Author is required to fom groups for the treenavigation, and the taskId allows the annotations to be piped to the corresponding data.
@@ -304,9 +304,17 @@ export default class KnowledgeManager{
 	tags.forEach(tag=>{
 		obj.nm.tree.addtagannotation(tag);
 	}) // forEach
-	console.log("tags", d, tags)
+	console.log("Tags", d, tags)
 	obj.nm.tree.update();
 	
+	
+	// tags need to be distributed to the individual items also - there the available tags will be displayed to the user. The individual items also need them to see if the name of the new annotation is unique or not.
+	let tagdistribution = distribution(tags);
+	obj.nm.items.forEach(item=>{
+		if(tagdistribution[item.task.taskId]){
+			item.commenting.tagoverview.add(tagdistribution[item.task.taskId]);
+		} // if
+	}); // forEach
 	
 	
 	// CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!

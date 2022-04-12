@@ -2,7 +2,7 @@ import { html2element } from "../helpers.js";
 import Item from "./Item.js";
 
 
-import ChapterForm from "../knowledge/commenting/ChapterForm.js";
+import TagForm from "../knowledge/TagForm.js";
 
 /*
 GROUPING: 
@@ -141,7 +141,7 @@ export default class Group extends Item {
 	commentingnode.style.paddingTop = "5px";
 	
 	// The group should also have a chapter form so that tags for several items can be submitted at once. But no chapters!!!
-	obj.tagform = new ChapterForm();	
+	obj.tagform = new TagForm();	
 	commentingnode.appendChild(obj.tagform.node);
 	
 	// Hide the time buttons.
@@ -153,7 +153,7 @@ export default class Group extends Item {
 	// And now, when the button is clicked loop through the members and call their submit methods.
 	obj.tagform.submit = function(tag){
 		obj.members.forEach(member=>{
-			member.commenting.chapterform.submit(tag);
+			member.commenting.TagForm.submit(tag);
 		})
 	} // submit
 	

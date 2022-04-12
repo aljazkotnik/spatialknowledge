@@ -21,6 +21,7 @@ h1 {
 
 
 
+
 /* Style the buttons */
 button.btn-small {
 	font-family: helvetica;
@@ -75,6 +76,13 @@ div.hudright {
 
 text.correlation-label {
 	cursor: pointer;
+}
+
+
+div.hudright-menu {
+	width: 100%; 
+	margin-top: 10px; 
+	overflow: auto;
 }
 
 
