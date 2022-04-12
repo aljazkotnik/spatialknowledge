@@ -171,8 +171,7 @@ export default class TreeNode{
 	
 	get yMarkerStart(){
 		let obj = this;
-		let yoffset = obj.markersize > 0 ? obj.line_width/2 : 0;
-		return obj.y - obj.markersize/2 + yoffset;
+		return obj.y - 0*obj.markersize/2 + obj.line_width/2;
 	} // markery
 	
 	get markersize(){

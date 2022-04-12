@@ -83,7 +83,7 @@ export default class AddCommentForm{
   
   get config(){
 	let obj = this;
-	return obj.commentinput.value ? {comment: obj.commentinput.value, type: "comment"} : false;
+	return obj.commentinput.value ? {comment: obj.commentinput.value} : false;
   } // config
   
   

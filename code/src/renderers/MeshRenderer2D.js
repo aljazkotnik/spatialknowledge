@@ -171,6 +171,8 @@ export default class MeshRenderer2D{
   // But the programme declares the variables it expects, so the program would have to be redone also, which means another webgl instance is needed, and thus another canvas.
   
   
+  
+  // SPLIT BETWEEN TRANSFORMATIONS, DATA, AND COLORSCALE?
   updateAttributesAndUniforms(item){
 	// 'item' is a 'ViewFrame' instance. This method needs to update the transformation matrices, which are owned by the 'ViewFrame' instance, as well as the geometry buffers owned by the 'ViewFrame.geometry' instance.
 	// 'transforms' should have the 'model', 'projection', and 'view' transform 4x4 matrices that will be used to draw the scene.

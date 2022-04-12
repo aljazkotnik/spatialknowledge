@@ -20,10 +20,11 @@ let css = {
 
 let template = `
 <div style="width: 300px">
-  <input type="text" placeholder="#tag-name" style="width: 100px;"></input>
+  <input class="tagname" type="text" placeholder="#tag-name" style="width: 65px;"></input>
   
-  <div style="display: inline-block; float: right;">
-    
+  <input class="tagvalue" type="text" placeholder="value" style="width: 35px;"></input>
+  
+  <div class="buttons" style="display: inline-block; float: right;">
       <button class="starttime" style="${ css.button } ${css.timebutton}">start</button>
       <i>-</i>
       <button class="endtime" style="${ css.button } ${css.timebutton}">end</button>
@@ -35,13 +36,17 @@ let template = `
 </div>
 `; // template
 
+
+// This is more than the chapterform, it is the entirety of the forms.
 export default class ChapterForm{
   
   constructor(){
     let obj = this;
 	obj.node = html2element(template);
 	
-	obj.input = obj.node.querySelector("input");
+	obj.nameinput = obj.node.querySelector("input.tagname");
+	obj.valueinput = obj.node.querySelector("input.tagvalue");
+	obj.buttons = obj.node.querySelector("div.buttons");
 	
 	// This value will be overwritten during interactions, and is where the tag manager collects the time for the timestamps.
 	obj.clear();
@@ -50,13 +55,13 @@ export default class ChapterForm{
 	// For now add 3 buttons. A starttime endtime and submit button. For the submit button only the start and name need to be filled in. The buttons must also show the selected times!
 	
 	
-	obj.input.onmousedown = function(e){
+	obj.nameinput.onmousedown = function(e){
 		e.stopPropagation()
 	} // onmousedown
 	
 	
 	// Update the form when the text is typed in to activate the submit button.
-	obj.input.oninput = function(){
+	obj.nameinput.oninput = function(){
 		obj.update()
 	} // oninput
 	
@@ -125,7 +130,8 @@ export default class ChapterForm{
 	let obj = this;
 	obj.starttime = undefined;
 	obj.endtime = undefined;
-	obj.input.value = "";
+	obj.nameinput.value = "";
+	obj.valueinput.value = "";
 	obj.update();
   } // clear
   
@@ -136,7 +142,8 @@ export default class ChapterForm{
 	
 	
 	let tag = { 
-		name: obj.input.value,
+		name: obj.nameinput.value,
+		value: obj.valueinput.value
 	} // tag
 	
 	
@@ -152,18 +159,16 @@ export default class ChapterForm{
 	*/
 	if(timestamps.some(t=>!isNaN(t))){
 		// In this case at least one of the values is defined, and should be included.
-	    tag.type = "chapter";
 		tag.timestamps = JSON.stringify( timestamps );
-	} else {
-		tag.type = "tag";
 	}; // if
 	
 	// This only collects the name and the optional timestamps. The author is supplied outside, in the knowledge manager, to avoid sending the author into this object.
 	// The time should be defined, but it can also be 0, or less than 0!
 	// obj.user && obj.input.value && ( obj.starttime != undefined ) ? tag : false; 
-	return obj.input.value ? tag : false; 
+	return obj.nameinput.value ? tag : false; 
   } // tag
 
+  // Is this necessary?? Or should we just use an outside method?
   // Placeholder for communication between classes.
   submit(tag){} // submit
 } // ChapterForm

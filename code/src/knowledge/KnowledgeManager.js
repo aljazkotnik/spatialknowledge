@@ -129,8 +129,6 @@ export default class KnowledgeManager{
 	
 	
 	
-	
-	
 
 	/* WEBSOCKET INITIALISATION
 	So - send over a list of taskIds, and then get back the initial set of comments.
@@ -215,7 +213,9 @@ export default class KnowledgeManager{
 	type: comment allows the server to handle different packages differently.
 	*/
 	nm.items.forEach(item=>{
+		// Chapterform holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
 		item.commenting.chapterform.submit = function(tag){
+			// Tag comes with at least the tag name from chapterform.
 			
 			/* The author and taskId are obligatory
 			Author is required to fom groups for the treenavigation, and the taskId allows the annotations to be piped to the corresponding data.
@@ -223,6 +223,12 @@ export default class KnowledgeManager{
 			if(obj.username){
 				tag.taskId = item.task.taskId;
 				tag.author = obj.username;
+				tag.geometry = JSON.stringify(item.renderer.geometryannotation.submit());
+
+
+				// Type tag is assigned so that tags are distinguished from queries and heartbeat pings. Tag type combinations are allowed by always extracting whatever is possible from hte tags. Possible values are controlled for on the server side.
+				tag.type = "tag";
+				
 				
 				obj.ws.send( JSON.stringify( tag ) );
 			} else {
@@ -236,6 +242,7 @@ export default class KnowledgeManager{
 			if(obj.username){
 				comment.taskId = item.task.taskId;
 				comment.author = obj.username;
+				comment.type = "tag";
 				
 				obj.ws.send( JSON.stringify( comment ) );
 			} else {
@@ -278,12 +285,11 @@ export default class KnowledgeManager{
 	
   } // purge
 	
+	
+	
+  // Processing of knowledge entries cannot rely on types, because these are no longer captured. Instead just define what the individual components require.
   process(d){
 	let obj = this;
-	// console.log("Process", d)
-
-	// How will this processing work? First filter by taskId, and then filter by type?
-	// I'm expecting to see tags, chapters, comments for now.
 	
 	
 	// First a nice KLUDGE to get us going - it should only display knowledge relevant to this demo, and so filter out anything with an inappropriate taskId.
@@ -292,9 +298,9 @@ export default class KnowledgeManager{
 	
 	
 	
-	// CHAPTERS SHOULD BE ADDED HERE TOO!!!
-	// All the tags can be pushed to the tree. But this is really pushed, not replaced!!
-	let tags = d.filter(a=>a.type==="tag");
+	
+	// the tree can handle anything with a tag name.
+	let tags = d.filter(a=>a.name);
 	tags.forEach(tag=>{
 		obj.nm.tree.addtagannotation(tag);
 	}) // forEach
@@ -306,8 +312,8 @@ export default class KnowledgeManager{
 	// CLICKING ON CHPTER LABELS COULD ALLOW CHAPTE MODIFICATIONS!!
 	// The chapters need to be distributed to hte appropriate items.
 	let chapters = d.filter(a=>{
-		if(a.type==="chapter"){
-			// Chpters should have their timestamps parsed back into JSON objects.
+		if(a.timestamps){
+			// Chpters should have their timestamps parsed back into JSON arrays.
 			a.timestamps = JSON.parse(a.timestamps);
 			return true
 		} // if
@@ -326,7 +332,7 @@ export default class KnowledgeManager{
 	
 	// COMMENTING ON GROUPS IS IMPOSSIBLE, ONLY ACTUAL INDIVIDUALS CAN BE DISCUSSED
 	// Could be relaxed by just toring all the user ids for comments submitted through groups? Would have to implement a group specific way to return a stringified array of taskIds.
-	let comments = d.filter(a=>{return a.type==="comment"}); // filter
+	let comments = d.filter(a=>a.comment); // filter
 	console.log("Comments", comments)
 	
 	let commentsdistribution = distribution(comments);
@@ -336,6 +342,12 @@ export default class KnowledgeManager{
 			item.commenting.commenting.add(commentsdistribution[item.task.taskId]);
 		} // if
 	}) // forEach
+	
+	
+	// Log a geometry tag to see what was saved.
+	let geometryannotations = d.filter(a=>a.geometry);
+	console.log(geometryannotations)
+	
 	
   } // process
 } // KnowledgeManager

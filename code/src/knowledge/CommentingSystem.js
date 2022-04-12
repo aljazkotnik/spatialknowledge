@@ -35,8 +35,8 @@ export default class CommentingSystem{
 	
 	
 	// Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
+	// This is just a local assignment. The actual submit function is attached in the knowledge manager.
 	obj.chapterform.submit = function(tag){
-		
 		// The KnowledgeManager must push the chapter annotations to:
 		// the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
 		console.log("Send to server", tag)

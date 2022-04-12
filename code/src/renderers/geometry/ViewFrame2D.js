@@ -22,23 +22,19 @@ Could the mesh renderer just do the rendering all the time, and teh ViewFrames d
 import { html2element } from "../../helpers.js";
 
 
-import {scaleMatrix, translateMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, multiplyArrayOfMatrices, perspectiveMatrix, orthographicMatrix, invertMatrix} from "./matrices.js"
+import {scaleMatrix, translateMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, multiplyArrayOfMatrices, perspectiveMatrix, orthographicMatrix, invertMatrix} from "./matrices.js";
 import { Camera2D } from "./Camera.js";
 
 
-
 // The Viewframe is allowed to create the player DOM elements, and these are then inserted into the item.
+// The geom annotation view cannot be above the view or it will obstruct interactions!!
 let template = `
-<div>
-  <div class="view" style="width:300px; height:200px; opacity:0.001;"></div>
+<div style="position: relative;">
+  <div class="view" style="width:300px; height:200px;"></div>
   <div class="controls"></div>
 </div>
 `;
 
-
-
-
-// Aha, because I want the group to be an independent item playing the data as well, but it just gets the data from an existing item....
 
 
 export default class ViewFrame2D{
@@ -50,6 +46,7 @@ export default class ViewFrame2D{
 	
 	// Okay, create the whole player here, and then just append it in hte item. The Item should then adjust the size to the player!!
 	obj.node = html2element(template);
+	
 	
 	// obj.view is a convenience reference that points to the node. Transforms.view is the view transformation matrix.
 	obj.view = obj.node.querySelector("div.view");
@@ -258,4 +255,5 @@ export default class ViewFrame2D{
 	// Change the title of the player.
 	this.node.querySelector("div.label").textContent = label;
   } // title
+  
 } // ViewFrame2D

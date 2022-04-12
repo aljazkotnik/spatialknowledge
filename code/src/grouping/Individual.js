@@ -47,15 +47,27 @@ export default class Individual extends Item {
 	obj.viewnode.appendChild(obj.renderer.node)
 	
 	
+	
 	// Add in a Commenting system also.
 	obj.commenting = new CommentingSystem(task.taskId);
 	obj.node.querySelector("div.commenting").appendChild(obj.commenting.node);
 	
 	// Maybe the chapterform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
 	// The chapterform needs to have access to the playbar current time.
-	obj.commenting.chapterform.t = function(){
+	let c = obj.commenting.chapterform;
+	c.t = function(){
 		return obj.renderer.ui.t_play;
 	} // chapterform t.
+	
+	
+	
+	
+	// Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
+	// Onclick is captured and stopped somewhere else, so mousedown is looked for.
+	c.buttons.insertBefore(obj.renderer.geometryannotation.togglebutton, c.buttons.firstChild);
+	
+	
+	
   } // constructor
   
   checksize(){

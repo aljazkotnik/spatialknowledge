@@ -15,10 +15,7 @@ import Mesh2D from "./geometry/Mesh2D.js";
 // Load in hte external modules. Should all this be wrapped up in one item?
 // import InteractivePlayerUI from "./controls/InteractivePlayerUI.js";
 import PlayControls from "./playbar/PlayControls.js";
-
-
-
-
+import PolygonAnnotation from "./geometry/PolygonAnnotation.js";
 
 
 // How to actually perform the playing? First, just allow a small multiple to play itself. When the button is pressed the player becomes 'active'. The UnsteadyPlayer must be given the fps at which the data should change. Then when the internal document timestamp passes another full timestep from the beginning of the document it changes the data. The data must be ready beforehand though.
@@ -37,13 +34,20 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	obj.dt = 1000 / obj.fps;
 	obj.timelastdraw = 0;
 	
-	
 	// Actual geometry to be drawn. The time domain will change after the geometry loads in its data.
 	// The time domain can only be known AFTER the metadata is loaded. But, after the timesteps are updated the playcontrols need to be updated too. Specifically, the chapters need to be rebuild because they are independent of the actual annotations. But they currently don't need to be! Yes, they do - e.g. padding etc.
 	obj.geometry = new Mesh2D(gl, unsteadyMetadataFilename);
 	obj.geometry.metadatapromise.then(content=>{
 		obj.ui.t_domain = content.domain.t;
 	}) //then
+	
+	// What about putting the SVG into the view div? And then the events should bubble up?
+	// PolygonAnnotation has a node (svg drawing area), and a toggle button, which needs to be attached to the chapterform. The toggle should be controlled here also..
+	obj.geometryannotation = new PolygonAnnotation();
+	obj.view.appendChild( obj.geometryannotation.node );
+	//obj.geometryannotation.node.setAttribute("width", 300);
+	//obj.geometryannotation.node.setAttribute("height", 200);
+	
 	
 	// Add in precofigured UI. The metadata filename identifies this small multiple.
 	obj.ui = new PlayControls();
@@ -77,6 +81,10 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	if(obj.ui.t_buffered != obj.geometry.t_buffered){
 		obj.ui.t_buffered = obj.geometry.t_buffered;
 	} // if
+	
+	
+	// Update the annotation transforms. Navigation interactions should not be possible when the geometry annotation pane is open.
+	obj.geometryannotation.transforms = obj.transforms;
 	
   } // update
   
@@ -121,5 +129,10 @@ export default class UnsteadyPlayer2D extends ViewFrame2D {
 	
 	return isOnScreen;
   } // isOnScreen
+  
+  
+  
+  
+  
   
 } // UnsteadyPlayer2D
