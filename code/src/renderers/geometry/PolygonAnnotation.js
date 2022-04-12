@@ -190,7 +190,9 @@ export default class PolygonAnnotation{
   
   clear(){
 	let obj = this;
-	obj.node.querySelector(`g.annotations`).remove();
+	if(obj.node.querySelector(`g.annotations`)){
+		obj.node.querySelector(`g.annotations`).remove();
+	}; // if
 	obj.points = [];
   } // clear
   
@@ -227,7 +229,9 @@ export default class PolygonAnnotation{
   hide(){
 	// Everytime the svg is hidden, remove the currently drawn geometry.
 	let obj = this;
-	obj.node.querySelector(`g.annotations`).remove();
+	if(obj.node.querySelector(`g.annotations`)){
+		obj.node.querySelector(`g.annotations`).remove();
+	}; // if
 	obj.node.style.display = "none";
 	obj.shown = false;
   }; // hide

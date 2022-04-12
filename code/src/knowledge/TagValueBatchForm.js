@@ -45,10 +45,11 @@ export default class TagValueBatchForm{
 	// The submit button hould only work when all the items in view have a valid name and value. When will the submit button be updated? It'll have to be updated during the navigation etc. Maybe instead of updating it it can always be on, and it can alert the user with the appropriate message?
 	obj.submitButton = obj.node.querySelector("button.submit");
 	obj.toggleSubmitButton(false);
-	obj.submitButton.onclick = function(){
+	obj.submitButton.onclick = function(e){
 		console.log("Check if anything can be submitted")
 		obj.onscreenitems.forEach(item=>{
-			// item.commenting.tagform.submitButton.onmousedown();
+			item.commenting.tagform.nameinput.value = obj.nameInput.value;
+			item.commenting.tagform.submitButton.onmousedown(e);
 		}) // forEach
 		obj.clear();
 	}; // onclick
@@ -105,8 +106,8 @@ export default class TagValueBatchForm{
   
   clear(){
 	let obj = this;
-	obj.nameInput = "";
-	obj.valueInput = "";
+	obj.nameInput.value = "";
+	obj.valueInput.value = "";
 	obj.toggleSubmitButton(false);
   } // clear
   

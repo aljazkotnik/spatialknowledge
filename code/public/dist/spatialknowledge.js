@@ -1763,7 +1763,11 @@
       key: "clear",
       value: function clear() {
         var obj = this;
-        obj.node.querySelector("g.annotations").remove();
+
+        if (obj.node.querySelector("g.annotations")) {
+          obj.node.querySelector("g.annotations").remove();
+        }
+
         obj.points = [];
       } // clear
       // Should the user be allowed to toggle on hte annotations in hte comments? And that would toggle them on the SVG? And multiple ones can be toggled at once?
@@ -1801,7 +1805,11 @@
       function hide() {
         // Everytime the svg is hidden, remove the currently drawn geometry.
         var obj = this;
-        obj.node.querySelector("g.annotations").remove();
+
+        if (obj.node.querySelector("g.annotations")) {
+          obj.node.querySelector("g.annotations").remove();
+        }
+
         obj.node.style.display = "none";
         obj.shown = false;
       }
@@ -4795,9 +4803,11 @@
       obj.submitButton = obj.node.querySelector("button.submit");
       obj.toggleSubmitButton(false);
 
-      obj.submitButton.onclick = function () {
+      obj.submitButton.onclick = function (e) {
         console.log("Check if anything can be submitted");
-        obj.onscreenitems.forEach(function (item) {// item.commenting.tagform.submitButton.onmousedown();
+        obj.onscreenitems.forEach(function (item) {
+          item.commenting.tagform.nameinput.value = obj.nameInput.value;
+          item.commenting.tagform.submitButton.onmousedown(e);
         }); // forEach
 
         obj.clear();
@@ -4856,8 +4866,8 @@
       key: "clear",
       value: function clear() {
         var obj = this;
-        obj.nameInput = "";
-        obj.valueInput = "";
+        obj.nameInput.value = "";
+        obj.valueInput.value = "";
         obj.toggleSubmitButton(false);
       } // clear
 
