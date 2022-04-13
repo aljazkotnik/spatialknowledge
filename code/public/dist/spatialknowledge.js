@@ -396,7 +396,7 @@
         var rect = obj.node.getBoundingClientRect(); // East, West, North, South
 
         var outside = rect.x > window.innerWidth || rect.x + rect.width < 0 || rect.y + rect.height < 0 || rect.y > window.innerHeight;
-        return !outside;
+        return !outside && obj.node.style.display != "none";
       } // isonscreen
 
     }]);
@@ -2159,7 +2159,7 @@
     return TagButton;
   }(); // TagButton
 
-  var template$f = "<div style=\"margin-top: 5px;\"></div>";
+  var template$f = "<div style=\"width: 300px; margin-top: 5px;\"></div>";
 
   var TagOverview = /*#__PURE__*/function () {
     function TagOverview() {
@@ -4434,6 +4434,7 @@
     }, {
       key: "ordinalscores",
       value: function ordinalscores(d) {
+
         var scores = d.ordinals.map(function (ordinal) {
           var sp = [spearman(d.spatial[0], ordinal), spearman(d.spatial[1], ordinal)];
           sp.name = ordinal.name;
@@ -5689,14 +5690,37 @@
 
       /* SPATIAL CORRELATION DATA COLLECTION
       
+      
+      
+      Why not just gather all the metadata at once? And then run through all of it?
+      
+      For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
+      
+      Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
+      
+      TODO
+      DONE: 1.) Limit the calculation to on-screen items.
+      DONE: 2.) Make sure items aren't accounted for twice
+      3.) Add tag annotation data.
+      
+      
       */
-      // Why not just gather all the metadata at once? And then run through all of it?
-      // For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
-      // Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
       function collectSpatialCorrelationData() {
-        var obj = this; // Two kinds of items need to be dealt with - individuals and groups. Grouped items should use the position of the group for the spatial correlations.
+        var obj = this;
+        var onscreenitems = obj.items.filter(function (item) {
+          return item.isonscreen();
+        });
+        var onscreengroups = obj.groups.filter(function (group) {
+          return group.isonscreen();
+        }); // To see the annotation data that can be used for correlations first all common tags need to be identified. To do that all the relevant items need to be iterated over.
+        // Tags under consideration ar erequired to have a value. But timesteps can have two values. Distinguish between start and end times?
 
-        var groupedItemData = obj.groups.reduce(function (acc, g) {
+        var allrelevantitems = onscreenitems.concat(onscreengroups.reduce(function (acc, grp) {
+          return acc.concat(grp.members);
+        }, []));
+        var tagCorrelationData = collectAvailableTagCorrelationData(allrelevantitems); // Two kinds of items need to be dealt with - individuals and groups. Grouped items should use the position of the group for the spatial correlations.
+
+        var groupedItemData = onscreengroups.reduce(function (acc, g) {
           var d = g.members.map(function (item) {
             return {
               spatial: {
@@ -5709,8 +5733,9 @@
 
           return acc.concat(d);
         }, []); // reduce
+        // Individual items are accounted for in the groups already no? So maybe try to filter them out? Add the third attribute of tag data.
 
-        var individualItemData = obj.items.map(function (item) {
+        var individualItemData = onscreenitems.map(function (item) {
           return {
             spatial: {
               x: item.position[0],
@@ -5735,13 +5760,12 @@
             return makeNamedArray(d.map(function (d_) {
               return d_.metadata[variable];
             }), variable);
-          }),
+          }).concat(tagCorrelationData.ordinals),
           categoricals: obj.categoricals.map(function (variable) {
             return makeNamedArray(d.map(function (d_) {
               return d_.metadata[variable];
             }), variable);
-          }) // map
-
+          }).concat(tagCorrelationData.categoricals)
         };
       } // collectSpatialCorrelationData
 
@@ -5917,6 +5941,76 @@
     A.name = name;
     return A;
   } // namedArray
+
+
+  function collectAvailableTagCorrelationData(items) {
+    // Maybe it's eaiest to first collect all possibilities, and then remove any array that hose some invalid values? And base it off of a seed anyway, because all otehrs will be filtered out later anyway?
+    // Loop over all the items. Keep only the tags that appear in all of them. Values can be categorical/ordinal - check to see which. Two values are created for sequence annotations, but only if the relevant values are present. Nothing for geometry for now.
+    // Ok, there are several possibilities - tag value, tag starttime, tag endtime.
+    // First filter out any variables that are not present in all items.
+    var commonTagNames = items.reduce(function (acc, item) {
+      return acc.filter(function (n) {
+        return item.commenting.tagoverview.tags.map(function (t) {
+          return t.name;
+        }).includes(n);
+      });
+    }, items[0].commenting.tagoverview.tags.map(function (t) {
+      return t.name;
+    })); // Get the relevant item tag.
+
+    function getItemTagByName(item, tagname) {
+      return item.commenting.tagoverview.tags.find(function (t) {
+        return t.name == tagname;
+      });
+    }
+
+    function getTagDataNamedArray(tagname, optionname, accessor) {
+      var values = items.map(function (item) {
+        return accessor(getItemTagByName(item, tagname));
+      }); // map
+
+      return makeNamedArray(values, "".concat(tagname, "-").concat(optionname));
+    } // getTagDataNamedArray
+    // Have to use reduce because for each tag three variables are generated.
+
+
+    var annotationCorrelationData = commonTagNames.reduce(function (acc, tagname) {
+      acc.push(getTagDataNamedArray(tagname, "value", function (t) {
+        return t.value;
+      }));
+      acc.push(getTagDataNamedArray(tagname, "start", function (t) {
+        return t.timestamps ? t.timestamps[0] : undefined;
+      }));
+      acc.push(getTagDataNamedArray(tagname, "end", function (t) {
+        return t.timestamps ? t.timestamps[1] : undefined;
+      }));
+      return acc;
+    }, []); // Filter out the ones that have any invalid entries. The null values should be dropped here.
+
+    var validAnnotationCorrelationData = annotationCorrelationData.filter(function (A) {
+      return !A.some(function (v) {
+        return !v;
+      });
+    }); // All the values are strings up to this point. Convert them here if they are ordinals.
+
+    return validAnnotationCorrelationData.reduce(function (acc, A) {
+      if (A.some(function (v) {
+        return !Number(v);
+      })) {
+        acc.categoricals.push(A);
+      } else {
+        acc.ordinals.push(makeNamedArray(A.map(function (v) {
+          return Number(v);
+        }), A.name));
+      } // if
+
+
+      return acc;
+    }, {
+      ordinals: [],
+      categoricals: []
+    }); // reduce
+  } // collectAvailableTagCorrelationData
 
   /*
   This class should connect with the server to get and save the knowledge captured.
@@ -6258,12 +6352,9 @@
           } // if
 
         }); // forEach
-        // Log a geometry tag to see what was saved.
-
-        var geometryannotations = d.filter(function (a) {
-          return a.geometry;
-        });
-        console.log(geometryannotations);
+        // Geometry tags need not be handled separately - TagOverview does what is appropriate.
+        // let geometryannotations = d.filter(a=>a.geometry);
+        // console.log(geometryannotations)
       } // process
 
     }]);

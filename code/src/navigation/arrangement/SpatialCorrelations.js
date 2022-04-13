@@ -133,7 +133,7 @@ export default class SpatialCorrelations{
   ordinalscores(d){
 	let obj = this;
 	
-	
+	// Calculate correlation between spatial and ordinal.
 	let scores = d.ordinals.map(ordinal=>{
 		
 		let sp = [

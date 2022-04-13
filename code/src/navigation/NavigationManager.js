@@ -369,16 +369,38 @@ export default class NavigationManager{
   
   /* SPATIAL CORRELATION DATA COLLECTION
   
-  */
   
-  // Why not just gather all the metadata at once? And then run through all of it?
-  // For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
-  // Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
+  
+  Why not just gather all the metadata at once? And then run through all of it?
+  
+  For statistics it's favourable to keep all the values of individual variables in single arrays so that calculations of mean and standard deviation etc are simpler.
+  
+  Still, this can just be made here, and the spatial and metadata values can be prepared together. First collect in the row orientation, and then convert? Maybe that is simplest. And in the reorientation the categoricals can be converted.
+  
+  TODO
+  DONE: 1.) Limit the calculation to on-screen items.
+  DONE: 2.) Make sure items aren't accounted for twice
+  3.) Add tag annotation data.
+  
+  
+  */
   collectSpatialCorrelationData(){
 	let obj = this;
 	
+	
+	let onscreenitems = obj.items.filter(item=>item.isonscreen());
+	let onscreengroups = obj.groups.filter(group=>group.isonscreen());
+	
+	
+	// To see the annotation data that can be used for correlations first all common tags need to be identified. To do that all the relevant items need to be iterated over.
+	// Tags under consideration ar erequired to have a value. But timesteps can have two values. Distinguish between start and end times?
+	let allrelevantitems = onscreenitems.concat(onscreengroups.reduce((acc,grp)=>{return acc.concat(grp.members)},[]));
+	let tagCorrelationData = collectAvailableTagCorrelationData(allrelevantitems);
+	
+	
+	
 	// Two kinds of items need to be dealt with - individuals and groups. Grouped items should use the position of the group for the spatial correlations.
-	let groupedItemData = obj.groups.reduce((acc,g)=>{
+	let groupedItemData = onscreengroups.reduce((acc,g)=>{
 		let d = g.members.map(item=>{
 			return {spatial: {x: g.position[0], y: g.position[1]}, metadata: item.task}
 		}); // map
@@ -386,12 +408,14 @@ export default class NavigationManager{
 	}, []) // reduce
 	
 	
-	let individualItemData = obj.items.map(item=>{
+	// Individual items are accounted for in the groups already no? So maybe try to filter them out? Add the third attribute of tag data.
+	let individualItemData = onscreenitems.map(item=>{
 		return {spatial: {x: item.position[0], y: item.position[1]}, metadata: item.task}
 	})
 	
 	
-	let d = groupedItemData.concat(individualItemData); 
+	let d = groupedItemData.concat(individualItemData);
+	
 	
 	// Reorient here, and introduce ordinalvariables and categoricalvariables properties? But it doesn't matter in the end, as long as the categoricals are mapped correctly it's all good?
 	let spatial = [
@@ -409,10 +433,10 @@ export default class NavigationManager{
 		spatial: spatial,
 		ordinals: obj.ordinals.map(variable=>{
 				return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
-			}),
+			}).concat(tagCorrelationData.ordinals),
 		categoricals : obj.categoricals.map(variable=>{
 				return makeNamedArray(d.map( d_=>d_.metadata[variable]), variable);
-			}) // map
+			}).concat(tagCorrelationData.categoricals)
 	};
   } // collectSpatialCorrelationData
   
@@ -593,6 +617,70 @@ function makeNamedArray(A, name){
 	A.name = name;
 	return A
 } // namedArray
+
+
+
+
+
+
+
+
+
+function collectAvailableTagCorrelationData(items){
+	// Maybe it's eaiest to first collect all possibilities, and then remove any array that hose some invalid values? And base it off of a seed anyway, because all otehrs will be filtered out later anyway?
+	// Loop over all the items. Keep only the tags that appear in all of them. Values can be categorical/ordinal - check to see which. Two values are created for sequence annotations, but only if the relevant values are present. Nothing for geometry for now.
+	// Ok, there are several possibilities - tag value, tag starttime, tag endtime.
+	
+	
+	
+	// First filter out any variables that are not present in all items.
+	let commonTagNames = items.reduce((acc,item)=>{
+		return acc.filter(n=>item.commenting.tagoverview.tags.map(t=>t.name).includes(n))
+	}, items[0].commenting.tagoverview.tags.map(t=>t.name))
+	
+	
+	
+	// Get the relevant item tag.
+	function getItemTagByName(item, tagname){
+		return item.commenting.tagoverview.tags.find(t=>t.name==tagname)
+	}; // getItemTagByName
+	
+	
+	
+	function getTagDataNamedArray(tagname, optionname, accessor){
+		let values = items.map(item=>{
+			return accessor( getItemTagByName(item, tagname) );
+		}) // map
+		return makeNamedArray(values, `${tagname}-${optionname}`);
+	} // getTagDataNamedArray
+	
+	
+	// Have to use reduce because for each tag three variables are generated.
+	let annotationCorrelationData = commonTagNames.reduce((acc,tagname)=>{
+		acc.push( getTagDataNamedArray(tagname, "value", function(t){return t.value}) );
+		acc.push( getTagDataNamedArray(tagname, "start", function(t){return t.timestamps ? t.timestamps[0] : undefined}) );
+		acc.push( getTagDataNamedArray(tagname, "end", function(t){return t.timestamps ? t.timestamps[1] : undefined}) );
+		return acc
+	}, [])
+	
+	
+	// Filter out the ones that have any invalid entries. The null values should be dropped here.
+	let validAnnotationCorrelationData = annotationCorrelationData.filter(A=>!A.some(v=>!v))
+	
+	
+	// All the values are strings up to this point. Convert them here if they are ordinals.
+	return validAnnotationCorrelationData.reduce((acc, A)=>{
+		if(A.some(v => !Number(v) )){
+			acc.categoricals.push(A);
+		} else {
+			acc.ordinals.push(makeNamedArray( A.map(v=>Number(v)), A.name));
+		} // if
+		return acc
+	}, {ordinals: [], categoricals: []}); // reduce
+	
+	
+	
+} // collectAvailableTagCorrelationData
 
 
 

@@ -358,9 +358,9 @@ export default class KnowledgeManager{
 	}) // forEach
 	
 	
-	// Log a geometry tag to see what was saved.
-	let geometryannotations = d.filter(a=>a.geometry);
-	console.log(geometryannotations)
+	// Geometry tags need not be handled separately - TagOverview does what is appropriate.
+	// let geometryannotations = d.filter(a=>a.geometry);
+	// console.log(geometryannotations)
 	
 	
   } // process

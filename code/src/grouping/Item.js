@@ -138,7 +138,7 @@ export default class Item{
 				  (rect.y + rect.height < 0) || 
 				  (rect.y > window.innerHeight);
 	
-	return !outside
+	return !outside && obj.node.style.display != "none";
   } // isonscreen
   
 } // Item

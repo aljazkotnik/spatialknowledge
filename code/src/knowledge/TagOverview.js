@@ -1,7 +1,7 @@
 import { html2element } from "../helpers.js";
 import TagButton from "./TagButton.js";
 
-let template = `<div style="margin-top: 5px;"></div>`;
+let template = `<div style="width: 300px; margin-top: 5px;"></div>`;
 
 export default class TagOverview{
   
