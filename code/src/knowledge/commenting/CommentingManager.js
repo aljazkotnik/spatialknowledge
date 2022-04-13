@@ -98,14 +98,14 @@ export default class CommentingManager{
   } // updateCommentCounter
   
   
-  clear(){
+  purge(){
 	let obj = this;
 	obj.comments = [];
 	let commentsToRemove = obj.node.querySelector("div.comments").children;
 	for(let i=0; i<commentsToRemove.length; i++){
 		commentsToRemove[i].remove();
 	} // for
-  } // clear
+  } // purge
   
   
 

@@ -10,9 +10,10 @@ let toggle = `<button class="geometrytoggle" style="border: none; cursor: pointe
 
 export default class PolygonAnnotation{ 
   
-  shown = false;
   transforms
   points = []
+  toggled = false
+  external = []
   
   pointradius = 10
   
@@ -25,13 +26,39 @@ export default class PolygonAnnotation{
 	// Mousedown is used, as mousedown implements the camera movements because onclick is for general dragging.
 	obj.node.onmousedown = function(e){
 	  e.stopPropagation()
-		// Allow only one geometry at a time?
-	  if(obj.points.closed){
-			
+	
+	  // If several points are availabe, and the last one is the same as the first one then the shape is closed.
+	  
+	  let p = screenPixel2dataDomain(e);
+	  
+	  if(obj.points.length>1 && (obj.points[0].toString() == p.toString())){
+		// If the first and last points are the same then the loop is closed. This can only be checked if there are more than two points, because for one point the first and last points are the same by definition.	
+	  } else if(obj.points.length>1 && distance(dataDomain2screenPixel(obj.points[0]), dataDomain2screenPixel(p)) < (obj.pointradius+2)**2){
+		obj.points.push(obj.points[0]);
 	  } else {
-		let M = obj.clipSpace2dataDomainMatrix;
-		let I = obj.dataDomain2clipSpaceMatrix;
+		obj.points.push(p);  
+	  } // if
+	  
+	  
 		
+	  obj.show();
+
+	  
+	  
+	  function dataDomain2screenPixel(p){
+		let I = obj.dataDomain2clipSpaceMatrix;
+		let viewrect = {
+			height: obj.node.clientHeight,
+			width: obj.node.clientWidth
+		}; // obj.node.getBoundingClientRect();
+		
+		return dataDomain2svgDomain(I, viewrect, [p[0], p[1],0,1]);
+	  } // dataDomain2screenPixel
+	  
+	  
+	  
+	  function screenPixel2dataDomain(e){
+		let M = obj.clipSpace2dataDomainMatrix;
 		
 		// Need to account for the overall scaling here. clientWidth/Height are in the original units, whereas the bounding rect is in onscreen units.
 		let boundingrect = obj.node.getBoundingClientRect();
@@ -49,29 +76,12 @@ export default class PolygonAnnotation{
 		  0,
 		  1
 		])
-		console.log("Hello world!", p)
-
-		
-		
-		
-		
-		// The distance metric is in pixels, whereas teh domain distance isn't. So the distance needs to be transformed into data space for comparison.
-		if(obj.points.length > 1){
-			let origin = obj.points[0];
-			let origin_pixel = dataDomain2svgDomain(I, viewrect, [origin[0], origin[1],0,1]);
-
-			if( distance(origin_pixel, p_pixel) < (obj.pointradius+2)**2 ){
-				obj.points.closed = true;
-			} else {
-				obj.points.push(p)
-			} // if
-		} else {
-			obj.points.push(p);
-		} // if
-		
-		
-		obj.show();
-	  } // if
+		return p
+	  } // screenPixelToDataDomain
+	  
+	  
+	  
+	  
 		
 		
 	} // onmousedown
@@ -93,11 +103,10 @@ export default class PolygonAnnotation{
 	var toggleState = true;
 	var pressTimer;
 	obj.togglebutton.onmouseup = function(){
-	  // Toggle background color.
 	  if(toggleState){
-		let on = obj.togglebutton.style.backgroundColor == "black";
-		obj.togglebutton.style.backgroundColor = on ? "gainsboro" : "black";
-		on ? obj.hide() : obj.show();
+		// Appearance is changed in show/hide, but not the state to prevent previewing toggling it permanently.
+		obj.toggled ? obj.hide() : obj.show();
+		obj.toggled = !obj.toggled;
 	  } // if
 		
 	  // If mousedown was long enough to execute the clearing the mouseup shouldn't change the state.
@@ -115,19 +124,24 @@ export default class PolygonAnnotation{
   } // constructor
   
   
-  draw(drawdata, area){
-	  // Draw data is already in the SVG domain.
+  draw(drawdata){
+	  // Draw data is in the data domain.
 	  let obj = this;
 	  let g = obj.node.querySelector("g.annotations");
-	  if(!g){
-		g = svg2element(`<g class="annotations"></g>`);
-		obj.node.appendChild(g);
-	  } // if 
 	  
 	  
+	  // Convert the data into SVG coordinates.
+	  // Matrix I transforms the domain coordinates to clip coordinates. The clip coordinates have to be further transformed into svg coordinates.
+	  let I = obj.dataDomain2clipSpaceMatrix;
+	  let viewrect = {
+		height: obj.node.clientHeight,
+		width: obj.node.clientWidth
+	  }; // obj.node.getBoundingClientRect();
+	  let svgdata = drawdata.map( p=>dataDomain2svgDomain(I, viewrect, p) )
 	  
-	  if(drawdata.length > 1){
-		let d = drawdata.reduce((acc,p,i)=>{
+	  
+	  if(svgdata.length > 1){
+		let d = svgdata.reduce((acc,p,i)=>{
 		  let s = ` L${p[0]},${p[1]}`;
 		  if(i==0){
 			s = ` M${p[0]},${p[1]}`;
@@ -135,8 +149,9 @@ export default class PolygonAnnotation{
 		  return acc + s
 		}, "");
 		
+		// Determine if a polygon, or just a line should be drawn.
 		let fill = "none";
-		if(area){
+		if(svgdata[0].toString() == svgdata[svgdata.length-1].toString()){
 			d += " Z";
 			fill = "blue";
 		} // if
@@ -149,7 +164,7 @@ export default class PolygonAnnotation{
 	  
 	  
 	  // Add also points. These would ideally be draggable. And they need to provide the snapping interactions!
-	  drawdata.forEach((d,i)=>{
+	  svgdata.forEach((d,i)=>{
 		  let outline = svg2element(`<circle cx="${d[0]}" cy="${d[1]}" r="${ obj.pointradius }" fill="black"></circle>`);
 		  let inside = svg2element(`<circle cx="${d[0]}" cy="${d[1]}" r="${ obj.pointradius - 4 }" fill="white"></circle>`);
 		  
@@ -188,39 +203,41 @@ export default class PolygonAnnotation{
   } // dataDomain2clipSpaceMatrix
   
   
-  clear(){
+  clearsvg(){
 	let obj = this;
 	if(obj.node.querySelector(`g.annotations`)){
 		obj.node.querySelector(`g.annotations`).remove();
+		obj.node.appendChild(svg2element(`<g class="annotations"></g>`));
 	}; // if
+  } // clearsvg
+  
+  
+  clear(){
+	let obj = this;
+	obj.clearsvg();
 	obj.points = [];
   } // clear
   
   
+  // REWORK so that annotation data can be passed in as empty, or undefined. Maybe the transformation can be pushed into draw?
   // Should the user be allowed to toggle on hte annotations in hte comments? And that would toggle them on the SVG? And multiple ones can be toggled at once?
-  show(annotationdata){
+  show(){
 	// `annotationdata' must be in the data domain.
 	let obj = this;
 	
 	// The SVG needs to be shown before a viewrect is established.
 	obj.node.style.display = "";
-	obj.shown = true;
-	
-	// Matrix I transforms the domain coordinates to clip coordinates. The clip coordinates have to be further transformed into svg coordinates.
-	let I = obj.dataDomain2clipSpaceMatrix;
-	let viewrect = {
-		height: obj.node.clientHeight,
-		width: obj.node.clientWidth
-	}; // obj.node.getBoundingClientRect();
+	obj.togglebutton.style.backgroundColor = "black";
+	obj.clearsvg();
 	
 	
-	if(annotationdata){
-		obj.draw(annotationdata.map( p=>dataDomain2svgDomain(I, viewrect, p) ), obj.points.closed);
-	} // if
+	// Any outside annotations should be shown.
+	obj.external.forEach(a=>obj.draw(a));
+	
 	
 	
 	// Draw the currently drawn points.
-	obj.draw( obj.points.map( p=>dataDomain2svgDomain(I, viewrect, p) ), obj.points.closed ) // draw
+	obj.draw(obj.points); // draw
 	
 	
   }; // show
@@ -229,19 +246,18 @@ export default class PolygonAnnotation{
   hide(){
 	// Everytime the svg is hidden, remove the currently drawn geometry.
 	let obj = this;
-	if(obj.node.querySelector(`g.annotations`)){
-		obj.node.querySelector(`g.annotations`).remove();
-	}; // if
+	obj.clearsvg();
 	obj.node.style.display = "none";
-	obj.shown = false;
+	obj.togglebutton.style.backgroundColor = "gainsboro";
   }; // hide
   
   
   submit(){
 	let obj = this;
     obj.hide();
+	let p = obj.points;
     obj.clear();	
-	return obj.points;
+	return p;
   } // submit
   
   

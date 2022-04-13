@@ -48,4 +48,11 @@ export default class CommentingSystem{
 	} // submit
 	
   } // constuctor
+  
+  
+  purge(){
+	let obj = this;
+	obj.tagoverview.purge();
+	obj.commenting.purge();
+  } // purge
 } // CommentingSystem

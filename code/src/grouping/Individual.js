@@ -52,6 +52,11 @@ export default class Individual extends Item {
 	obj.commenting = new CommentingSystem(task.taskId);
 	obj.node.querySelector("div.commenting").appendChild(obj.commenting.node);
 	
+	
+	
+	// CROSS MODULE FUNCTIONALITY
+	
+	
 	// Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
 	// The tagform needs to have access to the playbar current time.
 	let c = obj.commenting.tagform;
@@ -61,11 +66,41 @@ export default class Individual extends Item {
 	
 	
 	
+	let ga = obj.renderer.geometryannotation;
+	let to = obj.commenting.tagoverview;
+	
+	
 	
 	// Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
 	// Onclick is captured and stopped somewhere else, so mousedown is looked for.
-	c.buttons.insertBefore(obj.renderer.geometryannotation.togglebutton, c.buttons.firstChild);
+	c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild);
 	
+	
+	// Should previewing persist when the user is adding points? In that case the geometry annotation should know about all the active tags. So maybe it should just have a slot to show them? And it should be updated on the go?
+	// Here implement the annotation tag previewing.
+	// Should this just collectall currently active tags and push them to the polygon annotation for viewing?
+	to.preview = function(tag){
+	  // If the tag has geometry then the SVG should be turned on. This can only be done with access to the geometry annotation class.
+	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
+	
+	  // Tags are stored at least as empty arrays.
+	  if(tag.geometry != "[]"){
+		ga.external = activeannotations.concat([JSON.parse(tag.geometry)]);
+		ga.show();
+	  } // if
+		
+	  console.log("Implement general previewing of sequence chapters.")
+	} // preview
+	
+	
+	obj.commenting.tagoverview.previewend = function(){
+	  // Check if the geometry annotation is toggled on. If it's not then turn the SVG off.
+	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
+	  ga.external = activeannotations;
+		
+	  // geometryannotation.show expects to see the data in the data domain.
+	  ga.toggled ? ga.show() : ga.hide();
+	} // previewend
 	
 	
   } // constructor

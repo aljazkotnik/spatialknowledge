@@ -223,6 +223,8 @@ export default class KnowledgeManager{
 			if(obj.username){
 				tag.taskId = item.task.taskId;
 				tag.author = obj.username;
+				
+				// When stringifying an array all other properties are lost. Instead of explicitly stating that the geometry is closed just make the first and last points the same.
 				tag.geometry = JSON.stringify(item.renderer.geometryannotation.submit());
 
 
@@ -269,7 +271,7 @@ export default class KnowledgeManager{
   
   get username(){
 	return document.getElementById("username").value
-  }
+  } // get username
   
   
   
@@ -282,7 +284,11 @@ export default class KnowledgeManager{
 	obj.nm.tree.purge();
 	
 	
-	
+	// This is called before a query also. needs to purge comment sections, tag overviews, potentially chapters.
+	obj.nm.items.forEach(item=>{
+		// The annotation system will purge all its components.
+		item.commenting.purge();
+	}) // forEach
   } // purge
 	
 	

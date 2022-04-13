@@ -1599,20 +1599,42 @@
     function PolygonAnnotation() {
       _classCallCheck(this, PolygonAnnotation);
 
-      this.shown = false;
       this.transforms = void 0;
       this.points = [];
+      this.toggled = false;
+      this.external = [];
       this.pointradius = 10;
       var obj = this;
       obj.node = svg2element(template$h);
       obj.togglebutton = html2element(toggle); // Mousedown is used, as mousedown implements the camera movements because onclick is for general dragging.
 
       obj.node.onmousedown = function (e) {
-        e.stopPropagation(); // Allow only one geometry at a time?
+        e.stopPropagation(); // If several points are availabe, and the last one is the same as the first one then the shape is closed.
 
-        if (obj.points.closed) ; else {
-          var M = obj.clipSpace2dataDomainMatrix;
-          var I = obj.dataDomain2clipSpaceMatrix; // Need to account for the overall scaling here. clientWidth/Height are in the original units, whereas the bounding rect is in onscreen units.
+        var p = screenPixel2dataDomain(e);
+
+        if (obj.points.length > 1 && obj.points[0].toString() == p.toString()) ; else if (obj.points.length > 1 && distance(dataDomain2screenPixel(obj.points[0]), dataDomain2screenPixel(p)) < Math.pow(obj.pointradius + 2, 2)) {
+          obj.points.push(obj.points[0]);
+        } else {
+          obj.points.push(p);
+        } // if
+
+
+        obj.show();
+
+        function dataDomain2screenPixel(p) {
+          var I = obj.dataDomain2clipSpaceMatrix;
+          var viewrect = {
+            height: obj.node.clientHeight,
+            width: obj.node.clientWidth
+          }; // obj.node.getBoundingClientRect();
+
+          return dataDomain2svgDomain(I, viewrect, [p[0], p[1], 0, 1]);
+        } // dataDomain2screenPixel
+
+
+        function screenPixel2dataDomain(e) {
+          var M = obj.clipSpace2dataDomainMatrix; // Need to account for the overall scaling here. clientWidth/Height are in the original units, whereas the bounding rect is in onscreen units.
 
           var boundingrect = obj.node.getBoundingClientRect();
           var k = boundingrect.width / obj.node.clientWidth;
@@ -1623,25 +1645,8 @@
 
           var p_pixel = [(e.clientX - boundingrect.x) / k, (e.clientY - boundingrect.y) / k];
           var p = multiplyPoint(M, [2 * p_pixel[0] / viewrect.width - 1, 2 * (viewrect.height - p_pixel[1]) / viewrect.height - 1, 0, 1]);
-          console.log("Hello world!", p); // The distance metric is in pixels, whereas teh domain distance isn't. So the distance needs to be transformed into data space for comparison.
-
-          if (obj.points.length > 1) {
-            var origin = obj.points[0];
-            var origin_pixel = dataDomain2svgDomain(I, viewrect, [origin[0], origin[1], 0, 1]);
-
-            if (distance(origin_pixel, p_pixel) < Math.pow(obj.pointradius + 2, 2)) {
-              obj.points.closed = true;
-            } else {
-              obj.points.push(p);
-            } // if
-
-          } else {
-            obj.points.push(p);
-          } // if
-
-
-          obj.show();
-        } // if
+          return p;
+        } // screenPixelToDataDomain
 
       }; // onmousedown
       // Wheel event triggers zooming. Prevent it, or force a redraw.
@@ -1657,11 +1662,10 @@
       var pressTimer;
 
       obj.togglebutton.onmouseup = function () {
-        // Toggle background color.
         if (toggleState) {
-          var on = obj.togglebutton.style.backgroundColor == "black";
-          obj.togglebutton.style.backgroundColor = on ? "gainsboro" : "black";
-          on ? obj.hide() : obj.show();
+          // Appearance is changed in show/hide, but not the state to prevent previewing toggling it permanently.
+          obj.toggled ? obj.hide() : obj.show();
+          obj.toggled = !obj.toggled;
         } // if
         // If mousedown was long enough to execute the clearing the mouseup shouldn't change the state.
 
@@ -1684,19 +1688,24 @@
 
     _createClass(PolygonAnnotation, [{
       key: "draw",
-      value: function draw(drawdata, area) {
-        // Draw data is already in the SVG domain.
+      value: function draw(drawdata) {
+        // Draw data is in the data domain.
         var obj = this;
-        var g = obj.node.querySelector("g.annotations");
+        var g = obj.node.querySelector("g.annotations"); // Convert the data into SVG coordinates.
+        // Matrix I transforms the domain coordinates to clip coordinates. The clip coordinates have to be further transformed into svg coordinates.
 
-        if (!g) {
-          g = svg2element("<g class=\"annotations\"></g>");
-          obj.node.appendChild(g);
-        } // if 
+        var I = obj.dataDomain2clipSpaceMatrix;
+        var viewrect = {
+          height: obj.node.clientHeight,
+          width: obj.node.clientWidth
+        }; // obj.node.getBoundingClientRect();
 
+        var svgdata = drawdata.map(function (p) {
+          return dataDomain2svgDomain(I, viewrect, p);
+        });
 
-        if (drawdata.length > 1) {
-          var d = drawdata.reduce(function (acc, p, i) {
+        if (svgdata.length > 1) {
+          var d = svgdata.reduce(function (acc, p, i) {
             var s = " L".concat(p[0], ",").concat(p[1]);
 
             if (i == 0) {
@@ -1705,10 +1714,11 @@
 
 
             return acc + s;
-          }, "");
+          }, ""); // Determine if a polygon, or just a line should be drawn.
+
           var fill = "none";
 
-          if (area) {
+          if (svgdata[0].toString() == svgdata[svgdata.length - 1].toString()) {
             d += " Z";
             fill = "blue";
           } // if
@@ -1722,7 +1732,7 @@
         // Add also points. These would ideally be draggable. And they need to provide the snapping interactions!
 
 
-        drawdata.forEach(function (d, i) {
+        svgdata.forEach(function (d, i) {
           var outline = svg2element("<circle cx=\"".concat(d[0], "\" cy=\"").concat(d[1], "\" r=\"").concat(obj.pointradius, "\" fill=\"black\"></circle>"));
           var inside = svg2element("<circle cx=\"".concat(d[0], "\" cy=\"").concat(d[1], "\" r=\"").concat(obj.pointradius - 4, "\" fill=\"white\"></circle>"));
           g.appendChild(outline);
@@ -1760,44 +1770,41 @@
       } // dataDomain2clipSpaceMatrix
 
     }, {
-      key: "clear",
-      value: function clear() {
+      key: "clearsvg",
+      value: function clearsvg() {
         var obj = this;
 
         if (obj.node.querySelector("g.annotations")) {
           obj.node.querySelector("g.annotations").remove();
+          obj.node.appendChild(svg2element("<g class=\"annotations\"></g>"));
         }
+      } // clearsvg
 
+    }, {
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.clearsvg();
         obj.points = [];
       } // clear
+      // REWORK so that annotation data can be passed in as empty, or undefined. Maybe the transformation can be pushed into draw?
       // Should the user be allowed to toggle on hte annotations in hte comments? And that would toggle them on the SVG? And multiple ones can be toggled at once?
 
     }, {
       key: "show",
-      value: function show(annotationdata) {
+      value: function show() {
         // `annotationdata' must be in the data domain.
         var obj = this; // The SVG needs to be shown before a viewrect is established.
 
         obj.node.style.display = "";
-        obj.shown = true; // Matrix I transforms the domain coordinates to clip coordinates. The clip coordinates have to be further transformed into svg coordinates.
+        obj.togglebutton.style.backgroundColor = "black";
+        obj.clearsvg(); // Any outside annotations should be shown.
 
-        var I = obj.dataDomain2clipSpaceMatrix;
-        var viewrect = {
-          height: obj.node.clientHeight,
-          width: obj.node.clientWidth
-        }; // obj.node.getBoundingClientRect();
+        obj.external.forEach(function (a) {
+          return obj.draw(a);
+        }); // Draw the currently drawn points.
 
-        if (annotationdata) {
-          obj.draw(annotationdata.map(function (p) {
-            return dataDomain2svgDomain(I, viewrect, p);
-          }), obj.points.closed);
-        } // if
-        // Draw the currently drawn points.
-
-
-        obj.draw(obj.points.map(function (p) {
-          return dataDomain2svgDomain(I, viewrect, p);
-        }), obj.points.closed); // draw
+        obj.draw(obj.points); // draw
       }
     }, {
       key: "hide",
@@ -1805,13 +1812,9 @@
       function hide() {
         // Everytime the svg is hidden, remove the currently drawn geometry.
         var obj = this;
-
-        if (obj.node.querySelector("g.annotations")) {
-          obj.node.querySelector("g.annotations").remove();
-        }
-
+        obj.clearsvg();
         obj.node.style.display = "none";
-        obj.shown = false;
+        obj.togglebutton.style.backgroundColor = "gainsboro";
       }
     }, {
       key: "submit",
@@ -1819,8 +1822,9 @@
       function submit() {
         var obj = this;
         obj.hide();
+        var p = obj.points;
         obj.clear();
-        return obj.points;
+        return p;
       } // submit
 
     }]);
@@ -2119,13 +2123,50 @@
     return TagForm;
   }(); // TagForm
 
-  var template$f = "<div></div>";
+  var TagButton = /*#__PURE__*/function () {
+    function TagButton(tag) {
+      _classCallCheck(this, TagButton);
+
+      var obj = this;
+      obj.tag = tag;
+      obj.node = html2element("<button class=\"btn-small\">#".concat(tag.name, "</button>"));
+      obj.on = true; // On mouseover the tags should be highlighted. To highlight geometrical tags the corresponding SVG must be made visible.
+      // Onclick the buttons should filter the comments, and toggle the annotations.
+
+      obj.node.onmousedown = function (e) {
+        e.stopPropagation();
+        obj.toggle(!obj.on);
+      }; // onclick
+      // Turn button off as default.
+
+
+      obj.toggle(false);
+    } // constructor
+
+
+    _createClass(TagButton, [{
+      key: "toggle",
+      value: function toggle(on) {
+        // if on == true then turn the button on, otherwise turn it off.
+        var obj = this;
+        obj.node.style.background = on ? "black" : "gainsboro";
+        obj.node.style.color = on ? "white" : "black";
+        obj.on = on;
+      } // toggle
+
+    }]);
+
+    return TagButton;
+  }(); // TagButton
+
+  var template$f = "<div style=\"margin-top: 5px;\"></div>";
 
   var TagOverview = /*#__PURE__*/function () {
     function TagOverview() {
       _classCallCheck(this, TagOverview);
 
       this.tags = [];
+      this.buttons = [];
       var obj = this;
       obj.node = html2element(template$f); // The tag visualisation should happen here also.
     } // constructor
@@ -2138,6 +2179,24 @@
         newtags.forEach(function (t) {
           return obj.tags.push(t);
         });
+        var newbuttons = newtags.map(function (tag) {
+          return new TagButton(tag);
+        }); // map
+
+        newbuttons.forEach(function (b) {
+          obj.buttons.push(b);
+          obj.node.appendChild(b.node);
+
+          b.node.onmouseover = function () {
+            obj.preview(b.tag);
+          }; // onmouseover
+
+
+          b.node.onmouseout = function () {
+            obj.previewend();
+          }; // onmouseover
+
+        }); // forEach
       } // add
 
     }, {
@@ -2149,6 +2208,28 @@
           return tag.name == name;
         });
       } // namevalid
+
+    }, {
+      key: "purge",
+      value: function purge() {
+        var obj = this;
+        obj.tags = [];
+        obj.buttons.forEach(function (b) {
+          return b.node.remove();
+        });
+        obj.buttons = [];
+      } // purge
+      // Dummy code. 
+
+    }, {
+      key: "preview",
+      value: function preview(tag) {// If the tag has geometry then the SVG should be turned on. This can only be done with access to the geometry annotation class.
+      } // preview
+
+    }, {
+      key: "previewend",
+      value: function previewend() {// Stop the previewing by switching the SVG off - if it's not toggled on.
+      } // previewend
 
     }]);
 
@@ -2624,8 +2705,8 @@
       } // updateCommentCounter
 
     }, {
-      key: "clear",
-      value: function clear() {
+      key: "purge",
+      value: function purge() {
         var obj = this;
         obj.comments = [];
         var commentsToRemove = obj.node.querySelector("div.comments").children;
@@ -2634,7 +2715,7 @@
           commentsToRemove[i].remove();
         } // for
 
-      } // clear
+      } // purge
 
     }, {
       key: "add",
@@ -2689,29 +2770,43 @@
   var template$a = "\n<div></div>\n"; // template
   // Add top caret that hides the whole thing!! And the chapterform should maybe include a draw button.
 
-  var CommentingSystem = function CommentingSystem(taskid) {
-    _classCallCheck(this, CommentingSystem);
+  var CommentingSystem = /*#__PURE__*/function () {
+    function CommentingSystem(taskid) {
+      _classCallCheck(this, CommentingSystem);
 
-    var obj = this;
-    obj.node = html2element(template$a); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
+      var obj = this;
+      obj.node = html2element(template$a); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
 
-    obj.tagform = new TagForm();
-    obj.node.appendChild(obj.tagform.node);
-    obj.tagoverview = new TagOverview();
-    obj.node.appendChild(obj.tagoverview.node); // Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
+      obj.tagform = new TagForm();
+      obj.node.appendChild(obj.tagform.node);
+      obj.tagoverview = new TagOverview();
+      obj.node.appendChild(obj.tagoverview.node); // Add in the commenting system. The metadata filename is used as the id of this 'video', and thus this player. The node needs to be added also.
 
-    obj.commenting = new CommentingManager(taskid);
-    obj.node.appendChild(obj.commenting.node); // Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
-    // This is just a local assignment. The actual submit function is attached in the knowledge manager.
+      obj.commenting = new CommentingManager(taskid);
+      obj.node.appendChild(obj.commenting.node); // Tags will always be submitted straight to the server, which will then send them back. It's going to be tricky to deal with the upvotes/downvotes.
+      // This is just a local assignment. The actual submit function is attached in the knowledge manager.
 
-    obj.tagform.submit = function (tag) {
-      // The KnowledgeManager must push the chapter annotations to:
-      // the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
-      console.log("Send to server", tag);
-    }; // submit
+      obj.tagform.submit = function (tag) {
+        // The KnowledgeManager must push the chapter annotations to:
+        // the navigation tree as a group seed, the playbar as a chapter, and the commenting system as a conversation topic.
+        console.log("Send to server", tag);
+      }; // submit
 
-  } // constuctor
-  ; // CommentingSystem
+    } // constuctor
+
+
+    _createClass(CommentingSystem, [{
+      key: "purge",
+      value: function purge() {
+        var obj = this;
+        obj.tagoverview.purge();
+        obj.commenting.purge();
+      } // purge
+
+    }]);
+
+    return CommentingSystem;
+  }(); // CommentingSystem
 
   var Individual = /*#__PURE__*/function (_Item) {
     _inherits(Individual, _Item);
@@ -2737,7 +2832,8 @@
       obj.viewnode.appendChild(obj.renderer.node); // Add in a Commenting system also.
 
       obj.commenting = new CommentingSystem(task.taskId);
-      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
+      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // CROSS MODULE FUNCTIONALITY
+      // Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
       // The tagform needs to have access to the playbar current time.
 
       var c = obj.commenting.tagform;
@@ -2745,11 +2841,47 @@
       c.t = function () {
         return obj.renderer.ui.t_play;
       }; // tagform t.
-      // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
+
+
+      var ga = obj.renderer.geometryannotation;
+      var to = obj.commenting.tagoverview; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
       // Onclick is captured and stopped somewhere else, so mousedown is looked for.
 
+      c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild); // Should previewing persist when the user is adding points? In that case the geometry annotation should know about all the active tags. So maybe it should just have a slot to show them? And it should be updated on the go?
+      // Here implement the annotation tag previewing.
+      // Should this just collectall currently active tags and push them to the polygon annotation for viewing?
 
-      c.buttons.insertBefore(obj.renderer.geometryannotation.togglebutton, c.buttons.firstChild);
+      to.preview = function (tag) {
+        // If the tag has geometry then the SVG should be turned on. This can only be done with access to the geometry annotation class.
+        var activeannotations = to.buttons.filter(function (b) {
+          return b.on;
+        }).map(function (b) {
+          return JSON.parse(b.tag.geometry);
+        }); // Tags are stored at least as empty arrays.
+
+        if (tag.geometry != "[]") {
+          ga.external = activeannotations.concat([JSON.parse(tag.geometry)]);
+          ga.show();
+        } // if
+
+
+        console.log("Implement general previewing of sequence chapters.");
+      }; // preview
+
+
+      obj.commenting.tagoverview.previewend = function () {
+        // Check if the geometry annotation is toggled on. If it's not then turn the SVG off.
+        var activeannotations = to.buttons.filter(function (b) {
+          return b.on;
+        }).map(function (b) {
+          return JSON.parse(b.tag.geometry);
+        });
+        ga.external = activeannotations; // geometryannotation.show expects to see the data in the data domain.
+
+        ga.toggled ? ga.show() : ga.hide();
+      }; // previewend
+
+
       return _this;
     } // constructor
 
@@ -5996,7 +6128,8 @@
           */
           if (obj.username) {
             tag.taskId = item.task.taskId;
-            tag.author = obj.username;
+            tag.author = obj.username; // When stringifying an array all other properties are lost. Instead of explicitly stating that the geometry is closed just make the first and last points the same.
+
             tag.geometry = JSON.stringify(item.renderer.geometryannotation.submit()); // Type tag is assigned so that tags are distinguished from queries and heartbeat pings. Tag type combinations are allowed by always extracting whatever is possible from hte tags. Possible values are controlled for on the server side.
 
             tag.type = "tag";
@@ -6040,7 +6173,8 @@
       key: "username",
       get: function get() {
         return document.getElementById("username").value;
-      }
+      } // get username
+
     }, {
       key: "purge",
       value: function purge() {
@@ -6048,7 +6182,12 @@
         console.log("Purging"); // What needs to be purged? The knowledge manager doesn't keep track of the individual annotations anyway? Maybe cause the underlying modules to drop their knowledge?
         // Purge the navigation tree of obsolete knowledge.
 
-        obj.nm.tree.purge();
+        obj.nm.tree.purge(); // This is called before a query also. needs to purge comment sections, tag overviews, potentially chapters.
+
+        obj.nm.items.forEach(function (item) {
+          // The annotation system will purge all its components.
+          item.commenting.purge();
+        }); // forEach
       } // purge
       // Processing of knowledge entries cannot rely on types, because these are no longer captured. Instead just define what the individual components require.
 
