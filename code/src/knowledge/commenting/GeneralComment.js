@@ -14,7 +14,7 @@ let template = `
     <i class="fa fa-caret-down"></i>
 	<i class="control-text">View replies</i>
   </div>
-  <div class="replies" style="display: none;"></div>
+  <div class="replies"></div>
 </div>
 `
 
@@ -27,13 +27,16 @@ export default class GeneralComment extends Comment{
     super(config)
 	let obj = this;
 	
+	
+	obj.replybutton = obj.node.querySelector("button.reply");
+	
 	// The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
 	obj.replynode = html2element(template);
 	obj.node.appendChild( obj.replynode );
 	
 	// Add the functionality to the caret.
 	obj.repliesExpanded = false;
-	obj.replynode.querySelector("div.expand-controls").onclick = function(){
+	obj.replynode.querySelector("div.expand-controls").onmousedown = function(){
 	    obj.repliesExpanded = !obj.repliesExpanded;
 		obj.update();
 	} // onclick
@@ -43,26 +46,20 @@ export default class GeneralComment extends Comment{
 	obj.update();
   } // constructor
   
-  reply(replyconfig){
-	// Replies can also need to be updated if the server pushes an updated version. In that case handle the replacement here.
+  addreply(replyconfig){
+	// No pushing of updated versions.
 	let obj = this;
 	
 	// Make a comment node, and append it to this comment.
-	replyconfig.parentid = obj.id;
 	let r = new ReplyComment(replyconfig);
 	
-	let existing = findArrayItemById(obj.replies, r.id);
-	if(existing){
-	  obj.replaceReply(existing, r);
-	} else {
-	  // Add this one at the end.
-	  obj.replynode.querySelector("div.replies").appendChild(r.node);
-	  obj.replies.push(r);	
-	} // if
-	
+	// Add this one at the end.
+	obj.replynode.querySelector("div.replies").appendChild(r.node);
+	obj.replies.push(r);	
+
 	// Update the view.
 	obj.update();
-  } // reply
+  } // addreply
   
   replaceReply(existing, replacement){
 	// For simplicity handle the replacing of hte comment here.
@@ -90,6 +87,7 @@ export default class GeneralComment extends Comment{
 	obj.updateReplies();
   } // update
   
+  // Update function in addition to the superclass ones.
   updateReplies(){
 	let obj = this;
 	

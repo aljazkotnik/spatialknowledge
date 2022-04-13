@@ -91,11 +91,6 @@ export default class Comment{
 	
   } // constructor
   
-  get id(){
-	// Could just use obj.config.id, but in that case the relay has to be the actual SQL entry when a comment is added to the server.
-	let obj = this;
-	return [obj.config.viewid, obj.config.author, obj.config.datetime].join(" ");
-  } // get id
   
   update(){
 	// Only the time is allowed to be updated (if it will be calculated back), and the up and down votes.

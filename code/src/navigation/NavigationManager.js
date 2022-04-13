@@ -380,7 +380,7 @@ export default class NavigationManager{
   TODO
   DONE: 1.) Limit the calculation to on-screen items.
   DONE: 2.) Make sure items aren't accounted for twice
-  3.) Add tag annotation data.
+  DONE: 3.) Add tag annotation data.
   
   
   */

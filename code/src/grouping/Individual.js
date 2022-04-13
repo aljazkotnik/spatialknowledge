@@ -89,7 +89,13 @@ export default class Individual extends Item {
 		ga.show();
 	  } // if
 		
-	  console.log("Implement general previewing of sequence chapters.")
+		
+	  if(tag.timestamps){
+		// Just search by name.
+		obj.renderer.ui.bar.chapters.find(c=>c.config.label==tag.name).highlight();
+	  } // if
+	  
+	  
 	} // preview
 	
 	
@@ -100,6 +106,11 @@ export default class Individual extends Item {
 		
 	  // geometryannotation.show expects to see the data in the data domain.
 	  ga.toggled ? ga.show() : ga.hide();
+	  
+	  
+	  // Unhighlight all chapters.
+	  obj.renderer.ui.bar.chapters.forEach(c=>c.unhighlight());
+	  
 	} // previewend
 	
 	

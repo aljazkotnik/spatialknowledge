@@ -1,7 +1,7 @@
 import { html2element } from "../../helpers.js";
 import AddCommentForm from "./AddCommentForm.js";
 import GeneralComment from "./GeneralComment.js"; 
-import DiscussionSelector from "./DiscussionSelector.js";
+
 
 // Needs a way to minimise the commenting completely.
 let template = `
@@ -24,6 +24,7 @@ let template = `
 export default class CommentingManager{
 	
   comments = [];
+  generalcommentobjs = [];
 	
   constructor(){
     let obj = this;
@@ -35,22 +36,6 @@ export default class CommentingManager{
     obj.node.querySelector("div.comment-form").appendChild(obj.form.node);
   
   
-    
-	
-	
-	// Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
-	/*
-	obj.discussion = new DiscussionSelector();
-    obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node);
-    // obj.discussion.update(["#vortex", "#shock"])
-	obj.discussion.externalAction = function(){
-		obj.hideNonDiscussionComments();
-	} // externalAction
-	
-	
-	// At the beginning show only general comments? Better yet, show no comments.
-	obj.hideNonDiscussionComments();
-	*/
 	
 	// Finally add teh controls that completely hide comments.
 	let hsdiv = obj.node.querySelector("div.hideShowText");
@@ -67,17 +52,7 @@ export default class CommentingManager{
 	
   } // constructor
   
-  /*
-  hideNonDiscussionComments(){
-	let obj = this;
-	obj.comments.forEach(comment=>{
-      // This should really be select any!
-	  let pertinent = (obj.discussion.selected.length == 0) 
-	               || (obj.discussion.selected.some(d=>comment.config.tags.includes(d)));
-	  comment.node.style.display = pertinent ? "" : "none";
-	}) // forEach
-  } // hideNonDiscussionComments
-  */
+
   
   updateCommentCounter(){
 	let obj = this;
@@ -111,22 +86,50 @@ export default class CommentingManager{
 
   
   add(comments){
-	// The comments come solely from the server. They are not updated, and can just be created once. 
+	// The comments come solely from the server. They are not updated, and can just be created once.
 	let obj = this;
 	  
 	// Store all of them as a record.
 	obj.comments = obj.comments.concat(comments);
 	
+	
+	
+	
+	// Replies are owned by the general comment. So maybe split them first into general comments, and replies, and add the general comments first, and then add the replies to the general comments.
+	let replies = comments.filter(c=>c.ownerid);
+	let general = comments.filter(c=>!c.ownerid);
+	
 	// Just add the new ones in.
-	comments.forEach(comment=>{
-		// No replying for now.
+	general.forEach(comment=>{
 		let c = new GeneralComment(comment);
-
+		
 		// Insert the new comment at teh very top.
 		let container = obj.node.querySelector("div.comments");
 		container.insertBefore(c.node, container.firstChild);
-			
-	}) // forEach	
+		obj.generalcommentobjs.push(c);
+		
+		
+		// The general comment has a REPLY button - it needs to use the AddCommentForm submit function. That method is assigned from outside. The function here is different in that it assigns a parent id.
+		c.replybutton.onmousedown = function(e){
+			e.stopPropagation();
+			let c = obj.form.config;
+			c.ownerid = comment.id;
+			obj.form.submit(c);
+			obj.form.clear();
+		} // onmousedown
+	}) // forEach
+	
+	
+	// Replies need to be SORTED BY DATETIME!!
+	replies.forEach(reply=>{
+		// Find the owner.
+		let ownercomment = obj.generalcommentobjs.find(gc=>gc.config.id==reply.ownerid);
+		
+		// This if is not strictly necessary, but just to play it safe.
+		if(ownercomment){
+			ownercomment.addreply(reply);
+		} // if
+	}) // forEach
 	
 	
 	// Update the comment section header:

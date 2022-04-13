@@ -2358,14 +2358,6 @@
 
 
     _createClass(Comment, [{
-      key: "id",
-      get: function get() {
-        // Could just use obj.config.id, but in that case the relay has to be the actual SQL entry when a comment is added to the server.
-        var obj = this;
-        return [obj.config.viewid, obj.config.author, obj.config.datetime].join(" ");
-      } // get id
-
-    }, {
       key: "update",
       value: function update() {
         // Only the time is allowed to be updated (if it will be calculated back), and the up and down votes.
@@ -2520,7 +2512,7 @@
   // Sort the comments before passing them to the comments below. How will replies be updated? Ultimately everything should be coming from the server??
   // This is just a template for the controls which allow the replies to be expanded or collapsed. These are invisible at first.
 
-  var template$c = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\" style=\"display: none;\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
+  var template$c = "\n<div style=\"display: none;\">\n  <div class=\"expand-controls\" style=\"color: blue; cursor: pointer;\">\n    <i class=\"fa fa-caret-down\"></i>\n\t<i class=\"control-text\">View replies</i>\n  </div>\n  <div class=\"replies\"></div>\n</div>\n"; // Maybe the general comments can be added on top, but the replies should follow in chronological order.
 
   var GeneralComment = /*#__PURE__*/function (_Comment) {
     _inherits(GeneralComment, _Comment);
@@ -2535,15 +2527,16 @@
       _this = _super.call(this, config);
       _this.replies = [];
 
-      var obj = _assertThisInitialized(_this); // The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
+      var obj = _assertThisInitialized(_this);
 
+      obj.replybutton = obj.node.querySelector("button.reply"); // The general comment can have replies associated with it. Handle these here. Furthermore an additional control for expanding, reducing hte comments is required.
 
       obj.replynode = html2element(template$c);
       obj.node.appendChild(obj.replynode); // Add the functionality to the caret.
 
       obj.repliesExpanded = false;
 
-      obj.replynode.querySelector("div.expand-controls").onclick = function () {
+      obj.replynode.querySelector("div.expand-controls").onmousedown = function () {
         obj.repliesExpanded = !obj.repliesExpanded;
         obj.update();
       }; // onclick
@@ -2556,27 +2549,18 @@
 
 
     _createClass(GeneralComment, [{
-      key: "reply",
-      value: function reply(replyconfig) {
-        // Replies can also need to be updated if the server pushes an updated version. In that case handle the replacement here.
+      key: "addreply",
+      value: function addreply(replyconfig) {
+        // No pushing of updated versions.
         var obj = this; // Make a comment node, and append it to this comment.
 
-        replyconfig.parentid = obj.id;
-        var r = new ReplyComment(replyconfig);
-        var existing = findArrayItemById(obj.replies, r.id);
+        var r = new ReplyComment(replyconfig); // Add this one at the end.
 
-        if (existing) {
-          obj.replaceReply(existing, r);
-        } else {
-          // Add this one at the end.
-          obj.replynode.querySelector("div.replies").appendChild(r.node);
-          obj.replies.push(r);
-        } // if
-        // Update the view.
-
+        obj.replynode.querySelector("div.replies").appendChild(r.node);
+        obj.replies.push(r); // Update the view.
 
         obj.update();
-      } // reply
+      } // addreply
 
     }, {
       key: "replaceReply",
@@ -2602,6 +2586,7 @@
 
         obj.updateReplies();
       } // update
+      // Update function in addition to the superclass ones.
 
     }, {
       key: "updateReplies",
@@ -2624,14 +2609,7 @@
 
     return GeneralComment;
   }(Comment); // GeneralComment
-
-  function findArrayItemById(A, id) {
-    var candidates = A.filter(function (a) {
-      return a.id == id;
-    }); // filter
-
-    return candidates.length > 0 ? candidates[0] : false;
-  } // findArrayItemById
+   // findArrayItemById
 
   var template$b = "\n<div class=\"commenting\" style=\"width:300px; margin-top: 10px;\">\n  <div class=\"hideShowText\" style=\"cursor: pointer; margin-bottom: 5px; color: gray;\">\n    <b class=\"text\">Show comments</b>\n\t<b class=\"counter\"></b>\n\t<i class=\"fa fa-caret-down\"></i>\n  </div>\n  <div class=\"commentingWrapper\" style=\"display: none;\">\n    <div class=\"comment-form\"></div>\n    <hr>\n    <div class=\"comment-tags\"></div>\n    <div class=\"comments\" style=\"overflow-y: auto; max-height: 200px;\"></div>\n  </div>\n</div>\n"; // template
 
@@ -2640,25 +2618,12 @@
       _classCallCheck(this, CommentingManager);
 
       this.comments = [];
+      this.generalcommentobjs = [];
       var obj = this;
       obj.node = html2element(template$b); // Make the form;
 
       obj.form = new AddCommentForm();
-      obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Add the comment tags, which serve as selectors of the discussion topics. This should be another module. At the saem time this one will have to update when the module is updated. Maybe the placeholder reactions function should just be defined here??
-
-      /*
-      obj.discussion = new DiscussionSelector();
-         obj.node.querySelector("div.comment-tags").appendChild(obj.discussion.node);
-         // obj.discussion.update(["#vortex", "#shock"])
-      obj.discussion.externalAction = function(){
-      	obj.hideNonDiscussionComments();
-      } // externalAction
-      
-      
-      // At the beginning show only general comments? Better yet, show no comments.
-      obj.hideNonDiscussionComments();
-      */
-      // Finally add teh controls that completely hide comments.
+      obj.node.querySelector("div.comment-form").appendChild(obj.form.node); // Finally add teh controls that completely hide comments.
 
       var hsdiv = obj.node.querySelector("div.hideShowText");
       var cdiv = obj.node.querySelector("div.commentingWrapper");
@@ -2673,18 +2638,6 @@
       }; // onmousedown
 
     } // constructor
-
-    /*
-    hideNonDiscussionComments(){
-    let obj = this;
-    obj.comments.forEach(comment=>{
-        // This should really be select any!
-     let pertinent = (obj.discussion.selected.length == 0) 
-                  || (obj.discussion.selected.some(d=>comment.config.tags.includes(d)));
-     comment.node.style.display = pertinent ? "" : "none";
-    }) // forEach
-    } // hideNonDiscussionComments
-    */
 
 
     _createClass(CommentingManager, [{
@@ -2720,18 +2673,47 @@
     }, {
       key: "add",
       value: function add(comments) {
-        // The comments come solely from the server. They are not updated, and can just be created once. 
+        // The comments come solely from the server. They are not updated, and can just be created once.
         var obj = this; // Store all of them as a record.
 
-        obj.comments = obj.comments.concat(comments); // Just add the new ones in.
+        obj.comments = obj.comments.concat(comments); // Replies are owned by the general comment. So maybe split them first into general comments, and replies, and add the general comments first, and then add the replies to the general comments.
 
-        comments.forEach(function (comment) {
-          // No replying for now.
+        var replies = comments.filter(function (c) {
+          return c.ownerid;
+        });
+        var general = comments.filter(function (c) {
+          return !c.ownerid;
+        }); // Just add the new ones in.
+
+        general.forEach(function (comment) {
           var c = new GeneralComment(comment); // Insert the new comment at teh very top.
 
           var container = obj.node.querySelector("div.comments");
           container.insertBefore(c.node, container.firstChild);
-        }); // forEach	
+          obj.generalcommentobjs.push(c); // The general comment has a REPLY button - it needs to use the AddCommentForm submit function. That method is assigned from outside. The function here is different in that it assigns a parent id.
+
+          c.replybutton.onmousedown = function (e) {
+            e.stopPropagation();
+            var c = obj.form.config;
+            c.ownerid = comment.id;
+            obj.form.submit(c);
+            obj.form.clear();
+          }; // onmousedown
+
+        }); // forEach
+        // Replies need to be SORTED BY DATETIME!!
+
+        replies.forEach(function (reply) {
+          // Find the owner.
+          var ownercomment = obj.generalcommentobjs.find(function (gc) {
+            return gc.config.id == reply.ownerid;
+          }); // This if is not strictly necessary, but just to play it safe.
+
+          if (ownercomment) {
+            ownercomment.addreply(reply);
+          } // if
+
+        }); // forEach
         // Update the comment section header:
 
         obj.updateCommentCounter();
@@ -2865,7 +2847,13 @@
         } // if
 
 
-        console.log("Implement general previewing of sequence chapters.");
+        if (tag.timestamps) {
+          // Just search by name.
+          obj.renderer.ui.bar.chapters.find(function (c) {
+            return c.config.label == tag.name;
+          }).highlight();
+        } // if
+
       }; // preview
 
 
@@ -2878,7 +2866,11 @@
         });
         ga.external = activeannotations; // geometryannotation.show expects to see the data in the data domain.
 
-        ga.toggled ? ga.show() : ga.hide();
+        ga.toggled ? ga.show() : ga.hide(); // Unhighlight all chapters.
+
+        obj.renderer.ui.bar.chapters.forEach(function (c) {
+          return c.unhighlight();
+        });
       }; // previewend
 
 
@@ -5701,7 +5693,7 @@
       TODO
       DONE: 1.) Limit the calculation to on-screen items.
       DONE: 2.) Make sure items aren't accounted for twice
-      3.) Add tag annotation data.
+      DONE: 3.) Add tag annotation data.
       
       
       */
