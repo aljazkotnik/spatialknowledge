@@ -68,7 +68,7 @@ export default class Individual extends Item {
 	
 	let ga = obj.renderer.geometryannotation;
 	let to = obj.commenting.tagoverview;
-	
+	let cm = obj.commenting.commenting;
 	
 	
 	// Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
@@ -99,7 +99,7 @@ export default class Individual extends Item {
 	} // preview
 	
 	
-	obj.commenting.tagoverview.previewend = function(){
+	to.previewend = function(){
 	  // Check if the geometry annotation is toggled on. If it's not then turn the SVG off.
 	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
 	  ga.external = activeannotations;
@@ -113,6 +113,27 @@ export default class Individual extends Item {
 	  
 	} // previewend
 	
+	
+	to.communicatetags = function(tags){
+		// Pass these to the comment manager, which should pass it to all the comments.
+		cm.updateAvailableTags(tags.map(t=>`#${t.name}`));
+	} // communicatetags
+	
+	
+	
+	// Commenting should also support previewing.
+	cm.preview = function(tagname){
+		// Where should a selection be made which tags to preview, and which not?
+		
+		// First find the correct tag. All the tags are in TagOverview. After finding the correct tag the TagOverview preview can be used?
+		let tag = to.buttons.find(b=>b.node.innerText == tagname).tag;
+		to.preview(tag);
+	}; // preview
+	
+	
+	cm.previewend = function(tagname){
+		to.previewend();
+	}; // previewend
 	
   } // constructor
   

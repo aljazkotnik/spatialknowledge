@@ -52,6 +52,10 @@ export default class GeneralComment extends Comment{
 	
 	// Make a comment node, and append it to this comment.
 	let r = new ReplyComment(replyconfig);
+	r.preview = obj.preview;
+	r.previewend = obj.previewend;
+	r.availabletags = obj.availabletags;
+	r.update();
 	
 	// Add this one at the end.
 	obj.replynode.querySelector("div.replies").appendChild(r.node);
@@ -82,10 +86,12 @@ export default class GeneralComment extends Comment{
 	// Only the time is allowed to be updated (if it will be calculated back), and the up and down votes.
 	let obj = this;
 	
+	
 	// From superclass
 	obj.updateTimestamp();
 	obj.updateVoteCounter("upvote");
 	obj.updateVoteCounter("downvote");
+	obj.updateContent();
 	
 	// GeneralComment specific.
 	obj.updateReplies();

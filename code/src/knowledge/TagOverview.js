@@ -33,6 +33,8 @@ export default class TagOverview{
 	  
 	}) // forEach
 	
+	
+	obj.communicatetags(obj.tags);
   } // add
   
   namevalid(name){
@@ -59,5 +61,8 @@ export default class TagOverview{
   previewend(){
 	// Stop the previewing by switching the SVG off - if it's not toggled on.
   } // previewend
+  
+  // The available tags need to be communicated to comments to highlight them in hte text.
+  communicatetags(tagnames){} //communicatetags
   
 } // TagOverview

@@ -25,6 +25,7 @@ export default class CommentingManager{
 	
   comments = [];
   generalcommentobjs = [];
+  availabletags = [];
 	
   constructor(){
     let obj = this;
@@ -103,6 +104,10 @@ export default class CommentingManager{
 	// Just add the new ones in.
 	general.forEach(comment=>{
 		let c = new GeneralComment(comment);
+		c.preview = obj.preview;
+		c.previewend = obj.previewend;
+		c.availabletags = obj.availabletags;
+		c.update();
 		
 		// Insert the new comment at teh very top.
 		let container = obj.node.querySelector("div.comments");
@@ -158,8 +163,27 @@ export default class CommentingManager{
   } // set user
   
   
+  
+  updateAvailableTags(tagnames){
+	  let obj = this;
+	  obj.availabletags = tagnames;
+	  obj.generalcommentobjs.forEach(gc=>{
+		  gc.availabletags = tagnames;
+		  gc.update();
+		  
+		  gc.replies.forEach(rc=>{
+			rc.availabletags = tagnames;
+		    rc.update();
+		  })
+	  })
+  }
+  
+  
+  
   // Dummy function
   submitvote(){} // submitvote
+  preview(){} // preview
+  previewend(){} // previewend
   
 } // CommentingManager
 

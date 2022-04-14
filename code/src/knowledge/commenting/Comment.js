@@ -50,6 +50,9 @@ let template = `
 export default class Comment{
   
   user = "Default"
+  
+  // available tags.
+  availabletags = []
 	
   constructor(config){
 	let obj = this;
@@ -66,16 +69,17 @@ export default class Comment{
 	obj.config.datetime  = config.datetime ? config.datetime : new Date().toISOString();
 	obj.config.upvotes   = config.upvotes ? config.upvotes : [];
 	obj.config.downvotes = config.downvotes ? config.downvotes : [];
-	obj.config.tags      = config.tags ? config.tags : [];
+	
 	
 	// Modify the node to reflect the config.
 	let header = obj.node.querySelector("div.header");
 	header.querySelector("b.author").innerText = config.author;
 	
-	let body = obj.node.querySelector("div.body");
-	body.innerText = config.comment;
+	
 	
 	obj.update();
+	
+	
 	
 	
 	// Add the upvoting and downvoting. Where will the author name come from?? The upvote/downvote buttons should also be colored depending on whether the current user has upvoted or downvoted the comment already. Maybe the top app should just push the current user to the elements, and then they can figure out how to handle everything. That means that the functionality can be implemented here.
@@ -101,7 +105,25 @@ export default class Comment{
 	obj.updateVoteCounter("upvote");
 	obj.updateVoteCounter("downvote");
 	
+	obj.updateContent();
   } // update
+  
+  
+  updateContent(){
+	let obj = this;
+	obj.node.querySelector("div.body").innerHTML = obj.config.comment.replace(/#\w+/g, function(s){return obj.availabletags.includes(s) ? `<mark>${s}</mark>` : s});
+	
+	// Any mark tags need to interact with the view.
+	obj.node.querySelector("div.body").querySelectorAll("mark").forEach(m=>{
+		m.onmouseover = function(){
+			obj.preview(m.innerText)
+		} // onmouseover
+		m.onmouseout = function(){
+			obj.previewend(m.innerText)
+		} // onmouseover
+	}) // forEach
+  } // updateContent
+  
 	
   updateTimestamp(){
 	let obj = this;
@@ -109,27 +131,8 @@ export default class Comment{
 	let timestamp = obj.node
 	  .querySelector("div.header")
 	  .querySelector("span.timestamp");
-	
-	// Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
-	let t = obj.config.datetime;
-	let now = Date.now();
-	let stamp = Date.parse(t);
-	
-	let dayInMiliseconds = 1000*60*60*24;
-	let todayInMiliseconds = getDayInMiliseconds(now);
-	
-	// Format the time so that it shows everything from today as n minutes/hours ago, everything from yesterday as yesterday at :... and everything else as the date. 
-	if( stamp > now - todayInMiliseconds ){
-		// This was today, just report how long ago.
-		timestamp.innerText = getAgoFormattedString(now - stamp);
-	} else if (stamp > now - todayInMiliseconds - dayInMiliseconds){
-		// Yesterday at HH:MM
-		timestamp.innerText = `Yesterday at ${t.split(" ").splice(4,1)[0]}`;
-	} else {
-		// Just keep the first 4 parts which should be day name, month name, day number, year number
-		timestamp.innerText = t.split(" ").splice(0,4).join(" ")
-	} // if
-	
+	  
+	timestamp.innerText = formatTimeStamp( obj.config.datetime );
   } // updateTimestamp
 
 
@@ -163,48 +166,58 @@ export default class Comment{
 	
   
   // Dummy functionality.
-  submitvote(vote){
-	
-  } // submitvote
-  
+  submitvote(vote){} // submitvote
+  preview(){} // preview
+  previewend(){} // previewend
 } // Comment
 
 
   
   
   
-function getDayInMiliseconds(msdate){
-	// 'msdate' is a date in miliseconds from 1970. Calculate how many miliseconds have already passed on the day that msdate represents.
-	var d = new Date(msdate);
-	return ( ( d.getHours()*60 + d.getMinutes() )*60 + d.getSeconds() )*1000 + d.getMilliseconds();
-} // getDayInMiliseconds
+function formatTimeStamp(t){
+	
+	
+	// Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
+	let now = new Date(Date.now());
+	let stamp = new Date(t);
+	
+	let dayInMiliseconds = 1000*60*60*24;
+	
 
-
-function getAgoFormattedString(delta){
-	// delta is the number of miliseconds ago for which this should return a human readable string. If delta is more than a day, then the result is returned as days.
-	
-	
-	let seconds = Math.floor( delta/1000 );
-	let minutes = Math.floor( seconds/60 );
-	let hours   = Math.floor( minutes/60 );
-	let days    = Math.floor( hours/24 );
-	
-	if(days > 0){
-		return `${days} days ago`;
+	let todayInMiliseconds = ( ( now.getHours()*60 + now.getMinutes() )*60 + now.getSeconds() )*1000 + now.getMilliseconds();
+		
+	// Format the time so that it shows everything from today as n minutes/hours ago, everything from yesterday as yesterday at :... and everything else as the date. 
+	if( stamp > now - todayInMiliseconds ){
+	    // This was submitted today. Now figure out how long ago.
+		let seconds = Math.floor( (now - stamp)/1000 );
+		let minutes = Math.floor( seconds/60 );
+		let hours   = Math.floor( minutes/60 );
+		let days    = Math.floor( hours/24 );
+		
+		if(days > 0){
+			return `${days} days ago`;
+		} // if
+		
+		if(hours > 0){
+			return `${hours} hours ago`;
+		} // if
+		
+		if(minutes > 0){
+			return `${minutes} minutes ago`;
+		} // if
+		
+		return `${seconds} seconds ago`
+				
+	} else if (stamp > now - todayInMiliseconds - dayInMiliseconds){
+		// Yesterday at HH:MM
+		return `Yesterday at ${stamp.toLocaleTimeString()}`;
+	} else {
+		// Just keep the first 4 parts which should be day name, month name, day number, year number
+		return stamp.toDateString()
 	} // if
 	
-	if(hours > 0){
-		return `${hours} hours ago`;
-	} // if
-	
-	if(minutes > 0){
-		return `${minutes} minutes ago`;
-	} // if
-	
-	return `${seconds} seconds ago`
-	
-} // getAgoFormattedString
-
+  } // updateTimestamp
 
 
 

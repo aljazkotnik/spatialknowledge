@@ -123,6 +123,15 @@ div.previewicon {
 }
 
 
+/* Comments may have marks which should be highlighted */
+mark {
+	border-radius: 5px;
+	color: white;
+	background-color: black;
+	cursor: pointer;
+}
+
+
 /* CORRELATION SELECTION MENU */
 .hover-highlight {
 	cursor: pointer;

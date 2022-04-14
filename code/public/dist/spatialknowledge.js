@@ -2197,6 +2197,8 @@
           }; // onmouseover
 
         }); // forEach
+
+        obj.communicatetags(obj.tags);
       } // add
 
     }, {
@@ -2230,6 +2232,11 @@
       key: "previewend",
       value: function previewend() {// Stop the previewing by switching the SVG off - if it's not toggled on.
       } // previewend
+      // The available tags need to be communicated to comments to highlight them in hte text.
+
+    }, {
+      key: "communicatetags",
+      value: function communicatetags(tagnames) {} //communicatetags
 
     }]);
 
@@ -2322,10 +2329,12 @@
   var template$d = "\n<div class=\"comment\">\n  <div class=\"header\">\n    <b class=\"author\"></b>\n\t<span class=\"timestamp\" style=\"".concat(css$1.timestampspan, "\"></span>\n  </div>\n  <div class=\"body\"></div>\n  <div class=\"footer\">\n    <button class=\"upvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-up\"></i>\n\t  <i class=\"vote-number\"></i>\n\t</button>\n\t<button class=\"downvote\" style=\"").concat(css$1.button, "\">\n\t  <i class=\"fa fa-thumbs-down\"></i>\n\t  <i class=\"vote-number\" style=\"").concat(css$1.votenumberi, "\"></i>\n\t</button>\n\t<button class=\"reply\" style=\"").concat(css$1.button, " ").concat(css$1.replybutton, "\"><b>REPLY</b></button>\n  </div>\n</div>\n"); // template
 
   var Comment = /*#__PURE__*/function () {
+    // available tags.
     function Comment(config) {
       _classCallCheck(this, Comment);
 
       this.user = "Default";
+      this.availabletags = [];
       var obj = this; // Make a new node.
 
       obj.node = html2element(template$d); // Fill the template with the options from the config. There must be a comment, and there must be an author.
@@ -2334,13 +2343,10 @@
 
       obj.config.datetime = config.datetime ? config.datetime : new Date().toISOString();
       obj.config.upvotes = config.upvotes ? config.upvotes : [];
-      obj.config.downvotes = config.downvotes ? config.downvotes : [];
-      obj.config.tags = config.tags ? config.tags : []; // Modify the node to reflect the config.
+      obj.config.downvotes = config.downvotes ? config.downvotes : []; // Modify the node to reflect the config.
 
       var header = obj.node.querySelector("div.header");
       header.querySelector("b.author").innerText = config.author;
-      var body = obj.node.querySelector("div.body");
-      body.innerText = config.comment;
       obj.update(); // Add the upvoting and downvoting. Where will the author name come from?? The upvote/downvote buttons should also be colored depending on whether the current user has upvoted or downvoted the comment already. Maybe the top app should just push the current user to the elements, and then they can figure out how to handle everything. That means that the functionality can be implemented here.
 
       var footer = obj.node.querySelector("div.footer");
@@ -2371,31 +2377,36 @@
         obj.updateTimestamp();
         obj.updateVoteCounter("upvote");
         obj.updateVoteCounter("downvote");
+        obj.updateContent();
       } // update
+
+    }, {
+      key: "updateContent",
+      value: function updateContent() {
+        var obj = this;
+        obj.node.querySelector("div.body").innerHTML = obj.config.comment.replace(/#\w+/g, function (s) {
+          return obj.availabletags.includes(s) ? "<mark>".concat(s, "</mark>") : s;
+        }); // Any mark tags need to interact with the view.
+
+        obj.node.querySelector("div.body").querySelectorAll("mark").forEach(function (m) {
+          m.onmouseover = function () {
+            obj.preview(m.innerText);
+          }; // onmouseover
+
+
+          m.onmouseout = function () {
+            obj.previewend(m.innerText);
+          }; // onmouseover
+
+        }); // forEach
+      } // updateContent
 
     }, {
       key: "updateTimestamp",
       value: function updateTimestamp() {
         var obj = this;
-        var timestamp = obj.node.querySelector("div.header").querySelector("span.timestamp"); // Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
-
-        var t = obj.config.datetime;
-        var now = Date.now();
-        var stamp = Date.parse(t);
-        var dayInMiliseconds = 1000 * 60 * 60 * 24;
-        var todayInMiliseconds = getDayInMiliseconds(now); // Format the time so that it shows everything from today as n minutes/hours ago, everything from yesterday as yesterday at :... and everything else as the date. 
-
-        if (stamp > now - todayInMiliseconds) {
-          // This was today, just report how long ago.
-          timestamp.innerText = getAgoFormattedString(now - stamp);
-        } else if (stamp > now - todayInMiliseconds - dayInMiliseconds) {
-          // Yesterday at HH:MM
-          timestamp.innerText = "Yesterday at ".concat(t.split(" ").splice(4, 1)[0]);
-        } else {
-          // Just keep the first 4 parts which should be day name, month name, day number, year number
-          timestamp.innerText = t.split(" ").splice(0, 4).join(" ");
-        } // if
-
+        var timestamp = obj.node.querySelector("div.header").querySelector("span.timestamp");
+        timestamp.innerText = formatTimeStamp(obj.config.datetime);
       } // updateTimestamp
 
     }, {
@@ -2428,42 +2439,58 @@
       key: "submitvote",
       value: function submitvote(vote) {} // submitvote
 
+    }, {
+      key: "preview",
+      value: function preview() {} // preview
+
+    }, {
+      key: "previewend",
+      value: function previewend() {} // previewend
+
     }]);
 
     return Comment;
   }(); // Comment
 
-  function getDayInMiliseconds(msdate) {
-    // 'msdate' is a date in miliseconds from 1970. Calculate how many miliseconds have already passed on the day that msdate represents.
-    var d = new Date(msdate);
-    return ((d.getHours() * 60 + d.getMinutes()) * 60 + d.getSeconds()) * 1000 + d.getMilliseconds();
-  } // getDayInMiliseconds
+  function formatTimeStamp(t) {
+    // Dates are saved as strings for ease of comprehension. For formatting they are first translated into miliseconds passed since 1970.
+    var now = new Date(Date.now());
+    var stamp = new Date(t);
+    var dayInMiliseconds = 1000 * 60 * 60 * 24;
+    var todayInMiliseconds = ((now.getHours() * 60 + now.getMinutes()) * 60 + now.getSeconds()) * 1000 + now.getMilliseconds(); // Format the time so that it shows everything from today as n minutes/hours ago, everything from yesterday as yesterday at :... and everything else as the date. 
+
+    if (stamp > now - todayInMiliseconds) {
+      // This was submitted today. Now figure out how long ago.
+      var seconds = Math.floor((now - stamp) / 1000);
+      var minutes = Math.floor(seconds / 60);
+      var hours = Math.floor(minutes / 60);
+      var days = Math.floor(hours / 24);
+
+      if (days > 0) {
+        return "".concat(days, " days ago");
+      } // if
 
 
-  function getAgoFormattedString(delta) {
-    // delta is the number of miliseconds ago for which this should return a human readable string. If delta is more than a day, then the result is returned as days.
-    var seconds = Math.floor(delta / 1000);
-    var minutes = Math.floor(seconds / 60);
-    var hours = Math.floor(minutes / 60);
-    var days = Math.floor(hours / 24);
+      if (hours > 0) {
+        return "".concat(hours, " hours ago");
+      } // if
 
-    if (days > 0) {
-      return "".concat(days, " days ago");
+
+      if (minutes > 0) {
+        return "".concat(minutes, " minutes ago");
+      } // if
+
+
+      return "".concat(seconds, " seconds ago");
+    } else if (stamp > now - todayInMiliseconds - dayInMiliseconds) {
+      // Yesterday at HH:MM
+      return "Yesterday at ".concat(stamp.toLocaleTimeString());
+    } else {
+      // Just keep the first 4 parts which should be day name, month name, day number, year number
+      return stamp.toDateString();
     } // if
 
-
-    if (hours > 0) {
-      return "".concat(hours, " hours ago");
-    } // if
-
-
-    if (minutes > 0) {
-      return "".concat(minutes, " minutes ago");
-    } // if
-
-
-    return "".concat(seconds, " seconds ago");
-  } // getAgoFormattedString
+  } // updateTimestamp
 
   var ReplyComment = /*#__PURE__*/function (_Comment) {
     _inherits(ReplyComment, _Comment);
@@ -2535,7 +2562,11 @@
         // No pushing of updated versions.
         var obj = this; // Make a comment node, and append it to this comment.
 
-        var r = new ReplyComment(replyconfig); // Add this one at the end.
+        var r = new ReplyComment(replyconfig);
+        r.preview = obj.preview;
+        r.previewend = obj.previewend;
+        r.availabletags = obj.availabletags;
+        r.update(); // Add this one at the end.
 
         obj.replynode.querySelector("div.replies").appendChild(r.node);
         obj.replies.push(r); // Copy the submitvote function.
@@ -2565,7 +2596,8 @@
 
         obj.updateTimestamp();
         obj.updateVoteCounter("upvote");
-        obj.updateVoteCounter("downvote"); // GeneralComment specific.
+        obj.updateVoteCounter("downvote");
+        obj.updateContent(); // GeneralComment specific.
 
         obj.updateReplies();
       } // update
@@ -2602,6 +2634,7 @@
 
       this.comments = [];
       this.generalcommentobjs = [];
+      this.availabletags = [];
       var obj = this;
       obj.node = html2element(template$b); // Make the form;
 
@@ -2670,7 +2703,11 @@
         }); // Just add the new ones in.
 
         general.forEach(function (comment) {
-          var c = new GeneralComment(comment); // Insert the new comment at teh very top.
+          var c = new GeneralComment(comment);
+          c.preview = obj.preview;
+          c.previewend = obj.previewend;
+          c.availabletags = obj.availabletags;
+          c.update(); // Insert the new comment at teh very top.
 
           var container = obj.node.querySelector("div.comments");
           container.insertBefore(c.node, container.firstChild);
@@ -2719,11 +2756,33 @@
           });
         }); // forEach
       } // set user
-      // Dummy function
+
+    }, {
+      key: "updateAvailableTags",
+      value: function updateAvailableTags(tagnames) {
+        var obj = this;
+        obj.availabletags = tagnames;
+        obj.generalcommentobjs.forEach(function (gc) {
+          gc.availabletags = tagnames;
+          gc.update();
+          gc.replies.forEach(function (rc) {
+            rc.availabletags = tagnames;
+            rc.update();
+          });
+        });
+      } // Dummy function
 
     }, {
       key: "submitvote",
       value: function submitvote() {} // submitvote
+
+    }, {
+      key: "preview",
+      value: function preview() {} // preview
+
+    }, {
+      key: "previewend",
+      value: function previewend() {} // previewend
 
     }]);
 
@@ -2814,7 +2873,8 @@
 
 
       var ga = obj.renderer.geometryannotation;
-      var to = obj.commenting.tagoverview; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
+      var to = obj.commenting.tagoverview;
+      var cm = obj.commenting.commenting; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
       // Onclick is captured and stopped somewhere else, so mousedown is looked for.
 
       c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild); // Should previewing persist when the user is adding points? In that case the geometry annotation should know about all the active tags. So maybe it should just have a slot to show them? And it should be updated on the go?
@@ -2845,7 +2905,7 @@
       }; // preview
 
 
-      obj.commenting.tagoverview.previewend = function () {
+      to.previewend = function () {
         // Check if the geometry annotation is toggled on. If it's not then turn the SVG off.
         var activeannotations = to.buttons.filter(function (b) {
           return b.on;
@@ -2859,6 +2919,30 @@
         obj.renderer.ui.bar.chapters.forEach(function (c) {
           return c.unhighlight();
         });
+      }; // previewend
+
+
+      to.communicatetags = function (tags) {
+        // Pass these to the comment manager, which should pass it to all the comments.
+        cm.updateAvailableTags(tags.map(function (t) {
+          return "#".concat(t.name);
+        }));
+      }; // communicatetags
+      // Commenting should also support previewing.
+
+
+      cm.preview = function (tagname) {
+        // Where should a selection be made which tags to preview, and which not?
+        // First find the correct tag. All the tags are in TagOverview. After finding the correct tag the TagOverview preview can be used?
+        var tag = to.buttons.find(function (b) {
+          return b.node.innerText == tagname;
+        }).tag;
+        to.preview(tag);
+      }; // preview
+
+
+      cm.previewend = function (tagname) {
+        to.previewend();
       }; // previewend
 
 
