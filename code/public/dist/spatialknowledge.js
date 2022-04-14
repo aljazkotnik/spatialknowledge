@@ -2345,13 +2345,19 @@
 
       var footer = obj.node.querySelector("div.footer");
 
-      footer.querySelector("button.upvote").onclick = function () {
-        obj.upvote(obj.user);
+      footer.querySelector("button.upvote").onmousedown = function () {
+        obj.submitvote({
+          id: obj.config.id,
+          type: "upvote"
+        });
       }; // onclick
 
 
-      footer.querySelector("button.downvote").onclick = function () {
-        obj.downvote(obj.user);
+      footer.querySelector("button.downvote").onmousedown = function () {
+        obj.submitvote({
+          id: obj.config.id,
+          type: "downvote"
+        });
       }; // onclick
 
     } // constructor
@@ -2416,41 +2422,16 @@
         } // switch
 
       } // updateVoteCounter
-      // Maybe these should also allow the neutering of an upvote/downvote?
+      // Dummy functionality.
 
     }, {
-      key: "upvote",
-      value: function upvote(author) {
-        var obj = this;
-        pushValueToAWhichCompetesWithB(author, obj.config.upvotes, obj.config.downvotes);
-        obj.update();
-      } // upvote
-
-    }, {
-      key: "downvote",
-      value: function downvote(author) {
-        var obj = this;
-        pushValueToAWhichCompetesWithB(author, obj.config.downvotes, obj.config.upvotes);
-        obj.update();
-      } // upvote
+      key: "submitvote",
+      value: function submitvote(vote) {} // submitvote
 
     }]);
 
     return Comment;
   }(); // Comment
-
-  function pushValueToAWhichCompetesWithB(value, A, B) {
-    if (!A.includes(value)) {
-      A.push(value);
-
-      if (B.includes(value)) {
-        B.splice(B.indexOf(value), 1);
-      } // if
-
-    } // if
-
-  } // pushValueToAWhichCompetesWithB
-
 
   function getDayInMiliseconds(msdate) {
     // 'msdate' is a date in miliseconds from 1970. Calculate how many miliseconds have already passed on the day that msdate represents.
@@ -2557,7 +2538,9 @@
         var r = new ReplyComment(replyconfig); // Add this one at the end.
 
         obj.replynode.querySelector("div.replies").appendChild(r.node);
-        obj.replies.push(r); // Update the view.
+        obj.replies.push(r); // Copy the submitvote function.
+
+        r.submitvote = obj.submitvote; // Update the view.
 
         obj.update();
       } // addreply
@@ -2662,6 +2645,7 @@
       value: function purge() {
         var obj = this;
         obj.comments = [];
+        obj.generalcommentobjs = [];
         var commentsToRemove = obj.node.querySelector("div.comments").children;
 
         for (var i = 0; i < commentsToRemove.length; i++) {
@@ -2700,6 +2684,8 @@
             obj.form.clear();
           }; // onmousedown
 
+
+          c.submitvote = obj.submitvote;
         }); // forEach
         // Replies need to be SORTED BY DATETIME!!
 
@@ -2718,24 +2704,26 @@
 
         obj.updateCommentCounter();
       } // add
-      // The user may be needed here as the upvotes/downvotes need to be colored.
 
     }, {
       key: "user",
-      get: function get() {
-        return this.form.user;
-      } // get user
-      ,
       set: function set(name) {
-        var obj = this; // The form has a change of author.
+        var obj = this; // The comment appearance and functionality changes depends on who is checking them.
 
-        obj.form.user = name; // The comment appearance and functionality changes depends on who is checking them.
-
-        obj.comments.forEach(function (comment) {
-          comment.user = name;
-          comment.update();
+        obj.generalcommentobjs.forEach(function (gc) {
+          gc.user = name;
+          gc.update();
+          gc.replies.forEach(function (rc) {
+            rc.user = name;
+            rc.update();
+          });
         }); // forEach
       } // set user
+      // Dummy function
+
+    }, {
+      key: "submitvote",
+      value: function submitvote() {} // submitvote
 
     }]);
 
@@ -6116,11 +6104,21 @@
       var obj = this; // `nm' is a NavigationManager object.
       // Keep a reference to the navigation manager, because the tree navigation must have it's data updated with the knowledge, and the items can be accessed through it.
 
-      obj.nm = nm;
+      obj.nm = nm; // Commenting needs to be updated if the username changes.
+
+      document.getElementById("username").oninput = function () {
+        var currentuser = document.getElementById("username").value;
+        console.log(currentuser);
+        obj.nm.items.forEach(function (item) {
+          item.commenting.commenting.user = currentuser;
+        }); // forEach
+      }; // oninput
+
       /* WEBSOCKET INITIALISATION
       So - send over a list of taskIds, and then get back the initial set of comments.
       Everytime the connection is remade the comments will reload.
       */
+
 
       var serverAddress = "wss://continuous-brief-nylon.glitch.me";
       setupWebSocket();
@@ -6180,6 +6178,10 @@
               // But relays can be new comments, or they can be upvotes/downvotes/...
               obj.process(action.data);
               break;
+
+            case "vote":
+              obj.processvote(action);
+              break;
           }
         }; // onmessage
 
@@ -6238,7 +6240,19 @@
             console.log("You need to log in", comment);
           } // if
 
-        }; // submit 
+        }; // submit
+        // The submit for voting needs to be added dynamically. So the function should be gvien to the specific commenting manager, and that needs to assign it onwards.
+
+
+        item.commenting.commenting.submitvote = function (vote) {
+          if (obj.username) {
+            vote.author = obj.username;
+            obj.ws.send(JSON.stringify(vote));
+          } else {
+            console.log("You need to log in", vote);
+          } // if
+
+        }; // submitvote
 
       }); // forEach
       // Loop to keep updating the comments every 10 seconds - this is just so that the time labels are getting updated.
@@ -6331,9 +6345,15 @@
         // COMMENTING ON GROUPS IS IMPOSSIBLE, ONLY ACTUAL INDIVIDUALS CAN BE DISCUSSED
         // Could be relaxed by just toring all the user ids for comments submitted through groups? Would have to implement a group specific way to return a stringified array of taskIds.
 
-        var comments = d.filter(function (a) {
-          return a.comment;
+        var comments = d.filter(function (c) {
+          return c.comment;
         }); // filter
+        // Parse the upvotes and downvotes - they shoul dbe arrays.
+
+        comments.forEach(function (c) {
+          c.upvotes = c.upvotes ? JSON.parse(c.upvotes) : null;
+          c.downvotes = c.downvotes ? JSON.parse(c.downvotes) : null;
+        }); // forEach
 
         console.log("Comments", comments);
         var commentsdistribution = distribution(comments);
@@ -6348,6 +6368,35 @@
         // let geometryannotations = d.filter(a=>a.geometry);
         // console.log(geometryannotations)
       } // process
+
+    }, {
+      key: "processvote",
+      value: function processvote(d) {
+        // A vote is received as a single item: vote = {id, type: vote, upvotes, downvotes};
+        // Find the item with the appropriate comment id, and update that comment.
+        var obj = this; // SHOULD BE MOVED TO COMMENTING MANAGER
+
+        function updatevote(c, v) {
+          // Update comment `c' with a new voting object `v', if they have the same id.
+          if (c.config.id == v.id) {
+            c.config.upvotes = v.upvotes;
+            c.config.downvotes = v.downvotes;
+            c.update();
+          }
+        } // updatevote
+        // Just updating the comment items doesn't work. Unless we update the comments, then purge the comment objects, and then create new ones?
+        // Alternately loop through them.
+
+
+        obj.nm.items.forEach(function (item) {
+          item.commenting.commenting.generalcommentobjs.forEach(function (gc) {
+            updatevote(gc, d);
+            gc.replies.forEach(function (rc) {
+              updatevote(rc, d);
+            }); // forEach
+          });
+        }); // forEach
+      } // processvote
 
     }]);
 

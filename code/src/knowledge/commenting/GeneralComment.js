@@ -55,7 +55,11 @@ export default class GeneralComment extends Comment{
 	
 	// Add this one at the end.
 	obj.replynode.querySelector("div.replies").appendChild(r.node);
-	obj.replies.push(r);	
+	obj.replies.push(r);
+	
+	// Copy the submitvote function.
+	r.submitvote = obj.submitvote;
+	
 
 	// Update the view.
 	obj.update();

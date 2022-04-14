@@ -123,7 +123,14 @@ export default class KnowledgeManager{
 	
 	
 	
-	
+	// Commenting needs to be updated if the username changes.
+	document.getElementById("username").oninput = function(){
+		let currentuser = document.getElementById("username").value;
+		console.log(currentuser)
+		obj.nm.items.forEach(item=>{
+			item.commenting.commenting.user = currentuser;
+		}) // forEach
+	} // oninput
 	
 	
 	
@@ -183,7 +190,10 @@ export default class KnowledgeManager{
 			  obj.purge();
 			case "relay":
 			  // But relays can be new comments, or they can be upvotes/downvotes/...
-			  obj.process(action.data)
+			  obj.process(action.data);
+			  break;
+			case "vote":
+			  obj.processvote(action);
 			  break;
 		  }; // switch
 		  
@@ -250,7 +260,18 @@ export default class KnowledgeManager{
 			} else {
 				console.log("You need to log in", comment)
 			} // if
-		} // submit 
+		} // submit
+		
+		
+		// The submit for voting needs to be added dynamically. So the function should be gvien to the specific commenting manager, and that needs to assign it onwards.
+		item.commenting.commenting.submitvote = function(vote){
+			if(obj.username){
+				vote.author = obj.username;
+				obj.ws.send( JSON.stringify( vote ) )
+			} else {
+				console.log("You need to log in", vote)
+			} // if
+		} // submitvote
 	}) // forEach
 
 
@@ -346,7 +367,14 @@ export default class KnowledgeManager{
 	
 	// COMMENTING ON GROUPS IS IMPOSSIBLE, ONLY ACTUAL INDIVIDUALS CAN BE DISCUSSED
 	// Could be relaxed by just toring all the user ids for comments submitted through groups? Would have to implement a group specific way to return a stringified array of taskIds.
-	let comments = d.filter(a=>a.comment); // filter
+	let comments = d.filter(c=>c.comment); // filter
+	
+	// Parse the upvotes and downvotes - they shoul dbe arrays.
+	comments.forEach(c=>{
+		c.upvotes = c.upvotes ? JSON.parse(c.upvotes) : null;
+		c.downvotes = c.downvotes ? JSON.parse(c.downvotes) : null;
+	}) // forEach
+	
 	console.log("Comments", comments)
 	
 	let commentsdistribution = distribution(comments);
@@ -361,9 +389,42 @@ export default class KnowledgeManager{
 	// Geometry tags need not be handled separately - TagOverview does what is appropriate.
 	// let geometryannotations = d.filter(a=>a.geometry);
 	// console.log(geometryannotations)
-	
-	
   } // process
+  
+  
+  
+  processvote(d){
+	// A vote is received as a single item: vote = {id, type: vote, upvotes, downvotes};
+	// Find the item with the appropriate comment id, and update that comment.
+	let obj = this;
+	
+	
+	// SHOULD BE MOVED TO COMMENTING MANAGER
+	function updatevote(c,v){
+		// Update comment `c' with a new voting object `v', if they have the same id.
+		if(c.config.id==v.id){
+			c.config.upvotes = v.upvotes;
+			c.config.downvotes = v.downvotes;
+			c.update();
+		}; // if
+	} // updatevote
+	
+	
+	// Just updating the comment items doesn't work. Unless we update the comments, then purge the comment objects, and then create new ones?
+	// Alternately loop through them.
+	obj.nm.items.forEach(item=>{
+		item.commenting.commenting.generalcommentobjs.forEach(gc=>{
+			updatevote(gc,d);
+			gc.replies.forEach(rc=>{
+				updatevote(rc,d);
+			}) // forEach
+		})
+	}); // forEach
+	
+	
+  } // processvote
+  
+  
 } // KnowledgeManager
 
 

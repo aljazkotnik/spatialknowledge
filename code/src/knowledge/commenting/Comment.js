@@ -81,12 +81,12 @@ export default class Comment{
 	// Add the upvoting and downvoting. Where will the author name come from?? The upvote/downvote buttons should also be colored depending on whether the current user has upvoted or downvoted the comment already. Maybe the top app should just push the current user to the elements, and then they can figure out how to handle everything. That means that the functionality can be implemented here.
 	
 	let footer = obj.node.querySelector("div.footer")
-	footer.querySelector("button.upvote").onclick = function(){
-		obj.upvote(obj.user);
+	footer.querySelector("button.upvote").onmousedown = function(){
+		obj.submitvote({id: obj.config.id, type: "upvote"})
 	} // onclick
 	
-	footer.querySelector("button.downvote").onclick = function(){
-		obj.downvote(obj.user);
+	footer.querySelector("button.downvote").onmousedown = function(){
+		obj.submitvote({id: obj.config.id, type: "downvote"})
 	} // onclick
 	
   } // constructor
@@ -162,30 +162,14 @@ export default class Comment{
   } // updateVoteCounter
 	
   
-  // Maybe these should also allow the neutering of an upvote/downvote?
-  upvote(author){
-	let obj = this;
-	pushValueToAWhichCompetesWithB(author, obj.config.upvotes, obj.config.downvotes);
-	obj.update();
-  } // upvote
+  // Dummy functionality.
+  submitvote(vote){
 	
-  downvote(author){
-	let obj = this;
-	pushValueToAWhichCompetesWithB(author, obj.config.downvotes, obj.config.upvotes);
-	obj.update();
-  } // upvote
+  } // submitvote
   
 } // Comment
 
 
-function pushValueToAWhichCompetesWithB(value, A, B){
-    if(!A.includes(value)){
-	  A.push(value)
-	  if(B.includes(value)){
-		B.splice(B.indexOf(value), 1)
-	  } // if
-	} // if
-  } // pushValueToAWhichCompetesWithB
   
   
   

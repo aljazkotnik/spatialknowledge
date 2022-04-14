@@ -76,6 +76,7 @@ export default class CommentingManager{
   purge(){
 	let obj = this;
 	obj.comments = [];
+	obj.generalcommentobjs = [];
 	let commentsToRemove = obj.node.querySelector("div.comments").children;
 	for(let i=0; i<commentsToRemove.length; i++){
 		commentsToRemove[i].remove();
@@ -117,6 +118,8 @@ export default class CommentingManager{
 			obj.form.submit(c);
 			obj.form.clear();
 		} // onmousedown
+		
+		c.submitvote = obj.submitvote;
 	}) // forEach
 	
 	
@@ -139,23 +142,24 @@ export default class CommentingManager{
   
   
   
-  // The user may be needed here as the upvotes/downvotes need to be colored.
-  get user(){
-	return this.form.user;
-  } // get user
-  
   set user(name){
 	let obj = this;
 	
-	// The form has a change of author.
-	obj.form.user = name;
-	
 	// The comment appearance and functionality changes depends on who is checking them.
-	obj.comments.forEach(comment=>{
-	  comment.user = name;
-	  comment.update();
+	obj.generalcommentobjs.forEach(gc=>{
+	  gc.user = name;
+	  gc.update();
+	  
+	  gc.replies.forEach(rc=>{
+		  rc.user = name;
+		  rc.update();
+	  })
 	}) // forEach
   } // set user
+  
+  
+  // Dummy function
+  submitvote(){} // submitvote
   
 } // CommentingManager
 
