@@ -1,4 +1,4 @@
-import { html2element } from "../helpers.js";
+import { html2element } from "../../helpers.js";
 
 export default class TagButton{
   constructor(tag){

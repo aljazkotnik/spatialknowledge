@@ -1,7 +1,7 @@
 import { html2element } from "../helpers.js";
 
-import TagForm from "./TagForm.js";
-import TagOverview from "./TagOverview.js";
+import TagForm from "./tagging/TagForm.js";
+import TagOverview from "./tagging/TagOverview.js";
 import CommentingManager from "./commenting/CommentingManager.js";
 
 /* COMMENTING SYSTEM
@@ -17,7 +17,7 @@ let template = `
 
 // Add top caret that hides the whole thing!! And the chapterform should maybe include a draw button.
 
-export default class CommentingSystem{
+export default class AnnotationSystem{
   constructor(taskid){
 	let obj = this;
 	
@@ -55,4 +55,4 @@ export default class CommentingSystem{
 	obj.tagoverview.purge();
 	obj.commenting.purge();
   } // purge
-} // CommentingSystem
+} // AnnotationSystem

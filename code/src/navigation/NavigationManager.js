@@ -1,7 +1,7 @@
 import TreeKnowledge from "./tree/TreeKnowledge.js";
 import MiniMap from "./minimap/MiniMap.js";
 import Lasso from "./lasso/Lasso.js";
-import TagValueBatchForm from "../knowledge/TagValueBatchForm.js";
+import TagValueBatchForm from "../knowledge/tagging/TagValueBatchForm.js";
 import Group from "../grouping/Group.js";
 import { scaleLinear } from "../helpers.js";
 /*

@@ -20,14 +20,14 @@ import Item from "./Item.js";
 
 
 // Rendering modules
-import UnsteadyPlayer2D from "../renderers/UnsteadyPlayer2D.js";
+import ChessGameRenderer from "../renderers/ChessGameRenderer.js";
 import AnnotationSystem from "../knowledge/AnnotationSystem.js";
 
 
 
 // How will the individual draw? The group will have to follow the same idea. Or? maybe the drawing would just access a specific module, like geometry or smth, and that isn't implemented yet. And then the same thing can be added to the group?
-export default class Individual extends Item {
-  constructor(task, gl){
+export default class ChessGame extends Item {
+  constructor(task){
     super();
     let obj = this;
 	
@@ -37,16 +37,9 @@ export default class Individual extends Item {
 	
 	
 	
-	// There should ever only be one individual, and it should have the option to switch between renderers when ordered to do so. The order of the renderer should come from a slice configuration file. The allowed option renderers still need to be imported here.
-	
-	
-	// The MeshRenderer2D should be outside completely? Yes! And there could be a MeshRenderer3D running at the same time, and they just check which of them should perform the render? But then the code that applies to the gl needs to be swapped out everytime? In that case there could be a canvas for 2D and one for 3D if necessary. Would this be needed at all??
-	
-	// maybe it's more sensible to let hte renderer create the view node etc?
-	obj.renderer = new UnsteadyPlayer2D(gl, task.entropy2d);
-	obj.viewnode.appendChild(obj.renderer.node)
-	
-	
+	// Configure the chess board renderer.
+	obj.renderer = new ChessGameRenderer(task.Game);
+	obj.viewnode.appendChild(obj.renderer.node);
 	
 	// Add in a Commenting system also.
 	obj.annotations = new AnnotationSystem(task.taskId);
@@ -66,14 +59,14 @@ export default class Individual extends Item {
 	
 	
 	
-	let ga = obj.renderer.geometryannotation;
+	// let ga = obj.renderer.geometryannotation;
 	let to = obj.annotations.tagoverview;
 	let cm = obj.annotations.commenting;
 	
 	
 	// Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
 	// Onclick is captured and stopped somewhere else, so mousedown is looked for.
-	c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild);
+	// c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild);
 	
 	
 	// Should previewing persist when the user is adding points? In that case the geometry annotation should know about all the active tags. So maybe it should just have a slot to show them? And it should be updated on the go?
@@ -84,11 +77,12 @@ export default class Individual extends Item {
 	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
 	
 	  // Tags are stored at least as empty arrays.
+	  /*
 	  if(tag.geometry != "[]"){
 		ga.external = activeannotations.concat([JSON.parse(tag.geometry)]);
 		ga.show();
 	  } // if
-		
+	  */
 		
 	  if(tag.timestamps){
 		// Just search by name.
@@ -102,10 +96,10 @@ export default class Individual extends Item {
 	to.previewend = function(){
 	  // Check if the geometry annotation is toggled on. If it's not then turn the SVG off.
 	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
-	  ga.external = activeannotations;
+	  // ga.external = activeannotations;
 		
 	  // geometryannotation.show expects to see the data in the data domain.
-	  ga.toggled ? ga.show() : ga.hide();
+	  // ga.toggled ? ga.show() : ga.hide();
 	  
 	  
 	  // Unhighlight all chapters.
@@ -151,4 +145,8 @@ export default class Individual extends Item {
 	} // if
   } // checksize
   
-} // Individual
+} // ChessGame
+
+
+
+

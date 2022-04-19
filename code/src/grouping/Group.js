@@ -2,7 +2,7 @@ import { html2element } from "../helpers.js";
 import Item from "./Item.js";
 
 
-import TagForm from "../knowledge/TagForm.js";
+import TagForm from "../knowledge/tagging/TagForm.js";
 
 /*
 GROUPING: 

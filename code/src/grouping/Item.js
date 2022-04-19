@@ -3,7 +3,7 @@ import { html2element } from "../helpers.js";
 let template = `
 <div class="item">
   <div class="head unselectable">
-    <span class="label"></span>
+    <p class="label"></p>
 	<span class="button dissolve" style="display: none;">✖</span>
 	<span class="button enter" style="display: none;">⮊</span>
   </div>

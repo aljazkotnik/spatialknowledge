@@ -105,6 +105,10 @@ span.label {
 	white-space: nowrap;
 }
 
+p.label {
+	width: 300px;
+}
+
 span.button {
 	float: right;
 	cursor: pointer;

@@ -264,7 +264,7 @@
   } // arrayIncludesAll
    // joinDataToElements
 
-  var template$n = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <span class=\"label\"></span>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$n = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <p class=\"label\"></p>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -1504,7 +1504,7 @@
       obj.bar = new PlayBar();
       obj.bar.y = y;
       obj.node.querySelector("g.playbar").appendChild(obj.bar.node);
-      obj.bar.node.addEventListener("click", function (event) {
+      obj.bar.node.addEventListener("mouseup", function (event) {
         // On click the playbar should register the correct time.
         // The tscale takes inputs in the svg coordinates, and the event returns them in the client coordinates. Therefore the client coordinates must be adjusted for the position of the SVG.
         // Because there is a transformation applied the scale needs to be corrected for that also. Maybe calculate where 
@@ -2799,9 +2799,9 @@
   var template$a = "\n<div></div>\n"; // template
   // Add top caret that hides the whole thing!! And the chapterform should maybe include a draw button.
 
-  var CommentingSystem = /*#__PURE__*/function () {
-    function CommentingSystem(taskid) {
-      _classCallCheck(this, CommentingSystem);
+  var AnnotationSystem = /*#__PURE__*/function () {
+    function AnnotationSystem(taskid) {
+      _classCallCheck(this, AnnotationSystem);
 
       var obj = this;
       obj.node = html2element(template$a); // How will the chapter form know which time is currently selected? Should there be a dummy version that is assigned from the outside? So that the accessing can be done only when needed?
@@ -2824,7 +2824,7 @@
     } // constuctor
 
 
-    _createClass(CommentingSystem, [{
+    _createClass(AnnotationSystem, [{
       key: "purge",
       value: function purge() {
         var obj = this;
@@ -2834,8 +2834,8 @@
 
     }]);
 
-    return CommentingSystem;
-  }(); // CommentingSystem
+    return AnnotationSystem;
+  }(); // AnnotationSystem
 
   var Individual = /*#__PURE__*/function (_Item) {
     _inherits(Individual, _Item);
@@ -2853,19 +2853,19 @@
 
 
       obj.task = task;
-      obj.node.querySelector("span.label").innerHTML = task.taskId; // There should ever only be one individual, and it should have the option to switch between renderers when ordered to do so. The order of the renderer should come from a slice configuration file. The allowed option renderers still need to be imported here.
+      obj.node.querySelector("p.label").innerHTML = task.taskId; // There should ever only be one individual, and it should have the option to switch between renderers when ordered to do so. The order of the renderer should come from a slice configuration file. The allowed option renderers still need to be imported here.
       // The MeshRenderer2D should be outside completely? Yes! And there could be a MeshRenderer3D running at the same time, and they just check which of them should perform the render? But then the code that applies to the gl needs to be swapped out everytime? In that case there could be a canvas for 2D and one for 3D if necessary. Would this be needed at all??
       // maybe it's more sensible to let hte renderer create the view node etc?
 
       obj.renderer = new UnsteadyPlayer2D(gl, task.entropy2d);
       obj.viewnode.appendChild(obj.renderer.node); // Add in a Commenting system also.
 
-      obj.commenting = new CommentingSystem(task.taskId);
-      obj.node.querySelector("div.commenting").appendChild(obj.commenting.node); // CROSS MODULE FUNCTIONALITY
+      obj.annotations = new AnnotationSystem(task.taskId);
+      obj.node.querySelector("div.commenting").appendChild(obj.annotations.node); // CROSS MODULE FUNCTIONALITY
       // Maybe the tagform should be split off from the commenting? And just be its own independent module? But it'll need to be wrapped up somehown if I want to be able to hide it all at once.
       // The tagform needs to have access to the playbar current time.
 
-      var c = obj.commenting.tagform;
+      var c = obj.annotations.tagform;
 
       c.t = function () {
         return obj.renderer.ui.t_play;
@@ -2873,8 +2873,8 @@
 
 
       var ga = obj.renderer.geometryannotation;
-      var to = obj.commenting.tagoverview;
-      var cm = obj.commenting.commenting; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
+      var to = obj.annotations.tagoverview;
+      var cm = obj.annotations.commenting; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
       // Onclick is captured and stopped somewhere else, so mousedown is looked for.
 
       c.buttons.insertBefore(ga.togglebutton, c.buttons.firstChild); // Should previewing persist when the user is adding points? In that case the geometry annotation should know about all the active tags. So maybe it should just have a slot to show them? And it should be updated on the go?
@@ -6194,7 +6194,7 @@
         var currentuser = document.getElementById("username").value;
         console.log(currentuser);
         obj.nm.items.forEach(function (item) {
-          item.commenting.commenting.user = currentuser;
+          item.annotations.commenting.user = currentuser;
         }); // forEach
       }; // oninput
 
@@ -6292,7 +6292,7 @@
 
       nm.items.forEach(function (item) {
         // `tagform' holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
-        item.commenting.tagform.submit = function (tag) {
+        item.annotations.tagform.submit = function (tag) {
           // Tag comes with at least the tag name from tagform.
 
           /* The author and taskId are obligatory
@@ -6314,7 +6314,7 @@
         // Ah, with the commenting I want to have general comments and replies. And for the replies it's still the commentform that is used. So maybe that can be configured here actually. Ah, but it can't, because it depends on the dynamically generated comment DOM elements.
 
 
-        item.commenting.commenting.form.submit = function (comment) {
+        item.annotations.commenting.form.submit = function (comment) {
           if (obj.username) {
             comment.taskId = item.task.taskId;
             comment.author = obj.username;
@@ -6328,7 +6328,7 @@
         // The submit for voting needs to be added dynamically. So the function should be gvien to the specific commenting manager, and that needs to assign it onwards.
 
 
-        item.commenting.commenting.submitvote = function (vote) {
+        item.annotations.commenting.submitvote = function (vote) {
           if (obj.username) {
             vote.author = obj.username;
             obj.ws.send(JSON.stringify(vote));
@@ -6370,7 +6370,7 @@
 
         obj.nm.items.forEach(function (item) {
           // The annotation system will purge all its components.
-          item.commenting.purge();
+          item.annotations.purge();
         }); // forEach
       } // purge
       // Processing of knowledge entries cannot rely on types, because these are no longer captured. Instead just define what the individual components require.
@@ -6400,7 +6400,7 @@
         var tagdistribution = distribution(tags);
         obj.nm.items.forEach(function (item) {
           if (tagdistribution[item.task.taskId]) {
-            item.commenting.tagoverview.add(tagdistribution[item.task.taskId]);
+            item.annotations.tagoverview.add(tagdistribution[item.task.taskId]);
           } // if
 
         }); // forEach
@@ -6444,7 +6444,7 @@
         obj.nm.items.forEach(function (item) {
           if (commentsdistribution[item.task.taskId]) {
             // The comments are routed to the commenting manager.
-            item.commenting.commenting.add(commentsdistribution[item.task.taskId]);
+            item.annotations.commenting.add(commentsdistribution[item.task.taskId]);
           } // if
 
         }); // forEach
@@ -6473,7 +6473,7 @@
 
 
         obj.nm.items.forEach(function (item) {
-          item.commenting.commenting.generalcommentobjs.forEach(function (gc) {
+          item.annotations.commenting.generalcommentobjs.forEach(function (gc) {
             updatevote(gc, d);
             gc.replies.forEach(function (rc) {
               updatevote(rc, d);
@@ -8063,4 +8063,4 @@
   });
 
 }());
-//# sourceMappingURL=spatialknowledge.js.map
+//# sourceMappingURL=spatialknowledge_turbine.js.map

@@ -62,7 +62,7 @@ export default class PlayControls{
 	obj.bar.y = y;
 	obj.node.querySelector("g.playbar").appendChild( obj.bar.node );
 	
-	obj.bar.node.addEventListener("click", event=>{
+	obj.bar.node.addEventListener("mouseup", event=>{
 		// On click the playbar should register the correct time.
 		
 		// The tscale takes inputs in the svg coordinates, and the event returns them in the client coordinates. Therefore the client coordinates must be adjusted for the position of the SVG.

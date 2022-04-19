@@ -128,7 +128,7 @@ export default class KnowledgeManager{
 		let currentuser = document.getElementById("username").value;
 		console.log(currentuser)
 		obj.nm.items.forEach(item=>{
-			item.commenting.commenting.user = currentuser;
+			item.annotations.commenting.user = currentuser;
 		}) // forEach
 	} // oninput
 	
@@ -224,7 +224,7 @@ export default class KnowledgeManager{
 	*/
 	nm.items.forEach(item=>{
 		// `tagform' holds the button to submit tag, tag-value, tag-geometry, and tag-sequence annotations.
-		item.commenting.tagform.submit = function(tag){
+		item.annotations.tagform.submit = function(tag){
 			// Tag comes with at least the tag name from tagform.
 			
 			/* The author and taskId are obligatory
@@ -250,7 +250,7 @@ export default class KnowledgeManager{
 		
 		
 		// Ah, with the commenting I want to have general comments and replies. And for the replies it's still the commentform that is used. So maybe that can be configured here actually. Ah, but it can't, because it depends on the dynamically generated comment DOM elements.
-		item.commenting.commenting.form.submit = function(comment){
+		item.annotations.commenting.form.submit = function(comment){
 			if(obj.username){
 				comment.taskId = item.task.taskId;
 				comment.author = obj.username;
@@ -264,7 +264,7 @@ export default class KnowledgeManager{
 		
 		
 		// The submit for voting needs to be added dynamically. So the function should be gvien to the specific commenting manager, and that needs to assign it onwards.
-		item.commenting.commenting.submitvote = function(vote){
+		item.annotations.commenting.submitvote = function(vote){
 			if(obj.username){
 				vote.author = obj.username;
 				obj.ws.send( JSON.stringify( vote ) )
@@ -308,7 +308,7 @@ export default class KnowledgeManager{
 	// This is called before a query also. needs to purge comment sections, tag overviews, potentially chapters.
 	obj.nm.items.forEach(item=>{
 		// The annotation system will purge all its components.
-		item.commenting.purge();
+		item.annotations.purge();
 	}) // forEach
   } // purge
 	
@@ -339,7 +339,7 @@ export default class KnowledgeManager{
 	let tagdistribution = distribution(tags);
 	obj.nm.items.forEach(item=>{
 		if(tagdistribution[item.task.taskId]){
-			item.commenting.tagoverview.add(tagdistribution[item.task.taskId]);
+			item.annotations.tagoverview.add(tagdistribution[item.task.taskId]);
 		} // if
 	}); // forEach
 	
@@ -381,7 +381,7 @@ export default class KnowledgeManager{
 	obj.nm.items.forEach(item=>{
 		if(commentsdistribution[item.task.taskId]){
 			// The comments are routed to the commenting manager.
-			item.commenting.commenting.add(commentsdistribution[item.task.taskId]);
+			item.annotations.commenting.add(commentsdistribution[item.task.taskId]);
 		} // if
 	}) // forEach
 	
@@ -413,7 +413,7 @@ export default class KnowledgeManager{
 	// Just updating the comment items doesn't work. Unless we update the comments, then purge the comment objects, and then create new ones?
 	// Alternately loop through them.
 	obj.nm.items.forEach(item=>{
-		item.commenting.commenting.generalcommentobjs.forEach(gc=>{
+		item.annotations.commenting.generalcommentobjs.forEach(gc=>{
 			updatevote(gc,d);
 			gc.replies.forEach(rc=>{
 				updatevote(rc,d);
