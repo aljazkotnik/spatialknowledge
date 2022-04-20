@@ -60,11 +60,11 @@ export default class ChessGameRenderer {
 		obj.chess.move(ply)
 	    acc.push(obj.chess.fen());
 		return acc
-	},[]); // reduce
+	},["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]); // reduce
 	obj.chess.reset();
 	
 	obj.plyind = -1;
-	
+	obj.plyind_prev = undefined;
 	
 	
 	// Configure the chess board renderer. Here we need to pass in the div to draw to.
@@ -93,7 +93,58 @@ export default class ChessGameRenderer {
 	// WHAT OTHER METODS ARE REQUIRED??
 	// GEOMTRYANNOTATION OBJ
 	obj.geometryannotation = {
-		submit: function(){console.log("Submit geometry")}
+		submit: function(){
+			// Retain only the basic items. Should also set an empty shapes array...
+			let a = {
+				fen: obj.chess.fen(),
+				shapes: obj.board.state.drawable.shapes.map(s=>{
+					return {
+						orig: s.orig,
+						dest: s.dest
+					}
+				})
+			};
+			
+			// Clear the board.
+			obj.board.set({
+				drawable: {
+					shapes: []
+				}
+			}); // set
+			
+			return a
+		},
+		show: function(previewconfig){
+			// This is supposed to show the current annotation - the chessground module supports that already.
+			
+			// The tag has a specific fen to display. When previewing the annotation it should be shown.
+			// How will selecting the annotations happen? Should they be on-screen only if the fen are the same? Or should they be FEN independent? And toggling them on just shows them without showing the preview? Nah, toggling will show the latest one.
+			// The playbar should move simultaneously?
+			
+			if(previewconfig){
+				obj.plyind_prev = obj.plyind;
+				
+				// Clear the annotation state.
+				obj.board.state.drawable.shapes = [];
+				
+				let plyind = obj.plies_fen.indexOf(previewconfig.fen);
+				obj.ply(plyind);
+				
+				// Redrawing of annotations should also remove hte previous set.
+				obj.drawGeometryAnnotations(previewconfig.shapes);
+				
+			} else {
+				obj.ply(obj.plyind_prev)
+				obj.plying_prev = undefined;
+				
+				obj.board.state.drawable.shapes = [];
+				obj.board.redrawAll();
+			}; // previewconfig
+			
+			
+			
+			
+		}
 	};
 	
 	
@@ -152,8 +203,13 @@ export default class ChessGameRenderer {
 		obj.ui.playing = false;
 		clearInterval(obj.interval);
 	} else {
-		obj.plyind = plyind;
+		obj.plyind = plyind < 0 ? 0 : plyind;
 	} // if
+	
+	
+	// Also keep the chess module up to date - it's needed for variations.
+	obj.chess.reset();
+	obj.chess.load(obj.plies_fen[obj.plyind]);
 	
 	
 	// Find and play the next ply.
@@ -166,9 +222,7 @@ export default class ChessGameRenderer {
 	});
 	
 	
-	// Also keep the chess module up to date - it's needed for variations.
-	obj.chess.reset();
-	obj.chess.load(obj.plies_fen[obj.plyind]);
+	
 	
 	obj.ui.t_play = obj.plyind;
 	
@@ -201,21 +255,15 @@ export default class ChessGameRenderer {
   
   
   
-  printGeometryAnnotation(){
-	let obj = this;
-	console.log( obj.board.state.drawable.shapes );
-  } // printGeometryAnnotation
-  
-  
-  drawGeometryAnnotation(squares){
-	// Squares is an array of annotation squares
+  drawGeometryAnnotations(shapesconfigs){
+	// shapesconfigs is an array of annotation squares
 	let obj = this;
 	
-	let shapes = squares.map(an=>{
+	let shapes = shapesconfigs.map(an=>{
 		return {
 			brush: "green",
-			orig: an[0],
-			dest: an[1]
+			orig: an.orig,
+			dest: an.dest
 		}
 	}) // map
 
@@ -225,7 +273,7 @@ export default class ChessGameRenderer {
 			shapes: shapes
 		}
 	})
-  } // drawGeometryAnnotation
+  } // drawGeometryAnnotations
   
   
   

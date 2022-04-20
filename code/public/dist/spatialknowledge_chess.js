@@ -5330,10 +5330,11 @@
         obj.chess.move(ply);
         acc.push(obj.chess.fen());
         return acc;
-      }, []); // reduce
+      }, ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]); // reduce
 
       obj.chess.reset();
-      obj.plyind = -1; // Configure the chess board renderer. Here we need to pass in the div to draw to.
+      obj.plyind = -1;
+      obj.plyind_prev = undefined; // Configure the chess board renderer. Here we need to pass in the div to draw to.
 
       obj.board = Chessground(obj.node.querySelector("div.view"), {
         viewOnly: false,
@@ -5357,7 +5358,44 @@
 
       obj.geometryannotation = {
         submit: function submit() {
-          console.log("Submit geometry");
+          // Retain only the basic items. Should also set an empty shapes array...
+          var a = {
+            fen: obj.chess.fen(),
+            shapes: obj.board.state.drawable.shapes.map(function (s) {
+              return {
+                orig: s.orig,
+                dest: s.dest
+              };
+            })
+          }; // Clear the board.
+
+          obj.board.set({
+            drawable: {
+              shapes: []
+            }
+          }); // set
+
+          return a;
+        },
+        show: function show(previewconfig) {
+          // This is supposed to show the current annotation - the chessground module supports that already.
+          // The tag has a specific fen to display. When previewing the annotation it should be shown.
+          // How will selecting the annotations happen? Should they be on-screen only if the fen are the same? Or should they be FEN independent? And toggling them on just shows them without showing the preview? Nah, toggling will show the latest one.
+          // The playbar should move simultaneously?
+          if (previewconfig) {
+            obj.plyind_prev = obj.plyind; // Clear the annotation state.
+
+            obj.board.state.drawable.shapes = [];
+            var plyind = obj.plies_fen.indexOf(previewconfig.fen);
+            obj.ply(plyind); // Redrawing of annotations should also remove hte previous set.
+
+            obj.drawGeometryAnnotations(previewconfig.shapes);
+          } else {
+            obj.ply(obj.plyind_prev);
+            obj.plying_prev = undefined;
+            obj.board.state.drawable.shapes = [];
+            obj.board.redrawAll();
+          }
         }
       }; // Add in precofigured UI. The metadata filename identifies this small multiple.
 
@@ -5407,10 +5445,13 @@
           obj.ui.playing = false;
           clearInterval(obj.interval);
         } else {
-          obj.plyind = plyind;
+          obj.plyind = plyind < 0 ? 0 : plyind;
         } // if
-        // Find and play the next ply.
+        // Also keep the chess module up to date - it's needed for variations.
 
+
+        obj.chess.reset();
+        obj.chess.load(obj.plies_fen[obj.plyind]); // Find and play the next ply.
 
         obj.board.set({
           fen: obj.plies_fen[obj.plyind],
@@ -5418,10 +5459,7 @@
             showDests: true,
             dests: obj.calculateAvailableMoves()
           }
-        }); // Also keep the chess module up to date - it's needed for variations.
-
-        obj.chess.reset();
-        obj.chess.load(obj.plies_fen[obj.plyind]);
+        });
         obj.ui.t_play = obj.plyind; // Keep enforcing the available moves.
 
         obj.enforceAvailableMoves();
@@ -5445,22 +5483,15 @@
       } // isOnScreen
 
     }, {
-      key: "printGeometryAnnotation",
-      value: function printGeometryAnnotation() {
+      key: "drawGeometryAnnotations",
+      value: function drawGeometryAnnotations(shapesconfigs) {
+        // shapesconfigs is an array of annotation squares
         var obj = this;
-        console.log(obj.board.state.drawable.shapes);
-      } // printGeometryAnnotation
-
-    }, {
-      key: "drawGeometryAnnotation",
-      value: function drawGeometryAnnotation(squares) {
-        // Squares is an array of annotation squares
-        var obj = this;
-        var shapes = squares.map(function (an) {
+        var shapes = shapesconfigs.map(function (an) {
           return {
             brush: "green",
-            orig: an[0],
-            dest: an[1]
+            orig: an.orig,
+            dest: an.dest
           };
         }); // map
 
@@ -5469,7 +5500,7 @@
             shapes: shapes
           }
         });
-      } // drawGeometryAnnotation
+      } // drawGeometryAnnotations
 
     }, {
       key: "calculateAvailableMoves",
@@ -6417,9 +6448,9 @@
       c.t = function () {
         return obj.renderer.ui.t_play;
       }; // tagform t.
-      // let ga = obj.renderer.geometryannotation;
 
 
+      var ga = obj.renderer.geometryannotation;
       var to = obj.annotations.tagoverview;
       var cm = obj.annotations.commenting; // Attach a toggle on the geometry button to either show, or hide the geometry annotation SVG.
       // Onclick is captured and stopped somewhere else, so mousedown is looked for.
@@ -6430,18 +6461,26 @@
 
       to.preview = function (tag) {
         // If the tag has geometry then the SVG should be turned on. This can only be done with access to the geometry annotation class.
-        to.buttons.filter(function (b) {
+        var activeannotations = to.buttons.filter(function (b) {
           return b.on;
-        }).map(function (b) {
-          return JSON.parse(b.tag.geometry);
         }); // Tags are stored at least as empty arrays.
 
-        /*
-        if(tag.geometry != "[]"){
-        ga.external = activeannotations.concat([JSON.parse(tag.geometry)]);
-        ga.show();
+        if (tag.geometry != "[]") {
+          // Get all active geometries. A geometry has a FEN associated with it.
+          var taggeometry = JSON.parse(tag.geometry);
+          var activegeometries = activeannotations.map(function (b) {
+            return JSON.parse(b.tag.geometry);
+          });
+          var previewconfig = {
+            fen: taggeometry.fen,
+            shapes: activegeometries.reduce(function (acc, g) {
+              return acc.concat(g.shapes);
+            }, []).concat(taggeometry.shapes)
+          }; // previewconfig
+
+          ga.show(previewconfig);
         } // if
-        */
+
 
         if (tag.timestamps) {
           // Just search by name.
@@ -6461,8 +6500,8 @@
           return JSON.parse(b.tag.geometry);
         }); // ga.external = activeannotations;
         // geometryannotation.show expects to see the data in the data domain.
-        // ga.toggled ? ga.show() : ga.hide();
-        // Unhighlight all chapters.
+
+        ga.show(); // Unhighlight all chapters.
 
         obj.renderer.ui.bar.chapters.forEach(function (c) {
           return c.unhighlight();

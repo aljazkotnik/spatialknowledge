@@ -59,7 +59,7 @@ export default class ChessGame extends Item {
 	
 	
 	
-	// let ga = obj.renderer.geometryannotation;
+	let ga = obj.renderer.geometryannotation;
 	let to = obj.annotations.tagoverview;
 	let cm = obj.annotations.commenting;
 	
@@ -74,15 +74,22 @@ export default class ChessGame extends Item {
 	// Should this just collectall currently active tags and push them to the polygon annotation for viewing?
 	to.preview = function(tag){
 	  // If the tag has geometry then the SVG should be turned on. This can only be done with access to the geometry annotation class.
-	  let activeannotations = to.buttons.filter(b=>b.on).map(b=>JSON.parse(b.tag.geometry));
-	
+	  let activeannotations = to.buttons.filter(b=>b.on);
+	  
 	  // Tags are stored at least as empty arrays.
-	  /*
 	  if(tag.geometry != "[]"){
-		ga.external = activeannotations.concat([JSON.parse(tag.geometry)]);
-		ga.show();
+		  
+		// Get all active geometries. A geometry has a FEN associated with it.
+		let taggeometry = JSON.parse(tag.geometry);
+		let activegeometries = activeannotations.map(b=>JSON.parse(b.tag.geometry));
+		  
+		let previewconfig = {
+			fen: taggeometry.fen,
+			shapes: activegeometries.reduce((acc,g)=>acc.concat(g.shapes),[]).concat(taggeometry.shapes)
+		}; // previewconfig
+		ga.show(previewconfig);
 	  } // if
-	  */
+	  
 		
 	  if(tag.timestamps){
 		// Just search by name.
@@ -99,7 +106,7 @@ export default class ChessGame extends Item {
 	  // ga.external = activeannotations;
 		
 	  // geometryannotation.show expects to see the data in the data domain.
-	  // ga.toggled ? ga.show() : ga.hide();
+	  ga.show();
 	  
 	  
 	  // Unhighlight all chapters.
