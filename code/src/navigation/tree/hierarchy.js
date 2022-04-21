@@ -66,7 +66,8 @@ class taskgroup{
 	
 	addtag(tag){
 		let obj = this;
-		if( !obj.tags.some(existing=>existing.id == tag.id) ){
+				
+		if( !obj.tags.some(existing=>(existing.author == tag.author) && (existing.name == tag.name)) ){
 			obj.tags.push(tag);
 		} // if
 	} // addtags
@@ -121,14 +122,14 @@ function mergeIdenticalGroups(groups){
 	
 	let mergedgroups = groups.reduce((acc,g)=>{
 		// Find group with identical members.
-		let identicalg = acc.filter(g_=>{
+		let identicalg = acc.find(g_=>{
 			return arrayEqual(g_.members, g.members)
 		}) // filter
 		
-		if(identicalg.length > 0){
+		if(identicalg){
 			// Add another author to existing group.
 			g.tags.forEach(tag=>{
-				identicalg[0].addtag(tag);
+				identicalg.addtag(tag);
 			})
 		} else {
 			// Add this group to the unique ones.

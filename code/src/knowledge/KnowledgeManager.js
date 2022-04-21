@@ -168,7 +168,7 @@ export default class KnowledgeManager{
 		  
 			function ping(){
 			   // This should recursively call itself.
-			   console.log("ping")
+			   // console.log("ping")
 			   obj.ws.send(JSON.stringify({type: "ping"}));
 			   setTimeout(ping, 100*1000); // 299*1000   
 			} // ping
@@ -181,7 +181,7 @@ export default class KnowledgeManager{
 		  // Should differentiate between receiving a 'pong', receiving a single item, and receiving an array.
 		  // A single item is just added, while an array requires a purge of existing comments first.
 		  let action = JSON.parse( msg.data );
-		  console.log(action)
+		  // console.log(action)
 		  switch(action.type){
 			case "pong":
 			  break;
@@ -244,7 +244,7 @@ export default class KnowledgeManager{
 				
 				obj.ws.send( JSON.stringify( tag ) );
 			} else {
-				console.log("You need to log in", tag)
+				alert("You need to log in")
 			} // if			
 		} // submit
 		
@@ -258,7 +258,7 @@ export default class KnowledgeManager{
 				
 				obj.ws.send( JSON.stringify( comment ) );
 			} else {
-				console.log("You need to log in", comment)
+				alert("You need to log in")
 			} // if
 		} // submit
 		
@@ -269,7 +269,7 @@ export default class KnowledgeManager{
 				vote.author = obj.username;
 				obj.ws.send( JSON.stringify( vote ) )
 			} else {
-				console.log("You need to log in", vote)
+				alert("You need to log in")
 			} // if
 		} // submitvote
 	}) // forEach
@@ -331,7 +331,7 @@ export default class KnowledgeManager{
 	tags.forEach(tag=>{
 		obj.nm.tree.addtagannotation(tag);
 	}) // forEach
-	console.log("Tags", d, tags)
+	// console.log("Tags", d, tags)
 	obj.nm.tree.update();
 	
 	
@@ -375,7 +375,7 @@ export default class KnowledgeManager{
 		c.downvotes = c.downvotes ? JSON.parse(c.downvotes) : null;
 	}) // forEach
 	
-	console.log("Comments", comments)
+	// console.log("Comments", comments)
 	
 	let commentsdistribution = distribution(comments);
 	obj.nm.items.forEach(item=>{

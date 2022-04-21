@@ -6578,27 +6578,36 @@
 
 
     _createClass(DrawLink, [{
+      key: "originCoord",
+      get: function get() {
+        var obj = this;
+        return {
+          x: obj.parentnode.x,
+          y: obj.parentnode.calculateOutgoingLineY(obj.pi)
+        }; // origin
+      } // origincoord
+
+    }, {
+      key: "targetCoord",
+      get: function get() {
+        var obj = this;
+        return {
+          x: obj.childnode.x,
+          y: obj.childnode.calculateIncomingLineY(obj.ci)
+        }; // origin
+      } // origincoord
+
+    }, {
       key: "path",
       get: function get() {
         // Doesn't take into account the offsets yet!!
         // Allow this to return a straight path, or a curved one. The straight path is exclusively for bundles that have only one parent. Furthermore, that one should only be allowed when connecting nodes on the same height. So maybe just base the decision off of that?
         // Straight path is just M0 0 L40 0 or so.
-        var obj = this;
-        var dyc = obj.ci * obj.line_width + obj.childnode.markerEmptyIn;
-        var dyp = obj.pi * obj.line_width + obj.parentnode.markerEmptyOut; // The target x should be > `xHorizontal + r1 + r2'
+        var obj = this; // The target x should be > `xHorizontal + r1 + r2'
 
-        var xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi * obj.bundle_width; // Origin and target MUST be at least `[node_label_width + 2*r, 0]' apart otherwise the graphic logic doesn't follow.
-
-        var origin = {
-          x: obj.parentnode.x,
-          y: obj.parentnode.yMarkerStart + dyp
-        }; // origin
-
-        var target = {
-          x: obj.childnode.x,
-          y: obj.childnode.yMarkerStart + dyc
-        }; // target
-
+        var xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi * obj.bundle_width;
+        var origin = obj.originCoord;
+        var target = obj.targetCoord;
         var p = "M".concat(origin.x, " ").concat(origin.y, " L").concat(target.x, " ").concat(target.y);
 
         if (origin.y != target.y) {
@@ -6647,10 +6656,10 @@
   var bundle_width$1 = 4;
   var r$1 = 16; // Bundles are the connections between two levels of nodes.
 
-  var treebundle = /*#__PURE__*/function () {
+  var TreeBundle = /*#__PURE__*/function () {
     // Index is the ranked position of this bundle within hte level. It determines the position of hte vertical line segment, and the corner radius.
-    function treebundle(seednode, author) {
-      _classCallCheck(this, treebundle);
+    function TreeBundle(seednode, author) {
+      _classCallCheck(this, TreeBundle);
 
       this.links = [];
       this._bendi = 0; // A seed node is passed in to define the bundle parents and thus instantiate a bundle. After instantialisation only the children of the bundle can change.
@@ -6666,7 +6675,7 @@
     } // constructor
 
 
-    _createClass(treebundle, [{
+    _createClass(TreeBundle, [{
       key: "bendi",
       get: // bendi
       function get() {
@@ -6715,7 +6724,7 @@
 
         if (isNodeAllowed && isNodeUnknown) {
           obj.nodeParents.push(node);
-          obj.updateNodeMinPositions();
+          obj.updateNodeMinBlockPositions();
         } // if
 
       } // addparent
@@ -6732,7 +6741,7 @@
 
         if (!obj.nodeChildren.includes(node)) {
           obj.nodeChildren.push(node);
-          obj.updateNodeMinPositions();
+          obj.updateNodeMinBlockPositions();
         } // if
 
       } // addchild
@@ -6771,23 +6780,32 @@
       } // get width
 
     }, {
-      key: "updateNodeMinPositions",
-      value: function updateNodeMinPositions() {
-        // This should just be run whenever teh parents or the children are changed.
+      key: "updateNodeMinBlockPositions",
+      value: function updateNodeMinBlockPositions() {
+        // This should just be run whenever the parents or the children are changed.
         // Because the links make two 90 degree turns when connecting the parent to the child the radii of these turns constitute the minimum y offset of this bundle relative to the previous one. Furthermore, this is offset relative to the lowest parent! This is important when positioning the child nodes.
         var obj = this;
-        var y_lowest_parent = obj.nodeParents.reduce(function (acc, p) {
-          return acc > p.y ? acc : p.y;
+        var lowestParentBlock = obj.nodeParents.reduce(function (acc, p) {
+          return acc > p.block ? acc : p.block;
         }, 0);
         obj.nodeChildren.forEach(function (child) {
-          child.miny = y_lowest_parent + 2 * r$1 * 0;
+          child.block = lowestParentBlock; // + 2*r if all links curves.
         }); // forEach
       } // y_min
 
+    }, {
+      key: "childMinimumY",
+      value: function childMinimumY() {
+        var obj = this;
+        return obj.nodeParents.reduce(function (acc, b) {
+          return Math.max(acc, b.y);
+        }, 0);
+      } // childMinimumY
+
     }]);
 
-    return treebundle;
-  }(); // treebundle
+    return TreeBundle;
+  }(); // TreeBundle2
 
   var node_label_width = 70; // length of text
 
@@ -6853,8 +6871,7 @@
 
 
   function arrangeIncomingOutgoingTracks(node, bundles) {
-    // To draw the node I need to know where to start, how big it should be, and I should also know what the label is, and what the corresponding tags are.
-    // Each bundle should be staggered when entering a particular node. But bundles can also hold lines of several authors. These should be staggered as well.
+    // This is for bundles coming in and out of a particular node. To draw the node I need to know where to start, how big it should be, and I should also know what the label is, and what the corresponding tags are. Each bundle should be staggered when entering a particular node. But bundles can also hold lines of several authors. These should be staggered as well.
     var outgoingbundles = bundles.filter(function (b) {
       return b.parents.includes(node.connections.group);
     }); // filter
@@ -6872,7 +6889,7 @@
       return b.level - a.level || b.bendi - a.bendi;
     }); // sort
     // This should be improved. First of all, the track indices and the bundle indices should be coordinated by sorting the lines by bundle ind before assigning the track ind. Secondly, it would be good if bundles of the same color could maintain same track positions...
-    // Assign the index of track to enter the node by.
+    // Assign the index of track to enter the node by. Lines entering this node treat it as a child.
 
     incomingbundles.forEach(function (bundle, i) {
       var lines = getBundleLinesGoingThroughNode(bundle, node);
@@ -6880,6 +6897,7 @@
         line.ci = i;
       });
     }); // forEach
+    // Lines exiting hte node treat it as a parent.
 
     outgoingbundles.forEach(function (bundle, i) {
       var lines = getBundleLinesGoingThroughNode(bundle, node);
@@ -6889,8 +6907,8 @@
     }); // forEach
     // Set number of incoming bundles.
 
-    node.nbundlesin = incomingbundles.length;
-    node.nbundlesout = outgoingbundles.length;
+    node.nBundlesIn = incomingbundles.length;
+    node.nBundlesOut = outgoingbundles.length;
   } // arrangeIncomingOutgoingTracks
 
 
@@ -6934,7 +6952,7 @@
             b.addchild(node);
           }); // forEach
         } else {
-          bundles.push(new treebundle(node, tag.author));
+          bundles.push(new TreeBundle(node, tag.author));
         } // if
 
       });
@@ -6993,27 +7011,60 @@
     nodes.forEach(function (node) {
       return arrangeIncomingOutgoingTracks(node, bundles);
     }); // forEach
-    // Last thing is to position the nodes.
+    // Last thing is to position the nodes. x positioning is controlled by the level they are on.
 
-    var x_offset = 0;
+    var x = 0;
     levels.forEach(function (level) {
+      // Assigning x positions just depends on the level.
+      x += level.width;
+      level.nodes.forEach(function (n) {
+        n.x = x;
+      }); // level.nodes
       // Recalculate the minimum node positions.
+
       level.bundles.forEach(function (b) {
-        return b.updateNodeMinPositions();
+        return b.updateNodeMinBlockPositions();
       }); // Now sort the nodes by their miny to conserve as much space as possible.
 
       level.nodes.sort(function (a, b) {
-        return a.miny - b.miny;
+        return a.block - b.block;
       }); // sort
-      // With the sizes of the nodes defined, the x and y locations can be assigned. The x location depends on the level, and the y location on the order within hte level.
+      // Run through htem again to assign unique block ids to them. This should already produce a block ordered array of nodes.
 
-      x_offset += level.width;
-      var y_offset = 0;
+      var block = 0;
       level.nodes.forEach(function (n) {
-        n.x = x_offset;
-        n.y = y_offset; // Compute offset for next node. This is just offset within the level!
+        n.block = Math.max(n.block, block);
+        block += 1;
+      }); // forEach
+      // After blocks are assigned do the positioning. This also depends on the links. If a link is expected to connect the same blocks it will be horizntal, and hte node positions should be adjusted accordingly.
+      // The block are supposed to already separate the nodes vertically, now we're just figuring out the small adjustments.
+      // The assignment has to be done via links!
 
-        y_offset = n.y + n.markersize + n.pitch;
+      var y = 0;
+      level.bundles.forEach(function (bundle) {
+        bundle.links.sort(function (a, b) {
+          return a.childnode.block - b.childnode.block;
+        }); // sort
+        // Bundle links can always only be at the same level as parents, or below.
+
+        y = Math.max(y, bundle.childMinimumY()); // Bundle links nodes may have already been positioned - by a parallel path connecting hte same nodes.
+        // If there are multiple prents, then they will have positioned the childnode twice also!
+        // It's intra-bundle that causes the bundle positioning!
+
+        bundle.links.filter(function (lnk) {
+          return !lnk.childnode.positioned;
+        }).forEach(function (lnk) {
+          if (lnk.parentnode.block == lnk.childnode.block) {
+            lnk.childnode.yBasedOnIncomingHorizontalLine(lnk.parentnode.calculateOutgoingLineY(lnk.pi), lnk.ci);
+          } else {
+            lnk.childnode.y = y;
+          } // if
+          // The y position for hte next node. This should be global!
+
+
+          lnk.childnode.positioned = true;
+          y = lnk.childnode.y + lnk.childnode.markerSize + lnk.childnode.pitch;
+        });
       }); // forEach
     }); // forEach
 
@@ -7025,21 +7076,23 @@
 
   // text -> 	"x", node => node.labelx, "y", node => node.labely, label node=>node.label
 
-  var template$8 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n</g>\n"; // template
+  var template$8 = "\n<g class=\"node\" cursor=\"pointer\">\n  <g class=\"marker\">\n    <path class=\"outline\" stroke=\"black\" stroke-width=\"8\" stroke-linecap=\"round\"></path>\n    <path class=\"fill\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\"></path>\n  </g>\n  <g class=\"label\">\n    <rect rx=\"5\" ry=\"5\" fill=\"none\"></rect>\n    <text class=\"unselectable\" stroke=\"white\" stroke-width=\"2\" font-size=\"10px\"></text>\n    <text class=\"unselectable\" stroke=\"black\" stroke-width=\"0.5\" font-size=\"10px\"></text>\n  </g>\n  <g class=\"tooltip\"></g>\n</g>\n"; // template
   // A treenode object is a higher level wrapper that contains all the dimensioning information. The `connections' attribute is supposed to hold the `treegroup' object, which contains a reference the an individual group, all it's ancestors, it's direct parents, and all its descendants.
 
   var TreeNode = /*#__PURE__*/function () {
+    // These are assigned from outside.
+    // Blocks are used to roughly position nodes.
     // Line width is the width of the incoming line. The pitch is the vertical spacing to the next node.
     function TreeNode(treegroup) {
       _classCallCheck(this, TreeNode);
 
-      this.x = undefined;
-      this._y = 0;
-      this.miny = 0;
-      this.line_width = 4;
+      this.x = 0;
+      this.y = 0;
+      this.block = 0;
+      this.lineWidth = 4;
       this.pitch = 32;
-      this.nbundlesin = 0;
-      this.nbundlesout = 0;
+      this.nBundlesIn = 0;
+      this.nBundlesOut = 0;
       this.hidden = false;
       var obj = this;
       obj.node = svg2element(template$8); // The treegroup holds all the connections of a particular group.
@@ -7047,42 +7100,56 @@
       obj.connections = treegroup;
       var label = obj.node.querySelector("g.label");
       label.addEventListener("mouseenter", function () {
-        obj.highlighttext(true);
+        obj.highlightText(true);
       });
       label.addEventListener("mouseout", function () {
-        obj.highlighttext(false);
+        obj.highlightText(false);
       });
       var marker = obj.node.querySelector("g.marker");
 
       marker.onmouseenter = function () {
-        obj.highlightmarker(true);
+        obj.highlightMarker(true);
       };
 
       marker.onmouseleave = function () {
-        obj.highlightmarker(false);
+        obj.highlightMarker(false);
       };
     } // constructor	
 
 
     _createClass(TreeNode, [{
+      key: "clear",
+      value: function clear() {
+        var obj = this;
+        obj.x = 0;
+        obj.y = 0;
+        obj.block = 0;
+        obj.nBundlesIn = 0;
+        obj.nBundlesOut = 0;
+      } // clear
+      // Updating
+
+    }, {
       key: "update",
       value: function update() {
         var obj = this;
         var marker = obj.node.querySelector("g.marker");
         var paths = marker.querySelectorAll("path");
         var label = obj.node.querySelector("g.label");
-        var texts = label.querySelectorAll("text");
+        var texts = label.querySelectorAll("text"); // Draw the node marker
 
         for (var i = 0; i < paths.length; i++) {
-          paths[i].setAttribute("d", "M".concat(obj.x, " ").concat(obj.yMarkerStart, " L").concat(obj.x, " ").concat(obj.yMarkerStart + obj.markersize));
+          paths[i].setAttribute("d", "M".concat(obj.x, " ").concat(obj.y, " L").concat(obj.x, " ").concat(obj.y + obj.markerSize));
         } // for
+        // Position hte texts
 
 
-        label.setAttribute("transform", "translate(".concat(obj.labelx, ", ").concat(obj.labely, ")"));
+        label.setAttribute("transform", "translate(".concat(obj.x + 4, ", ").concat(obj.y - 4, ")"));
 
         for (var _i = 0; _i < texts.length; _i++) {
           texts[_i].innerHTML = obj.label;
         } // for
+        // Instead of having background text just a rectangle is added behind it. Text scales weirdly...
 
 
         obj.updateBackgroundRectSize();
@@ -7100,10 +7167,11 @@
         rect.setAttribute("width", textbox.width * 1.1);
         rect.setAttribute("height", textbox.height * 1.1);
       } // updatebackgroundRectSize
+      // Highlighting
 
     }, {
-      key: "highlightselect",
-      value: function highlightselect() {
+      key: "highlightSelect",
+      value: function highlightSelect() {
         // Just toggle the background rect, and the text color. Let it still respond to mouseover font increases.
         var obj = this;
         var t = obj.node.querySelector("g.label").querySelectorAll("text");
@@ -7115,11 +7183,11 @@
         t[1].setAttribute("stroke", "white"); // Set the rect
 
         rect.setAttribute("fill", "black");
-      } // highlightselect
+      } // highlightSelect
 
     }, {
-      key: "unhighlightselect",
-      value: function unhighlightselect() {
+      key: "unhighlightSelect",
+      value: function unhighlightSelect() {
         var obj = this;
         var t = obj.node.querySelector("g.label").querySelectorAll("text");
         var rect = obj.node.querySelector("g.label").querySelector("rect"); // Text fill is now white.
@@ -7129,11 +7197,11 @@
         t[1].setAttribute("fill", "black");
         t[1].setAttribute("stroke", "black");
         rect.setAttribute("fill", "none");
-      } // unhighlightselect
+      } // unhighlightSelect
 
     }, {
-      key: "highlighttext",
-      value: function highlighttext(v) {
+      key: "highlightText",
+      value: function highlightText(v) {
         var obj = this;
         var size = v ? "12px" : "10px";
         var texts = obj.node.querySelector("g.label").querySelectorAll("text");
@@ -7144,67 +7212,62 @@
 
 
         obj.updateBackgroundRectSize();
-      } // highlighttext
+      } // highlightText
 
     }, {
-      key: "highlightmarker",
-      value: function highlightmarker(v) {
+      key: "highlightMarker",
+      value: function highlightMarker(v) {
         var obj = this;
         var size = v ? 10 : 8;
         var outline = obj.node.querySelector("g.marker").querySelector("path.outline");
         outline.setAttribute("stroke-width", size);
-      } // highlighttext
+      } // highlightMarker
+      // Drawing.
 
     }, {
-      key: "clear",
-      value: function clear() {
-        var obj = this;
-        obj.x = undefined;
-        obj._y = 0;
-        obj.miny = 0;
-        obj.nbundlesin = 0;
-        obj.nbundlesout = 0;
-      } // clear
-
-    }, {
-      key: "y",
-      get: // set y
-      function get() {
-        var obj = this;
-        return Math.max(obj._y, obj.miny);
-      } // get y
-      ,
-      set: function set(val) {
-        var obj = this;
-        obj._y = val;
-      }
-    }, {
-      key: "yMarkerStart",
+      key: "markerSize",
       get: function get() {
-        var obj = this;
-        return obj.y - 0 * obj.markersize / 2 + obj.line_width / 2;
-      } // markery
-
-    }, {
-      key: "markersize",
-      get: function get() {
-        return Math.max(this.nbundlesin - 1, this.nbundlesout - 1, 0) * this.line_width;
+        return Math.max(this.nBundlesIn - 1, this.nBundlesOut - 1, 0) * this.lineWidth;
       } // markersize
 
     }, {
-      key: "markerEmptyIn",
+      key: "yBasedOnIncomingHorizontalLine",
+      value: function yBasedOnIncomingHorizontalLine(y, i) {
+        // A horizontal line should be drawn at a `y'. Given that this line should come in at index i position the node to achieve both simultaneously.
+        var obj = this;
+        obj.y = y - i * obj.lineWidth - obj.markerPaddingIn;
+      } // yBasedOnIncomingHorizontalLine
+
+    }, {
+      key: "calculateIncomingLineY",
+      value: function calculateIncomingLineY(i) {
+        // given index 'i', and the position of the node calulate the y the line should terminate at.
+        var obj = this;
+        return obj.y + obj.markerPaddingIn + i * obj.lineWidth;
+      } // calculateIncomingLineY
+
+    }, {
+      key: "calculateOutgoingLineY",
+      value: function calculateOutgoingLineY(i) {
+        // given index 'i', and the position of the node calulate the y the line should terminate at.
+        var obj = this;
+        return obj.y + obj.markerPaddingOut + i * obj.lineWidth;
+      } // calculateIncomingLineY
+
+    }, {
+      key: "markerPaddingIn",
       get: function get() {
         // If the marker is larger than the width of the lines coming in, then the lines should be centered in hte middle of the marker. Calculate the empty space from hte marker start to where the lines should begin.
         var obj = this;
-        return (obj.markersize - (obj.nbundlesin - 1) * obj.line_width) / 2;
-      } // markerEmptyIn
+        return (obj.markerSize - (obj.nBundlesIn - 1) * obj.lineWidth) / 2;
+      } // markerPaddingIn
 
     }, {
-      key: "markerEmptyOut",
+      key: "markerPaddingOut",
       get: function get() {
         var obj = this;
-        return (obj.markersize - (obj.nbundlesout - 1) * obj.line_width) / 2;
-      } // markerEmptyIn
+        return (obj.markerSize - (obj.nBundlesOut - 1) * obj.lineWidth) / 2;
+      } // markerPaddingOut
       // Label to be displayed next to it. Shouldn't be larger than the node_label_width.
 
     }, {
@@ -7217,18 +7280,6 @@
         var n = obj.connections.group.members.length;
         return "".concat(name, " ").concat(n > 0 ? "(".concat(n, ")") : "");
       } // label
-
-    }, {
-      key: "labelx",
-      get: function get() {
-        return this.x + 4;
-      } // labelx
-
-    }, {
-      key: "labely",
-      get: function get() {
-        return this.yMarkerStart - 4;
-      } // labely
 
     }]);
 
@@ -7304,7 +7355,7 @@
         var obj = this;
 
         if (!obj.tags.some(function (existing) {
-          return existing.id == tag.id;
+          return existing.author == tag.author && existing.name == tag.name;
         })) {
           obj.tags.push(tag);
         } // if
@@ -7359,14 +7410,14 @@
   function mergeIdenticalGroups(groups) {
     var mergedgroups = groups.reduce(function (acc, g) {
       // Find group with identical members.
-      var identicalg = acc.filter(function (g_) {
+      var identicalg = acc.find(function (g_) {
         return arrayEqual(g_.members, g.members);
       }); // filter
 
-      if (identicalg.length > 0) {
+      if (identicalg) {
         // Add another author to existing group.
         g.tags.forEach(function (tag) {
-          identicalg[0].addtag(tag);
+          identicalg.addtag(tag);
         });
       } else {
         // Add this group to the unique ones.
@@ -7587,7 +7638,7 @@
   - Fix node mouseover css - css affects specific child of mover g.
   */
 
-  var template$7 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"bundles\"></g>\n  <g class=\"nodes\"></g>\n  <g class=\"nodetooltip\"></g>\n  <g class=\"linktooltip\"></g>\n</g>\n";
+  var template$7 = "\n<g transform=\"translate(20, 20)\">\n  <g class=\"legend\"></g>\n  <g class=\"treeelements\" transform=\"translate(0, 20)\">\n\t<g class=\"bundles\"></g>\n\t<g class=\"nodes\"></g>\n  </g>\n</g>\n";
 
   var TreeKnowledge = /*#__PURE__*/function () {
     function TreeKnowledge() {
@@ -7646,6 +7697,7 @@
         obj.map = dimensioning(obj.hierarchy.visiblenodes);
         obj.updatenodes();
         obj.updatelines();
+        obj.updatelegend();
       } // interact
 
     }, {
@@ -7661,7 +7713,9 @@
       key: "updatenodes",
       value: function updatenodes() {
         var obj = this;
-        obj.map.nodes.forEach(function (nodeobj) {
+        obj.map.nodes.sort(function (a, b) {
+          return a.x - b.x;
+        }).forEach(function (nodeobj) {
           // Check if the group should be highlighted.
           var iscurrent = !nodeobj.connections.group.members.some(function (taskId) {
             return !obj.currenttasks.includes(taskId);
@@ -7672,22 +7726,30 @@
           if (iscurrent) {
             nodeobj.highlightselect();
           } // if
-          // Add teh styling changes on mouseover. Clicking the label moves view to the group.
 
+
+          var tooltipTimer; // Add teh styling changes on mouseover. Clicking the label moves view to the group.
 
           var label = nodeobj.node.querySelector("g.label");
 
           label.onclick = function () {
             obj.moveto(nodeobj.connections);
+            clearTimeout(tooltipTimer);
+            obj.hidetooltip(nodeobj);
           }; // onclick
 
 
           label.addEventListener("mouseenter", function () {
             obj.crossreferencein(nodeobj.connections.group.members);
+            tooltipTimer = setTimeout(function () {
+              obj.showtooltip(nodeobj);
+            }, 10);
           }); // addEventListener
 
           label.addEventListener("mouseout", function () {
             obj.crossreferenceout();
+            clearTimeout(tooltipTimer);
+            obj.hidetooltip(nodeobj);
           }); // addEventListener
           // Clicking on hte node just collapses branches.
 
@@ -7711,10 +7773,67 @@
       } // updatelines
 
     }, {
+      key: "updatelegend",
+      value: function updatelegend() {
+        var obj = this; // Get the tentative width of hte legend.
+
+        var entrywidth = 90;
+        var entryheight = 15; // A minus is used to allow i=0 to be used later on - easier to calculate start x.
+
+        var legendwidth = obj.gnodes.getBoundingClientRect().width - entrywidth / 2; // This should only appear if there are any unsaved items.
+
+        var unsaved = obj.hierarchy.temporary.length > 0 ? "<g transform=translate(0,0)>\n\t\t\t<path d=\"M0,-4 L20,-4\" stroke=\"black\" stroke-dasharray=\"5,2\" stroke-width=\"5px\"></path>\n\t\t\t<text x=\"25\" y=\"0\" font-weight=\"bold\" font-size=\"12px\">Unsaved</text>\n\t\t</g>" : "";
+        var i = obj.hierarchy.temporary.length > 0 ? 0 : -1;
+        var j = 0;
+        var entries = obj.color.domain.map(function (author) {
+          j = (i + 1) * entrywidth > legendwidth ? j + 1 : j;
+          i = (i + 1) * entrywidth > legendwidth ? 0 : i + 1;
+          return "<g transform=translate(".concat(i * entrywidth, ",").concat(j * entryheight, ")>\n\t\t\t<path d=\"M0,-4 L20,-4\" stroke=\"").concat(obj.color.dom2range(author), "\" stroke-width=\"5px\"></path>\n\t\t\t<text x=\"25\" y=\"0\" font-weight=\"bold\" font-size=\"12px\">").concat(author, "</text>\n\t\t\t</g>");
+        }); // Try to fit the legend entries in one row. Limit username to 8 characters?		
+
+        obj.node.querySelector("g.legend").appendChild(svg2element("<g>".concat([unsaved].concat(entries), "</g>")));
+        obj.node.querySelector("g.treeelements").setAttribute("transform", "translate(0,".concat((j + 2) * entryheight, ")"));
+      } // updatelegend
+
+    }, {
+      key: "showtooltip",
+      value: function showtooltip(nodeobj) {
+        var g = nodeobj.node.querySelector("g.tooltip");
+        g.innerHTML = "";
+        var aliases = nodeobj.connections.group.tags;
+
+        if (aliases.length > 1) {
+          // Ok - there has to be a square, and it should be positioned near the text.
+          var textnodes = aliases.map(function (alias, i) {
+            return svg2element("<text x=\"10\" y=\"".concat((i + 1) * 15, "\" font-weight=\"bold\" font-size=\"12px\">").concat(alias.author, ": ").concat(alias.name, "</text>"));
+          });
+          var tooltip = svg2element("<g>\n\t\t\t<rect x=\"0\" y=\"0\" width=\"100\" height=\"".concat(textnodes.length * 15 + 10, "\" fill=\"white\" stroke-width=\"2\" stroke=\"black\" rx=\"5px\"></rect></g>"));
+          g.appendChild(tooltip);
+          textnodes.forEach(function (n) {
+            return tooltip.appendChild(n);
+          });
+          var w = textnodes.reduce(function (acc, n) {
+            return Math.max(acc, n.getBBox().width);
+          }, 0) + 20; // reduce
+
+          tooltip.querySelector("rect").setAttribute("width", w);
+          tooltip.setAttribute("transform", "translate(".concat(nodeobj.x - w < 0 ? 0 : nodeobj.x - w, ",").concat(nodeobj.y - 10, ")"));
+        } // if
+
+      } // showtooltip
+
+    }, {
+      key: "hidetooltip",
+      value: function hidetooltip(nodeobj) {
+        var g = nodeobj.node.querySelector("g.tooltip");
+        g.innerHTML = "";
+      } // hidetooltip
+
+    }, {
       key: "moveto",
       value: function moveto(connections) {
         // I want to move to the group which contains only tasks given by "nodeobj.connections.group.members", but I also want to show all the groups within that grop.
-        console.log("Move to", nodeobj.connections.group.members);
+        console.log("Move to", connections.group.members);
       } // moveto
 
     }, {
@@ -9818,7 +9937,7 @@
 
           function ping() {
             // This should recursively call itself.
-            console.log("ping");
+            // console.log("ping")
             obj.ws.send(JSON.stringify({
               type: "ping"
             }));
@@ -9834,8 +9953,7 @@
         obj.ws.onmessage = function (msg) {
           // Should differentiate between receiving a 'pong', receiving a single item, and receiving an array.
           // A single item is just added, while an array requires a purge of existing comments first.
-          var action = JSON.parse(msg.data);
-          console.log(action);
+          var action = JSON.parse(msg.data); // console.log(action)
 
           switch (action.type) {
             case "pong":
@@ -9894,7 +10012,7 @@
             tag.type = "tag";
             obj.ws.send(JSON.stringify(tag));
           } else {
-            console.log("You need to log in", tag);
+            alert("You need to log in");
           } // if			
 
         }; // submit
@@ -9908,7 +10026,7 @@
             comment.type = "tag";
             obj.ws.send(JSON.stringify(comment));
           } else {
-            console.log("You need to log in", comment);
+            alert("You need to log in");
           } // if
 
         }; // submit
@@ -9920,7 +10038,7 @@
             vote.author = obj.username;
             obj.ws.send(JSON.stringify(vote));
           } else {
-            console.log("You need to log in", vote);
+            alert("You need to log in");
           } // if
 
         }; // submitvote
@@ -9980,8 +10098,8 @@
         tags.forEach(function (tag) {
           obj.nm.tree.addtagannotation(tag);
         }); // forEach
+        // console.log("Tags", d, tags)
 
-        console.log("Tags", d, tags);
         obj.nm.tree.update(); // tags need to be distributed to the individual items also - there the available tags will be displayed to the user. The individual items also need them to see if the name of the new annotation is unique or not.
 
         var tagdistribution = distribution(tags);
@@ -10025,8 +10143,8 @@
           c.upvotes = c.upvotes ? JSON.parse(c.upvotes) : null;
           c.downvotes = c.downvotes ? JSON.parse(c.downvotes) : null;
         }); // forEach
+        // console.log("Comments", comments)
 
-        console.log("Comments", comments);
         var commentsdistribution = distribution(comments);
         obj.nm.items.forEach(function (item) {
           if (commentsdistribution[item.task.taskId]) {

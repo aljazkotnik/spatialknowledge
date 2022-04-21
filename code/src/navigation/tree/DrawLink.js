@@ -24,6 +24,25 @@ export default class DrawLink{
 		obj.r2 = obj.r;
 	} // constructor
 	
+	
+	
+	get originCoord(){
+		let obj = this;
+		return {
+			x: obj.parentnode.x,
+			y: obj.parentnode.calculateOutgoingLineY(obj.pi)
+		} // origin
+	} // origincoord
+	
+	
+	get targetCoord(){
+		let obj = this;
+		return {
+			x: obj.childnode.x,
+			y: obj.childnode.calculateIncomingLineY(obj.ci)
+		} // origin
+	} // origincoord
+	
 	get path(){
 		// Doesn't take into account the offsets yet!!
 		
@@ -35,24 +54,16 @@ export default class DrawLink{
 		let obj = this;
 				
 		
-		let dyc = obj.ci*obj.line_width + obj.childnode.markerEmptyIn;
-		let dyp = obj.pi*obj.line_width + obj.parentnode.markerEmptyOut;
+		
 		
 		// The target x should be > `xHorizontal + r1 + r2'
 		let xHorizontal = obj.parentnode.x + obj.node_label_width + obj.bendi*obj.bundle_width;
 		
 		
 		
-		// Origin and target MUST be at least `[node_label_width + 2*r, 0]' apart otherwise the graphic logic doesn't follow.
-		let origin = {
-			x: obj.parentnode.x,
-			y: obj.parentnode.yMarkerStart + dyp
-		} // origin
+		let origin = obj.originCoord;
+		let target = obj.targetCoord;
 		
-		let target = {
-			x: obj.childnode.x,
-			y: obj.childnode.yMarkerStart + dyc
-		} // target
 	
 		
 		let p = `M${ origin.x } ${ origin.y } L${ target.x } ${ target.y }`;

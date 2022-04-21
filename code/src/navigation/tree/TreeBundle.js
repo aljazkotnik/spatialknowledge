@@ -17,7 +17,7 @@ let line_width = 4
 let r = 16
 
 // Bundles are the connections between two levels of nodes.
-export default class treebundle{
+export default class TreeBundle{
 	// Index is the ranked position of this bundle within hte level. It determines the position of hte vertical line segment, and the corner radius.
 	links = []
 	_bendi = 0;
@@ -77,7 +77,7 @@ export default class treebundle{
 		
 		if( isNodeAllowed && isNodeUnknown ){
 			obj.nodeParents.push(node);
-			obj.updateNodeMinPositions();
+			obj.updateNodeMinBlockPositions();
 		} // if
 	} // addparent
 	
@@ -89,7 +89,7 @@ export default class treebundle{
 		
 		if(!obj.nodeChildren.includes(node)){
 			obj.nodeChildren.push(node);
-			obj.updateNodeMinPositions();
+			obj.updateNodeMinBlockPositions();
 		} // if
 	} // addchild
 	
@@ -124,19 +124,26 @@ export default class treebundle{
 		return node_label_width + obj.bundles.length*bundle_width + r;
 	} // get width
 	
-	updateNodeMinPositions(){
-		// This should just be run whenever teh parents or the children are changed.
+	updateNodeMinBlockPositions(){
+		// This should just be run whenever the parents or the children are changed.
 		// Because the links make two 90 degree turns when connecting the parent to the child the radii of these turns constitute the minimum y offset of this bundle relative to the previous one. Furthermore, this is offset relative to the lowest parent! This is important when positioning the child nodes.
 		let obj = this;
 		
-		let y_lowest_parent = obj.nodeParents.reduce((acc, p)=>{
-			return acc > p.y ? acc : p.y
+		let lowestParentBlock = obj.nodeParents.reduce((acc, p)=>{
+			return acc > p.block ? acc : p.block
 		}, 0)
 		
 		obj.nodeChildren.forEach(child=>{
-			child.miny = y_lowest_parent + 2*r*0;
+			child.block = lowestParentBlock; // + 2*r if all links curves.
 		}) // forEach
 		
 	} // y_min
 	
-} // treebundle
+	childMinimumY(){
+		let obj = this;
+		return obj.nodeParents.reduce((acc,b)=>{
+			return Math.max(acc,b.y)
+		}, 0)
+	} // childMinimumY
+	
+} // TreeBundle2

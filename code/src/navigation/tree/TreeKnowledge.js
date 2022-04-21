@@ -44,10 +44,11 @@ import {svg2element, scaleCategorical} from "../../helpers.js";
 
 let template = `
 <g transform="translate(20, 20)">
-  <g class="bundles"></g>
-  <g class="nodes"></g>
-  <g class="nodetooltip"></g>
-  <g class="linktooltip"></g>
+  <g class="legend"></g>
+  <g class="treeelements" transform="translate(0, 20)">
+	<g class="bundles"></g>
+	<g class="nodes"></g>
+  </g>
 </g>
 `;
 
@@ -105,6 +106,7 @@ export default class TreeKnowledge {
 		obj.map = dimensioning( obj.hierarchy.visiblenodes );
 		obj.updatenodes();
 		obj.updatelines();
+		obj.updatelegend();
 	} // interact
 	
 	
@@ -120,7 +122,7 @@ export default class TreeKnowledge {
 	updatenodes(){
 		let obj = this
 		
-		obj.map.nodes.forEach(nodeobj=>{
+		obj.map.nodes.sort((a,b)=>a.x-b.x).forEach(nodeobj=>{
 			
 			// Check if the group should be highlighted.
 			let iscurrent = !nodeobj.connections.group.members.some(taskId=>!obj.currenttasks.includes(taskId))
@@ -132,16 +134,26 @@ export default class TreeKnowledge {
 				nodeobj.highlightselect();
 			} // if
 			
+			
+			var tooltipTimer;
+			
 			// Add teh styling changes on mouseover. Clicking the label moves view to the group.
 			let label = nodeobj.node.querySelector("g.label");
 			label.onclick = function(){ 
 				obj.moveto(nodeobj.connections);
+				clearTimeout(tooltipTimer)
+				obj.hidetooltip(nodeobj);
 			} // onclick
 			label.addEventListener("mouseenter", function(){
 				obj.crossreferencein(nodeobj.connections.group.members)
+				tooltipTimer = setTimeout(function(){
+					obj.showtooltip(nodeobj)
+				}, 10)
 			}) // addEventListener
 			label.addEventListener("mouseout", function(){
 				obj.crossreferenceout();
+				clearTimeout(tooltipTimer)
+				obj.hidetooltip(nodeobj);
 			}) // addEventListener
 			
 			// Clicking on hte node just collapses branches.
@@ -165,9 +177,90 @@ export default class TreeKnowledge {
 		}) // forEach
 	} // updatelines
 	
+	
+	updatelegend(){
+		let obj = this;
+		
+		// Get the tentative width of hte legend.
+		let entrywidth = 90;
+		let entryheight = 15;
+		
+		// A minus is used to allow i=0 to be used later on - easier to calculate start x.
+		let legendwidth = obj.gnodes.getBoundingClientRect().width - entrywidth/2;
+
+		
+
+		// This should only appear if there are any unsaved items.
+		let unsaved = obj.hierarchy.temporary.length > 0 ? `<g transform=translate(0,0)>
+			<path d="M0,-4 L20,-4" stroke="black" stroke-dasharray="5,2" stroke-width="5px"></path>
+			<text x="25" y="0" font-weight="bold" font-size="12px">Unsaved</text>
+		</g>` : ``;
+
+		
+		let i = obj.hierarchy.temporary.length > 0 ? 0 : -1;
+		let j = 0;
+		let entries = obj.color.domain.map(author=>{
+			j = (i+1)*entrywidth > legendwidth ? j+1 : j;
+			i = (i+1)*entrywidth > legendwidth ? 0 : i+1;
+			return `<g transform=translate(${i*entrywidth},${j*entryheight})>
+			<path d="M0,-4 L20,-4" stroke="${obj.color.dom2range(author)}" stroke-width="5px"></path>
+			<text x="25" y="0" font-weight="bold" font-size="12px">${author}</text>
+			</g>`
+		});
+		
+		
+		
+		// Try to fit the legend entries in one row. Limit username to 8 characters?		
+		obj.node.querySelector("g.legend").appendChild(svg2element(`<g>${[unsaved].concat(entries)}</g>`));
+		obj.node.querySelector("g.treeelements").setAttribute("transform", `translate(0,${(j+2)*entryheight})`);
+	} // updatelegend
+	
+	
+	showtooltip(nodeobj){
+		// Get the aliases. Don't show the tooltip if there is no other aliases.
+		let obj = this;
+		
+	
+		let g = nodeobj.node.querySelector("g.tooltip")
+		g.innerHTML = "";
+		
+		
+		let aliases = nodeobj.connections.group.tags;
+		if(aliases.length > 1){
+			// Ok - there has to be a square, and it should be positioned near the text.
+			
+			let textnodes = aliases.map((alias,i)=>svg2element(`<text x="10" y="${(i+1)*15}" font-weight="bold" font-size="12px">${alias.author}: ${alias.name}</text>`))
+			
+			
+			let tooltip = svg2element(`<g>
+			<rect x="0" y="0" width="100" height="${textnodes.length*15+10}" fill="white" stroke-width="2" stroke="black" rx="5px"></rect></g>`)
+			
+			g.appendChild(tooltip)
+			textnodes.forEach(n=>tooltip.appendChild(n))
+			
+			
+			let w = textnodes.reduce((acc,n)=>{
+				return Math.max(acc, n.getBBox().width)
+			},0) + 20; // reduce
+			
+			tooltip.querySelector("rect").setAttribute("width", w);
+			tooltip.setAttribute("transform", `translate(${nodeobj.x - w < 0 ? 0 : nodeobj.x - w},${nodeobj.y - 10})`);
+			
+		} // if
+		
+	} // showtooltip
+	
+	hidetooltip(nodeobj){
+		let g = nodeobj.node.querySelector("g.tooltip")
+		g.innerHTML = "";
+	} // hidetooltip
+	
+	
+	
+	
 	moveto(connections){
 		// I want to move to the group which contains only tasks given by "nodeobj.connections.group.members", but I also want to show all the groups within that grop.
-		console.log("Move to", nodeobj.connections.group.members)
+		console.log("Move to", connections.group.members)
 	} // moveto
 	
 	crossreferencein(taskids){

@@ -24,9 +24,7 @@ function getBundleLinesGoingThroughNode(bundle, node){
 } // getBundleLines
 	
 function arrangeIncomingOutgoingTracks(node, bundles){
-	// To draw the node I need to know where to start, how big it should be, and I should also know what the label is, and what the corresponding tags are.
-	
-	// Each bundle should be staggered when entering a particular node. But bundles can also hold lines of several authors. These should be staggered as well.
+	// This is for bundles coming in and out of a particular node. To draw the node I need to know where to start, how big it should be, and I should also know what the label is, and what the corresponding tags are. Each bundle should be staggered when entering a particular node. But bundles can also hold lines of several authors. These should be staggered as well.
 		
 	let outgoingbundles = bundles.filter(b=>{
 		return b.parents.includes( node.connections.group );
@@ -49,7 +47,7 @@ function arrangeIncomingOutgoingTracks(node, bundles){
 	// This should be improved. First of all, the track indices and the bundle indices should be coordinated by sorting the lines by bundle ind before assigning the track ind. Secondly, it would be good if bundles of the same color could maintain same track positions...
 	
 	
-	// Assign the index of track to enter the node by.
+	// Assign the index of track to enter the node by. Lines entering this node treat it as a child.
 	incomingbundles.forEach((bundle,i)=>{
 		let lines = getBundleLinesGoingThroughNode(bundle, node);
 		lines.forEach(line=>{
@@ -57,6 +55,7 @@ function arrangeIncomingOutgoingTracks(node, bundles){
 		})
 	}) // forEach
 	
+	// Lines exiting hte node treat it as a parent.
 	outgoingbundles.forEach((bundle,i)=>{
 		let lines = getBundleLinesGoingThroughNode(bundle, node);
 		lines.forEach(line=>{
@@ -66,8 +65,8 @@ function arrangeIncomingOutgoingTracks(node, bundles){
 	
 	
 	// Set number of incoming bundles.
-	node.nbundlesin  = incomingbundles.length;
-	node.nbundlesout = outgoingbundles.length;
+	node.nBundlesIn  = incomingbundles.length;
+	node.nBundlesOut = outgoingbundles.length;
 	
 		
 } // arrangeIncomingOutgoingTracks
@@ -194,29 +193,77 @@ export function dimensioning(nodes){
 	nodes.forEach(node=>arrangeIncomingOutgoingTracks(node, bundles)); // forEach
   
 	
-	// Last thing is to position the nodes.
-	let x_offset = 0;
+	// Last thing is to position the nodes. x positioning is controlled by the level they are on.
+	let x = 0;
 	levels.forEach(level=>{
-								
-		// Recalculate the minimum node positions.
-		level.bundles.forEach(b=>b.updateNodeMinPositions());
 		
+		// Assigning x positions just depends on the level.
+		x += level.width;
+		level.nodes.forEach(n=>{
+			n.x = x;
+		}); // level.nodes
+		
+		
+		// Recalculate the minimum node positions.
+		level.bundles.forEach(b=>b.updateNodeMinBlockPositions());
+				
 		// Now sort the nodes by their miny to conserve as much space as possible.
 		level.nodes.sort((a,b)=>{
-			return a.miny - b.miny
+			return a.block - b.block
 		}) // sort
 		
-		// With the sizes of the nodes defined, the x and y locations can be assigned. The x location depends on the level, and the y location on the order within hte level.
-		x_offset += level.width;
-		let y_offset = 0;
-		level.nodes.forEach(n=>{
-
-			n.x = x_offset;
-			n.y = y_offset;
 		
-			// Compute offset for next node. This is just offset within the level!
-			y_offset = n.y + n.markersize + n.pitch
+		// Run through htem again to assign unique block ids to them. This should already produce a block ordered array of nodes.
+		let block = 0;
+		level.nodes.forEach(n=>{
+			n.block = Math.max(n.block, block);
+			block += 1;
+		}); // forEach
+		
+		
+		
+		
+		// After blocks are assigned do the positioning. This also depends on the links. If a link is expected to connect the same blocks it will be horizntal, and hte node positions should be adjusted accordingly.
+		
+		// The block are supposed to already separate the nodes vertically, now we're just figuring out the small adjustments.
+		
+		
+		
+		// The assignment has to be done via links!
+		var y = 0;
+		level.bundles.forEach(bundle=>{
+			bundle.links.sort((a,b)=>{
+				return a.childnode.block - b.childnode.block
+			}); // sort
+			
+			// Bundle links can always only be at the same level as parents, or below.
+			y = Math.max(y, bundle.childMinimumY());
+			
+			
+			// Bundle links nodes may have already been positioned - by a parallel path connecting hte same nodes.
+			// If there are multiple prents, then they will have positioned the childnode twice also!
+			
+			// It's intra-bundle that causes the bundle positioning!
+			
+			bundle.links.filter(lnk=>!lnk.childnode.positioned).forEach(lnk=>{
+				
+					if(lnk.parentnode.block == lnk.childnode.block){
+						lnk.childnode.yBasedOnIncomingHorizontalLine(lnk.parentnode.calculateOutgoingLineY(lnk.pi), lnk.ci ) ;
+					} else {
+						lnk.childnode.y = y;
+					} // if
+					
+					// The y position for hte next node. This should be global!
+					lnk.childnode.positioned = true;
+					y = lnk.childnode.y + lnk.childnode.markerSize + lnk.childnode.pitch;
+				
+			})
+			
 		}) // forEach
+		
+		
+		
+		
 	}) // forEach
 
 	return {

@@ -96,9 +96,9 @@ Promise.all(mtdtprmss).then(data=>{
 	// Start with the rendering. Rendering only considers drawing the items it knows about, and it knows nothing of the dynamically created groups by the NavigationManager. As a kludge solution the NavigationManager will superst the items to be considered by the renderer.
 
 	// How should the renderer recognise that it needs to change the set of groups to iterate over?
+	renderer.customColormapRange = [1140, 1160];
 	renderer.draw();
-	// renderer.customColormapRange = [1140, 1160];
-
+	
 
 	// Allow NavigationManager to control which items are rendered.
 	workspace.updateRenderingItems = function(subsetitems){
@@ -107,12 +107,16 @@ Promise.all(mtdtprmss).then(data=>{
 
 
 
-	// How to do the memory handling. And how to make it appear in the navigation bar!
-	console.log(workspace, renderer, knowledge)
+	
 
+	
 
-
+	
+	// console.log(workspace, renderer, knowledge)
+	console.log(T)
+	
 })
+
 
 
 

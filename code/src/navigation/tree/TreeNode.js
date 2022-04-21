@@ -15,21 +15,26 @@ let template = `
     <text class="unselectable" stroke="white" stroke-width="2" font-size="10px"></text>
     <text class="unselectable" stroke="black" stroke-width="0.5" font-size="10px"></text>
   </g>
+  <g class="tooltip"></g>
 </g>
 `; // template
 
 // A treenode object is a higher level wrapper that contains all the dimensioning information. The `connections' attribute is supposed to hold the `treegroup' object, which contains a reference the an individual group, all it's ancestors, it's direct parents, and all its descendants.
 export default class TreeNode{
-	x = undefined
-	_y = 0
-	miny = 0
+	
+	// These are assigned from outside.
+	x = 0
+	y = 0
+	
+	// Blocks are used to roughly position nodes.
+	block = 0
 	
 	// Line width is the width of the incoming line. The pitch is the vertical spacing to the next node.
-	line_width = 4
+	lineWidth = 4
 	pitch = 32
 	
-	nbundlesin = 0
-	nbundlesout = 0
+	nBundlesIn = 0
+	nBundlesOut = 0
 	
 	hidden = false;
 	
@@ -42,15 +47,26 @@ export default class TreeNode{
 		
 		
 		let label = obj.node.querySelector("g.label");
-		label.addEventListener("mouseenter", function(){ obj.highlighttext(true) });
-		label.addEventListener("mouseout" , function(){ obj.highlighttext(false) });
+		label.addEventListener("mouseenter", function(){ obj.highlightText(true) });
+		label.addEventListener("mouseout" , function(){ obj.highlightText(false) });
 		
 		let marker = obj.node.querySelector("g.marker");
-		marker.onmouseenter = function(){ obj.highlightmarker(true) }
-		marker.onmouseleave = function(){ obj.highlightmarker(false) }
+		marker.onmouseenter = function(){ obj.highlightMarker(true) }
+		marker.onmouseleave = function(){ obj.highlightMarker(false) }
 	} // constructor	
 	
 	
+	clear(){
+		let obj = this;
+		obj.x = 0;
+		obj.y = 0;
+		obj.block = 0;
+		obj.nBundlesIn = 0;
+		obj.nBundlesOut = 0;
+	} // clear
+	
+	
+	// Updating
 	update(){
 	    let obj = this;
 		
@@ -61,19 +77,20 @@ export default class TreeNode{
 		let texts = label.querySelectorAll("text");
 		
 		
+		// Draw the node marker
 		for(let i=0; i<paths.length; i++){
-			paths[i].setAttribute("d", `M${ obj.x } ${ obj.yMarkerStart } L${ obj.x } ${ obj.yMarkerStart + obj.markersize }`)
+			paths[i].setAttribute("d", `M${ obj.x } ${ obj.y } L${ obj.x } ${ obj.y + obj.markerSize }`)
 		} // for
 		
-		label.setAttribute("transform", `translate(${obj.labelx}, ${obj.labely})`);
+		// Position hte texts
+		label.setAttribute("transform", `translate(${obj.x+4}, ${obj.y-4})`);
 		for(let i=0; i<texts.length; i++){
 			texts[i].innerHTML = obj.label;
 		} // for
 		
+		// Instead of having background text just a rectangle is added behind it. Text scales weirdly...
 		obj.updateBackgroundRectSize();
 	} // update
-	
-	
 	
 	updateBackgroundRectSize(){
 		let obj = this;
@@ -89,7 +106,9 @@ export default class TreeNode{
 	} // updatebackgroundRectSize
 	
 	
-	highlightselect(){
+	
+	// Highlighting
+	highlightSelect(){
 		// Just toggle the background rect, and the text color. Let it still respond to mouseover font increases.
 		let obj = this;
 		
@@ -105,10 +124,9 @@ export default class TreeNode{
 
 		// Set the rect
 		rect.setAttribute("fill", "black");
-	} // highlightselect
+	} // highlightSelect
 	
-	
-	unhighlightselect(){
+	unhighlightSelect(){
 		let obj = this;
 		
 		let t = obj.node.querySelector("g.label").querySelectorAll("text");
@@ -123,12 +141,9 @@ export default class TreeNode{
 
 
 		rect.setAttribute("fill", "none");
-	} // unhighlightselect
+	} // unhighlightSelect
 	
-	
-	
-	
-	highlighttext(v){
+	highlightText(v){
 		let obj = this;
 		let size = v ? "12px" : "10px";
 		let texts = obj.node.querySelector("g.label").querySelectorAll("text");
@@ -136,58 +151,57 @@ export default class TreeNode{
 			texts[i].setAttribute("font-size", size);
 		} // for
 		obj.updateBackgroundRectSize();
-	} // highlighttext
+	} // highlightText
 	
-	highlightmarker(v){
+	highlightMarker(v){
 		let obj = this;
 		let size = v ? 10 : 8;
 		let outline = obj.node.querySelector("g.marker").querySelector("path.outline");
 		outline.setAttribute("stroke-width", size);
-	} // highlighttext
-	
-	clear(){
-		let obj = this;
-		obj.x = undefined;
-		obj._y = 0;
-		obj.miny = 0;
-		obj.nbundlesin = 0;
-		obj.nbundlesout = 0;
-	} // clear
-	
-	
-
-	set y(val){
-		let obj = this;
-		obj._y = val
-	} // set y
-	
-	get y(){
-		let obj = this;
-		return Math.max(obj._y, obj.miny)
-	} // get y
+	} // highlightMarker
 	
 	
 	
 	
-	get yMarkerStart(){
-		let obj = this;
-		return obj.y - 0*obj.markersize/2 + obj.line_width/2;
-	} // markery
 	
-	get markersize(){
-		return Math.max(this.nbundlesin-1, this.nbundlesout-1, 0)*this.line_width;
+		
+	// Drawing.
+	get markerSize(){
+		return Math.max(this.nBundlesIn-1, this.nBundlesOut-1, 0)*this.lineWidth;
 	} // markersize
 	
-	get markerEmptyIn(){
+	
+	yBasedOnIncomingHorizontalLine(y,i){
+		// A horizontal line should be drawn at a `y'. Given that this line should come in at index i position the node to achieve both simultaneously.
+		let obj = this;
+		obj.y = y - i*obj.lineWidth - obj.markerPaddingIn;
+	} // yBasedOnIncomingHorizontalLine
+	
+	
+	calculateIncomingLineY(i){
+		// given index 'i', and the position of the node calulate the y the line should terminate at.
+		let obj = this;
+		return obj.y + obj.markerPaddingIn + i*obj.lineWidth;
+	} // calculateIncomingLineY
+	
+	calculateOutgoingLineY(i){
+		// given index 'i', and the position of the node calulate the y the line should terminate at.
+		let obj = this;
+		return obj.y + obj.markerPaddingOut + i*obj.lineWidth;
+	} // calculateIncomingLineY
+	
+	
+	
+	get markerPaddingIn(){
 		// If the marker is larger than the width of the lines coming in, then the lines should be centered in hte middle of the marker. Calculate the empty space from hte marker start to where the lines should begin.
 		let obj = this;
-		return (obj.markersize - (obj.nbundlesin-1)*obj.line_width) / 2;
-	} // markerEmptyIn
+		return (obj.markerSize - (obj.nBundlesIn-1)*obj.lineWidth) / 2;
+	} // markerPaddingIn
 	
-	get markerEmptyOut(){
+	get markerPaddingOut(){
 		let obj = this;
-		return (obj.markersize - (obj.nbundlesout-1)*obj.line_width) / 2;
-	} // markerEmptyIn
+		return (obj.markerSize - (obj.nBundlesOut-1)*obj.lineWidth) / 2;
+	} // markerPaddingOut
 	
 	
 	
@@ -202,13 +216,6 @@ export default class TreeNode{
 		return `${name} ${n > 0 ? `(${ n })`: ""}`
 	} // label
 	
-	get labelx(){
-		return this.x + 4;
-	} // labelx
-	
-	get labely(){
-		return this.yMarkerStart - 4;
-	} // labely
 	
 	
 	
