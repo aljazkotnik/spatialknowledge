@@ -106,14 +106,6 @@ Promise.all(mtdtprmss).then(data=>{
 	} // updateRenderingItems
 
 
-
-	
-
-	
-
-	
-	// console.log(workspace, renderer, knowledge)
-	console.log(T)
 	
 })
 

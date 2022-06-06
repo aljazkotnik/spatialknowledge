@@ -210,8 +210,12 @@ export default class TreeKnowledge {
 		
 		
 		
-		// Try to fit the legend entries in one row. Limit username to 8 characters?		
-		obj.node.querySelector("g.legend").appendChild(svg2element(`<g>${[unsaved].concat(entries)}</g>`));
+		// Try to fit the legend entries in one row. Limit username to 8 characters?
+		let legend = obj.node.querySelector("g.legend");
+		while (legend.lastChild) {
+			legend.removeChild(legend.lastChild);
+		}
+		legend.appendChild(svg2element(`<g>${[unsaved].concat(entries)}</g>`));
 		obj.node.querySelector("g.treeelements").setAttribute("transform", `translate(0,${(j+2)*entryheight})`);
 	} // updatelegend
 	

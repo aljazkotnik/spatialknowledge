@@ -3,9 +3,9 @@ import { html2element } from "../helpers.js";
 let template = `
 <div class="item">
   <div class="head unselectable">
-    <p class="label"></p>
 	<span class="button dissolve" style="display: none;">✖</span>
 	<span class="button enter" style="display: none;">⮊</span>
+	<p class="label"></p>
   </div>
   <div class="viewcontainer"></div>
   <div class="preview"></div>

@@ -97,7 +97,7 @@ export default class Group extends Item {
 
 	// The label should depcit the group name - where does that come from? Maybe it should just be passed in? Maybe as an array of all names for this group.
 	let head = obj.node.querySelector("div.head")
-	head.querySelector("span.label").innerHTML = "Group";
+	head.querySelector("p.label").innerHTML = "Group";
 	
 	let dissolvebutton = head.querySelector("span.dissolve");
 	dissolvebutton.style.display = "";

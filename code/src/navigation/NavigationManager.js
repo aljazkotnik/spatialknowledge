@@ -635,14 +635,14 @@ function collectAvailableTagCorrelationData(items){
 	
 	// First filter out any variables that are not present in all items.
 	let commonTagNames = items.reduce((acc,item)=>{
-		return acc.filter(n=>item.commenting.tagoverview.tags.map(t=>t.name).includes(n))
-	}, items[0].commenting.tagoverview.tags.map(t=>t.name))
+		return acc.filter(n=>item.annotations.tagoverview.tags.map(t=>t.name).includes(n))
+	}, items[0].annotations.tagoverview.tags.map(t=>t.name))
 	
 	
 	
 	// Get the relevant item tag.
 	function getItemTagByName(item, tagname){
-		return item.commenting.tagoverview.tags.find(t=>t.name==tagname)
+		return item.annotations.tagoverview.tags.find(t=>t.name==tagname)
 	}; // getItemTagByName
 	
 	

@@ -264,7 +264,7 @@
   } // arrayIncludesAll
    // joinDataToElements
 
-  var template$n = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n    <p class=\"label\"></p>\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
+  var template$n = "\n<div class=\"item\">\n  <div class=\"head unselectable\">\n\t<span class=\"button dissolve\" style=\"display: none;\">\u2716</span>\n\t<span class=\"button enter\" style=\"display: none;\">\u2B8A</span>\n\t<p class=\"label\"></p>\n  </div>\n  <div class=\"viewcontainer\"></div>\n  <div class=\"preview\"></div>\n  <div class=\"commenting\"></div>\n</div>\n";
   /*
   `Item' is a basis for individual small multiples as well as groups. It implements the node creation and appends dragging.
 
@@ -4202,9 +4202,15 @@
           j = (i + 1) * entrywidth > legendwidth ? j + 1 : j;
           i = (i + 1) * entrywidth > legendwidth ? 0 : i + 1;
           return "<g transform=translate(".concat(i * entrywidth, ",").concat(j * entryheight, ")>\n\t\t\t<path d=\"M0,-4 L20,-4\" stroke=\"").concat(obj.color.dom2range(author), "\" stroke-width=\"5px\"></path>\n\t\t\t<text x=\"25\" y=\"0\" font-weight=\"bold\" font-size=\"12px\">").concat(author, "</text>\n\t\t\t</g>");
-        }); // Try to fit the legend entries in one row. Limit username to 8 characters?		
+        }); // Try to fit the legend entries in one row. Limit username to 8 characters?
 
-        obj.node.querySelector("g.legend").appendChild(svg2element("<g>".concat([unsaved].concat(entries), "</g>")));
+        var legend = obj.node.querySelector("g.legend");
+
+        while (legend.lastChild) {
+          legend.removeChild(legend.lastChild);
+        }
+
+        legend.appendChild(svg2element("<g>".concat([unsaved].concat(entries), "</g>")));
         obj.node.querySelector("g.treeelements").setAttribute("transform", "translate(0,".concat((j + 2) * entryheight, ")"));
       } // updatelegend
 
@@ -5306,7 +5312,7 @@
 
 
       var head = obj.node.querySelector("div.head");
-      head.querySelector("span.label").innerHTML = "Group";
+      head.querySelector("p.label").innerHTML = "Group";
       var dissolvebutton = head.querySelector("span.dissolve");
       dissolvebutton.style.display = "";
 
@@ -6133,16 +6139,16 @@
     // First filter out any variables that are not present in all items.
     var commonTagNames = items.reduce(function (acc, item) {
       return acc.filter(function (n) {
-        return item.commenting.tagoverview.tags.map(function (t) {
+        return item.annotations.tagoverview.tags.map(function (t) {
           return t.name;
         }).includes(n);
       });
-    }, items[0].commenting.tagoverview.tags.map(function (t) {
+    }, items[0].annotations.tagoverview.tags.map(function (t) {
       return t.name;
     })); // Get the relevant item tag.
 
     function getItemTagByName(item, tagname) {
-      return item.commenting.tagoverview.tags.find(function (t) {
+      return item.annotations.tagoverview.tags.find(function (t) {
         return t.name == tagname;
       });
     }
@@ -8174,10 +8180,7 @@
     workspace.updateRenderingItems = function (subsetitems) {
       renderer.items = subsetitems;
     }; // updateRenderingItems
-    // console.log(workspace, renderer, knowledge)
 
-
-    console.log(T);
   });
 
 }());
