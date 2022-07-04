@@ -214,10 +214,11 @@ export function dimensioning(nodes){
 		
 		
 		// Run through htem again to assign unique block ids to them. This should already produce a block ordered array of nodes.
-		let block = 0;
+		// Min block positions are not necessarily 0 - the blocks may begin lower down. Just offset from previous.
+		let block = 0; // 0
 		level.nodes.forEach(n=>{
 			n.block = Math.max(n.block, block);
-			block += 1;
+			block = n.block + 1;
 		}); // forEach
 		
 		

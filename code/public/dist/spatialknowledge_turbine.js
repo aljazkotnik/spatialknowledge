@@ -3443,11 +3443,13 @@
         return a.block - b.block;
       }); // sort
       // Run through htem again to assign unique block ids to them. This should already produce a block ordered array of nodes.
+      // Min block positions are not necessarily 0 - the blocks may begin lower down. Just offset from previous.
 
-      var block = 0;
+      var block = 0; // 0
+
       level.nodes.forEach(function (n) {
         n.block = Math.max(n.block, block);
-        block += 1;
+        block = n.block + 1;
       }); // forEach
       // After blocks are assigned do the positioning. This also depends on the links. If a link is expected to connect the same blocks it will be horizntal, and hte node positions should be adjusted accordingly.
       // The block are supposed to already separate the nodes vertically, now we're just figuring out the small adjustments.
@@ -4137,7 +4139,7 @@
           nodeobj.update();
 
           if (iscurrent) {
-            nodeobj.highlightselect();
+            nodeobj.highlightSelect();
           } // if
 
 

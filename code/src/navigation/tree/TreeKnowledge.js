@@ -131,7 +131,7 @@ export default class TreeKnowledge {
 			obj.gnodes.appendChild( nodeobj.node );
 			nodeobj.update();
 			if(iscurrent){
-				nodeobj.highlightselect();
+				nodeobj.highlightSelect();
 			} // if
 			
 			
