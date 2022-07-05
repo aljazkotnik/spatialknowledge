@@ -106,7 +106,7 @@ Promise.all(mtdtprmss).then(data=>{
 	} // updateRenderingItems
 
 
-	
+	console.log(items)
 })
 
 

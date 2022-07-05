@@ -620,7 +620,9 @@
     _inherits(Camera2D, _Camera);
 
     var _super = _createSuper(Camera2D); // The 2D camera has panning instead of changing the camera angle.
-    // The z coordinate is not important here because it gets defined in the shaders as 0 in any case.
+    // Collect zoom points for smooth interactions.
+    // zoomPointClip = [0,0]
+    // k = 1
 
 
     function Camera2D() {
@@ -629,11 +631,12 @@
       _classCallCheck(this, Camera2D);
 
       _this = _super.call(this);
+      _this.zoomEvents = [[0, 0, 1]];
 
-      var obj = _assertThisInitialized(_this);
+      _assertThisInitialized(_this); // obj.zoomPointClip = [0,0]
+      // obj.k = 1;
 
-      obj.zoomPointClip = [0, 0];
-      obj.k = 1;
+
       return _this;
     } // constructor
 
@@ -643,11 +646,11 @@
       value: function move(x, y, vpp) {
         // Instead of changing the camera pitch/yaw/roll pan the view.
         var obj = this;
-        vpp = vpp == undefined ? 1 : vpp;
+        vpp = vpp == undefined ? [1, 1] : vpp;
 
         if (obj.mouseDown) {
-          var diffX = (x - obj.mouseStart[0]) * vpp;
-          var diffY = (y - obj.mouseStart[1]) * vpp; // Limit the panning?
+          var diffX = (x - obj.mouseStart[0]) * vpp[0];
+          var diffY = (y - obj.mouseStart[1]) * vpp[1]; // Limit the panning?
 
           obj.x = obj.xStart - diffX;
           obj.y = obj.yStart + diffY;
@@ -768,18 +771,33 @@
         // THE ZOOM POINT MUST BE CONVERTED TO THE CLIP SPACE FROM PIXEL COORDINATES!!! I want to translate to 0,0. That's the middle of the viewport. y has to be calculated in terms of client window.
         // For zooming I want the zoomed point to remain where it is at the moment, and everything around it should be scaled. So, for that to happen the mesh needs to be translated by the location of the point in clip coordinates, scaled, and translated back to the same coordinates in pixel values.
 
-        var dx = camera.zoomPointClip[0];
-        var dy = camera.zoomPointClip[1];
-        var k = camera.k; // let x0 = camera.mouseStart[0] * this.valuePerPixel;
-        // let y0 = camera.mouseStart[1] * this.valuePerPixel;
-        // let k  = camera.k;
+        /*
+        let dx = camera.zoomPointClip[0];
+        let dy = camera.zoomPointClip[1];
+        let k  = camera.k;
+        
+        
+        // Every time the zoom is computed from start. Therefore the dx/dy need to be calculated for the original view, not the current view.
+        let translateToOrigin    = translateMatrix(-dx, -dy, 0);
+        let scaleToZoomSpace     = scaleMatrix(k, k, 1);
+        let translateToZoomSpace = translateMatrix(dx, dy, 0);
+        */
+        // Move the matrices to be stored directly, as opposed to being recalculated on-the-go?
 
-        var translateToOrigin = translateMatrix(-dx, -dy, 0);
-        var scaleToZoomSpace = scaleMatrix(k, k, 1);
-        var translateToZoomSpace = translateMatrix(dx, dy, 0); // Inverse the operation for camera movements, because we are actually moving the geometry in the scene, not the camera itself.
+        var zoomTransforms = camera.zoomEvents.map(function (ze) {
+          var dx = ze[0];
+          var dy = ze[1];
+          var k = ze[2];
+          var translateToOrigin = translateMatrix(-dx, -dy, 0);
+          var scaleToZoomSpace = scaleMatrix(k, k, 1);
+          var translateToZoomSpace = translateMatrix(dx, dy, 0);
+          return multiplyArrayOfMatrices([translateToZoomSpace, scaleToZoomSpace, translateToOrigin]); // model
+        }); // zoomTransforms
+        // Inverse the operation for camera movements, because we are actually moving the geometry in the scene, not the camera itself.
         // this.transforms.view = invertMatrix( position );
+        // Remember - multiplication is in reverse order!
 
-        this.transforms.view = multiplyArrayOfMatrices([invertMatrix(position), translateToZoomSpace, scaleToZoomSpace, translateToOrigin]); // model
+        this.transforms.view = multiplyArrayOfMatrices([invertMatrix(position)].concat(_toConsumableArray(zoomTransforms.reverse()))); // model
       } // computeViewMatrix
       // On the go updates.
 
@@ -812,9 +830,11 @@
       get: function get() {
         // The zoom transformation will work in the clip space, which is within [-1,1]. Therefore the range is 2, and independent of hte domain of the data.
         var obj = this;
-        var arx = obj.camera.k * 2 / obj.viewport[2];
-        var ary = obj.camera.k * 2 / obj.viewport[3];
-        return Math.max(arx, ary);
+        var arx = 2 / obj.viewport[2]; // 2/obj.camera.k/obj.viewport[2]; // obj.camera.k*2/obj.viewport[2]; //
+
+        var ary = 2 / obj.viewport[3]; // 2/obj.camera.k/obj.viewport[3]; // obj.camera.k*2/obj.viewport[3];
+
+        return [arx, ary];
       } // get aspectRatio
       // Camera
 
@@ -845,19 +865,27 @@
         var obj = this; // The 2D camera works off of a zoom value, because the perspective does not change. There is no perspective transformation because the data only has x/y, and to make zoom work through perspective a third z value would have to be spliced into the ArrayBuffer data.
         // The first translate can be made using the clip coordinates. The translate back after scaling has to be done using pixels, because the point should stay at the same pixel location. Store both the clip coordinate, and the pixel coordinate.
 
-        obj.camera.zoomPointClip = obj.pixel2clip([e.clientX, e.clientY]);
-        obj.camera.incrementZoomValue(e.deltaY < 0 ? 0.1 : -0.1);
+        obj.camera.zoomEvents.push([].concat(_toConsumableArray(obj.pixel2clip([e.clientX, e.clientY])), [e.deltaY < 0 ? 1.1 : 1 / 1.1])); // obj.camera.incrementZoomValue(e.deltaY<0 ? 0.1 : -0.1);
       } // cameraChangeDist
+      // Maybe this should be moved into the camera?
 
     }, {
       key: "pixel2clip",
       value: function pixel2clip(p) {
+        /* PIXEL2CLIP is used to establish the zoom anchor point. When zooming the zooming point should stay at the cursor location, and the domain around it should be scaled. The anchor point usage is implemented in the view matrix. The view matrix calculates the transform from the original clip domain every time, therefore the anchor point adjustment needs to be done in the original clip space. 
+        	
+        obj.transforms.view goes from the original clip space to the current anchor point clip space. We select a new anchor point in the current clip space, and reproject it back to the original clip space. On refresh the entire scaling should be applied there.
+        
+        When zooming the anchor point is translated to origin, the view scaled, and then the anchor point is translated back. This means that the anchor point should return to the same end clip space coordinates? And since the clip space remains the same this should mean the same pixel location.
+        
+        But the anchor point is not equal to the underlying data! So maybe just apply all the transformations back to find hte data point, and then apply the transformation to the clip space?
+        */
         // Pixel values can be obtained from the event. Convert the pixel value to the clip space values.
         var obj = this;
         var rect = obj.view.getBoundingClientRect(); // Clicked point within the viewport, in terms of pixels.
 
         var x_px = p[0] - rect.left;
-        var y_px = p[1] - rect.top; // Convert to clip coordinates. Camera.x is in data coordinates.
+        var y_px = p[1] - rect.top; // Convert to current clip coordinates. Camera.x is in data coordinates.
 
         var x_clip = 2 * (x_px / (rect.right - rect.left)) - 1;
         var y_clip = -2 * (y_px / (rect.bottom - rect.top)) + 1;
@@ -8183,6 +8211,8 @@
       renderer.items = subsetitems;
     }; // updateRenderingItems
 
+
+    console.log(items);
   });
 
 }());

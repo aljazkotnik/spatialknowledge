@@ -67,25 +67,29 @@ export default class Camera{
 export class Camera2D extends Camera{
   // The 2D camera has panning instead of changing the camera angle.
   
-  // The z coordinate is not important here because it gets defined in the shaders as 0 in any case.
+  // Collect zoom points for smooth interactions.
+  zoomEvents = [[0,0,1]];
+  
+  // zoomPointClip = [0,0]
+  // k = 1
   
   constructor(){
 	super()
 	let obj = this;
 	
-	obj.zoomPointClip = [0,0]
-	obj.k = 1;
+	// obj.zoomPointClip = [0,0]
+	// obj.k = 1;
   } // constructor
   
   
   move(x,y, vpp){
 	// Instead of changing the camera pitch/yaw/roll pan the view.
 	let obj = this;
-	vpp = vpp == undefined ? 1 : vpp;
+	vpp = vpp == undefined ? [1, 1] : vpp;
 	
 	if(obj.mouseDown){
-		let diffX = (x - obj.mouseStart[0])*vpp;
-		let diffY = (y - obj.mouseStart[1])*vpp;
+		let diffX = (x - obj.mouseStart[0])*vpp[0];
+		let diffY = (y - obj.mouseStart[1])*vpp[1];
 		
 		// Limit the panning?
 		obj.x = obj.xStart - diffX;
