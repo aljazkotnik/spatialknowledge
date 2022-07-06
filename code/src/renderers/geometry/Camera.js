@@ -1,3 +1,6 @@
+import {scaleMatrix, translateMatrix, multiplyArrayOfMatrices, multiplyPoint, invertMatrix} from "./matrices.js";
+
+
 export default class Camera{
   
   mouseDown = false
@@ -68,7 +71,14 @@ export class Camera2D extends Camera{
   // The 2D camera has panning instead of changing the camera angle.
   
   // Collect zoom points for smooth interactions.
-  zoomEvents = [[0,0,1]];
+  matrix = [
+    1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1
+  ]
+  zoomEvents = [[0,0,1]]
+  
   
   // zoomPointClip = [0,0]
   // k = 1
@@ -97,9 +107,50 @@ export class Camera2D extends Camera{
 	} // if  
   } // move
   
+  
+  zoom(p, k){
+	let obj = this;
+	  
+	// Zoom, but keep the anchor point fixed.
+	let dx = p[0];
+	let dy = p[1];
+	
+	// Just update the camera matrix.
+	let translateToOrigin    = translateMatrix(-dx, -dy, 0);
+	let scaleToZoomSpace     = scaleMatrix(k, k, 1);
+	let translateToZoomSpace = translateMatrix(dx, dy, 0);
+	
+	let M = multiplyArrayOfMatrices([
+	  translateToZoomSpace,
+	  scaleToZoomSpace,
+	  translateToOrigin
+	]);
+	
+	
+	obj.transform(M);
+	obj.zoomEvents.push( [ dx, dy, k] );
+	
+  } // zoom
+  
+  
   incrementZoomValue(d){
 	this.k += d;
   } // incrementZoomValue
+  
+  
+ 
+  
+  
+  transform(M){
+	let obj = this;
+	
+	// Obj.matrix is second input because the last transformation is supposed to be the left-most matrix in the multiplication!!!
+	obj.matrix = multiplyArrayOfMatrices([
+	  M,
+	  obj.matrix
+	])
+	  
+  } // tansform
 } // Camera2D
 
 

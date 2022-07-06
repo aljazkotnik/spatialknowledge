@@ -631,6 +631,7 @@
       _classCallCheck(this, Camera2D);
 
       _this = _super.call(this);
+      _this.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       _this.zoomEvents = [[0, 0, 1]];
 
       _assertThisInitialized(_this); // obj.zoomPointClip = [0,0]
@@ -659,10 +660,34 @@
       } // move
 
     }, {
+      key: "zoom",
+      value: function zoom(p, k) {
+        var obj = this; // Zoom, but keep the anchor point fixed.
+
+        var dx = p[0];
+        var dy = p[1]; // Just update the camera matrix.
+
+        var translateToOrigin = translateMatrix(-dx, -dy, 0);
+        var scaleToZoomSpace = scaleMatrix(k, k, 1);
+        var translateToZoomSpace = translateMatrix(dx, dy, 0);
+        var M = multiplyArrayOfMatrices([translateToZoomSpace, scaleToZoomSpace, translateToOrigin]);
+        obj.transform(M);
+        obj.zoomEvents.push([dx, dy, k]);
+      } // zoom
+
+    }, {
       key: "incrementZoomValue",
       value: function incrementZoomValue(d) {
         this.k += d;
       } // incrementZoomValue
+
+    }, {
+      key: "transform",
+      value: function transform(M) {
+        var obj = this; // Obj.matrix is second input because the last transformation is supposed to be the left-most matrix in the multiplication!!!
+
+        obj.matrix = multiplyArrayOfMatrices([M, obj.matrix]);
+      } // tansform
 
     }]);
 
@@ -764,40 +789,30 @@
     }, {
       key: "computeViewMatrix",
       value: function computeViewMatrix() {
-        var camera = this.camera; // PANNING AND ZOOMING
-
-        var position = translateMatrix(camera.x, camera.y, camera.z); // For zooming a scaling operation should be performed. And the zooming should be based on hte pointers position. So that point should stay in hte same position, while the rest of the view scales.
-        // The values need to be in coordinate units! So the pixel location needs to be changed to value location. Mouse locations are per client window, and so must be corrected for viewport location to ensure consistent zooming behavior. Initially the zooming is not needed.
-        // THE ZOOM POINT MUST BE CONVERTED TO THE CLIP SPACE FROM PIXEL COORDINATES!!! I want to translate to 0,0. That's the middle of the viewport. y has to be calculated in terms of client window.
-        // For zooming I want the zoomed point to remain where it is at the moment, and everything around it should be scaled. So, for that to happen the mesh needs to be translated by the location of the point in clip coordinates, scaled, and translated back to the same coordinates in pixel values.
-
-        /*
-        let dx = camera.zoomPointClip[0];
-        let dy = camera.zoomPointClip[1];
-        let k  = camera.k;
+        // Push this all into the camera? And let it track everything on an incremental basis?
+        // But te translation is always in the absolute sense. But does it need to be? Maybe it can be incremental also?
+        var camera = this.camera;
+        /* PANNING
+        The translations must also be tracked as incremental changes, as opposed to one change from hte origin to accommodate anchor point zooming. However, panning is a `quasi-continuous' event. Therefore the matrices are only recalculated when the pan stops. The internal camera positions are used to facilitate the transformations during hte movement itself.
         
+        Maybe this should be changed? just log all events - this will allow to capture animations.
+        */
+
+        var position = translateMatrix(camera.x, camera.y, camera.z);
+        /* ZOOMING
+        Zooming is done by pointing and scrolling, and the zoom point should remain at the same position. To achieve this the model should first be translated to the origin, then scaled, and finally retranslated back. This ensures that the zoom point retains it's clip space coordinates.
         
-        // Every time the zoom is computed from start. Therefore the dx/dy need to be calculated for the original view, not the current view.
-        let translateToOrigin    = translateMatrix(-dx, -dy, 0);
-        let scaleToZoomSpace     = scaleMatrix(k, k, 1);
-        let translateToZoomSpace = translateMatrix(dx, dy, 0);
+        Consecutive zoom events cannot supersede the preceding event - consecutive zooms at different points also incur a translation, which cannot be accounted for in a simple zoom. Therefore the events need to be tracked, and reapplied every time.
+        
+        The reapplication of many matrices is a bit repetitive. To save on computation an accumulator matrix is defined on the camera, and the event transformations are applied only once, when they occur.
         */
         // Move the matrices to be stored directly, as opposed to being recalculated on-the-go?
-
-        var zoomTransforms = camera.zoomEvents.map(function (ze) {
-          var dx = ze[0];
-          var dy = ze[1];
-          var k = ze[2];
-          var translateToOrigin = translateMatrix(-dx, -dy, 0);
-          var scaleToZoomSpace = scaleMatrix(k, k, 1);
-          var translateToZoomSpace = translateMatrix(dx, dy, 0);
-          return multiplyArrayOfMatrices([translateToZoomSpace, scaleToZoomSpace, translateToOrigin]); // model
-        }); // zoomTransforms
         // Inverse the operation for camera movements, because we are actually moving the geometry in the scene, not the camera itself.
         // this.transforms.view = invertMatrix( position );
+        // Inverse the operation for camera movements, because we are actually moving the geometry in the scene, not the camera itself.
         // Remember - multiplication is in reverse order!
 
-        this.transforms.view = multiplyArrayOfMatrices([invertMatrix(position)].concat(_toConsumableArray(zoomTransforms.reverse()))); // model
+        this.transforms.view = multiplyArrayOfMatrices([invertMatrix(position), camera.matrix]); // model
       } // computeViewMatrix
       // On the go updates.
 
@@ -856,7 +871,12 @@
       key: "cameraMoveEnd",
       value: function cameraMoveEnd() {
         var camera = this.camera;
-        camera.moveEnd();
+        camera.moveEnd(); // Apply the translate transformation here, and reset the camera position, which will be encoded in the matrix.
+
+        camera.transform(invertMatrix(translateMatrix(camera.x, camera.y, camera.z)));
+        camera.x = 0;
+        camera.y = 0;
+        camera.z = 0;
       } // cameraMoveEnd
 
     }, {
@@ -865,7 +885,11 @@
         var obj = this; // The 2D camera works off of a zoom value, because the perspective does not change. There is no perspective transformation because the data only has x/y, and to make zoom work through perspective a third z value would have to be spliced into the ArrayBuffer data.
         // The first translate can be made using the clip coordinates. The translate back after scaling has to be done using pixels, because the point should stay at the same pixel location. Store both the clip coordinate, and the pixel coordinate.
 
-        obj.camera.zoomEvents.push([].concat(_toConsumableArray(obj.pixel2clip([e.clientX, e.clientY])), [e.deltaY < 0 ? 1.1 : 1 / 1.1])); // obj.camera.incrementZoomValue(e.deltaY<0 ? 0.1 : -0.1);
+        var c = obj.pixel2clip([e.clientX, e.clientY]);
+        var k = e.deltaY < 0 ? 1.1 : 1 / 1.1; // obj.camera.zoomEvents.push( [ dx, dy, k] );
+        // obj.camera.incrementZoomValue(e.deltaY<0 ? 0.1 : -0.1);
+
+        obj.camera.zoom(c, k);
       } // cameraChangeDist
       // Maybe this should be moved into the camera?
 
